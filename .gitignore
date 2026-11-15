@@ -1,0 +1,15 @@
+# Real songs used for testing: copyrighted and large, never published
+test-songs/
+
+# Reference images from other people (not ours to publish)
+inspiration/
+
+# Run state for automatic sessions (lock, usage log)
+.run/
+
+# The app as it was before it was split into files (kept locally for reference)
+Music_Visualizer-Project.html
+
+node_modules/
+.DS_Store
+Thumbs.db

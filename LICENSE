@@ -1,0 +1,33 @@
+Music Visualiser Omega — Copyright (c) 2026 UncertaintyNihilityOmega (https://github.com/UncertaintyNihilityOmega)
+
+You may use, copy, change, share and sell this work for any purpose, as long as you credit it:
+"Music Visualiser Omega by UncertaintyNihilityOmega", with a link to
+https://github.com/UncertaintyNihilityOmega/Music-Visualizer-Omega and the licence, and say if you changed it.
+
+The work is under two licences:
+
+1. Content: Creative Commons Attribution 4.0 International (CC BY 4.0)
+   Documents, explanations, interface text and artwork: docs/, README.md, CHANGELOG.md, FACTS.md, ROADMAP.md,
+   ORGANIZER.md, AGENT-RUN.md, PROMPTS.md, icons/, and the text shown in the app.
+   Full licence: https://creativecommons.org/licenses/by/4.0/legalcode
+
+2. Code: MIT License
+   index.html, css/, js/, engine/, manifest.webmanifest and package.json.
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+   documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+   to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+   the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+   THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+   IN THE SOFTWARE.
+
+Not part of this work: the music you play with it. No songs are included, and the licences above give no rights
+to any song. The emoji drawn in some modes come from the fonts of the device showing them and keep those fonts'
+licences.

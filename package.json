@@ -1,0 +1,15 @@
+{
+  "name": "music-visualiser-omega",
+  "version": "0.1.0-dev",
+  "private": true,
+  "description": "A music player and visualiser that plays the songs already on your device, listens to your microphone, and works offline.",
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "serve": "node engine/serve.js",
+    "check": "node engine/check.js",
+    "test": "node engine/test.js",
+    "songtest": "node engine/songtest.js",
+    "icons": "node engine/icons.js",
+    "all": "node engine/test.js && node engine/check.js"
+  }
+}

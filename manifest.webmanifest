@@ -1,0 +1,13 @@
+{
+  "name": "Music Visualiser Omega",
+  "short_name": "Visualiser Ω",
+  "description": "A music player and visualiser that plays the songs already on your device, listens to your microphone, and works offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0C0918",
+  "theme_color": "#0C0918",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

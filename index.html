@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="omega">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Visualiser Omega</title>
+<meta name="description" content="A music player and visualiser that plays the songs already on your device, listens to your microphone, and works offline.">
+<meta name="theme-color" content="#0C0918">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+  <!-- The stage: always on screen, whatever page is open below it -->
+  <h1 class="title" id="appTitle">Music Visualiser <span>Ω</span></h1>
+
+  <div class="card viz-card" id="vizCard">
+    <button class="viz-fs viz-set" id="setBtn" type="button" aria-label="Visualiser settings" title="Settings (S)">⚙</button>
+    <button class="viz-fs" id="fsBtn" type="button" aria-label="Fullscreen visualiser" title="Fullscreen (F)">⛶</button>
+    <canvas id="visualizer"></canvas>
+    <div class="modes-wrap">
+    <div class="mode-row" role="tablist" aria-label="Visualiser style">
+      <button class="mode-btn active" type="button" data-mode="basic" role="tab" aria-selected="true">Basic</button>
+      <button class="mode-btn" type="button" data-mode="strings" role="tab" aria-selected="false">String</button>
+      <button class="mode-btn" type="button" data-mode="emoji" role="tab" aria-selected="false">Emoji</button>
+      <button class="mode-btn" type="button" data-mode="rain" role="tab" aria-selected="false">Rain</button>
+      <button class="mode-btn" type="button" data-mode="fire" role="tab" aria-selected="false">Fire</button>
+      <button class="mode-btn" type="button" data-mode="ice" role="tab" aria-selected="false">Ice</button>
+      <button class="mode-btn" type="button" data-mode="aqua" role="tab" aria-selected="false">Aquatic</button>
+      <button class="mode-btn" type="button" data-mode="nature" role="tab" aria-selected="false">Nature</button>
+      <button class="mode-btn" type="button" data-mode="piano" role="tab" aria-selected="false">Piano</button>
+      <button class="mode-btn" type="button" data-mode="clock" role="tab" aria-selected="false">Clock</button>
+    </div>
+    <div class="mode-row game-row" role="tablist" aria-label="Mini-games">
+      <span class="mode-sep" aria-hidden="true"></span>
+      <button class="mode-btn" type="button" data-mode="td" role="tab" aria-selected="false">Defense</button>
+      <button class="mode-btn" type="button" data-mode="rpg" role="tab" aria-selected="false">Survivor</button>
+      <button class="mode-btn" type="button" data-mode="cards" role="tab" aria-selected="false">Cards</button>
+      <button class="mode-btn" type="button" data-mode="sandbox" role="tab" aria-selected="false">Sandbox</button>
+    </div>
+    </div>
+    <p class="now-playing" id="nowPlaying" aria-live="polite">Nothing loaded yet — add some music below</p>
+    <p class="cors-note" id="corsNote"></p>
+  </div>
+
+  <div class="card transport-card">
+    <div class="transport">
+      <button class="toggle" id="shuffleBtn" aria-label="Shuffle" title="Shuffle">🔀</button>
+      <button id="prevBtn" aria-label="Previous track" title="Previous">⏮</button>
+      <button class="play-btn" id="playBtn" aria-label="Play">▶</button>
+      <button id="nextBtn" aria-label="Next track" title="Next">⏭</button>
+      <button class="toggle" id="repeatBtn" aria-label="Repeat" title="Repeat">🔁</button>
+    </div>
+    <div class="seek-row">
+      <span id="curTime">0:00</span>
+      <input type="range" id="seekBar" min="0" max="100" value="0" aria-label="Position in the song">
+      <span id="durTime">0:00</span>
+    </div>
+    <div class="volume-row">
+      <span aria-hidden="true">🔉</span>
+      <input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume">
+    </div>
+  </div>
+
+  <!-- Pages: each one lives in its own file under js/pages/ -->
+  <nav class="tabs" id="pageTabs" role="tablist" aria-label="Pages"></nav>
+  <main id="pages"></main>
+</div>
+
+<audio id="audio" preload="metadata" style="display:none"></audio>
+
+<!-- namespace + pages (must come before state.js, which looks page elements up by id) -->
+<script src="js/core/app.js"></script>
+<script src="js/pages/page-music.js"></script>
+<script src="js/pages/page-games.js"></script>
+<script src="js/pages/page-settings.js"></script>
+<script src="js/pages/page-guide.js"></script>
+<script src="js/pages/pages-mount.js"></script>
+
+<!-- core -->
+<script src="js/core/state.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/settings.js"></script>
+<script src="js/core/themes.js"></script>
+<script src="js/core/analysis.js"></script>
+<script src="js/core/audio-engine.js"></script>
+<script src="js/core/canvas-core.js"></script>
+<script src="js/core/mode-registry.js"></script>
+<script src="js/core/taps.js"></script>
+
+<!-- visualiser modes -->
+<script src="js/modes/mode-basic.js"></script>
+<script src="js/modes/mode-strings.js"></script>
+<script src="js/modes/mode-emoji.js"></script>
+<script src="js/modes/mode-rain.js"></script>
+<script src="js/modes/mode-fire.js"></script>
+<script src="js/modes/mode-ice.js"></script>
+<script src="js/modes/mode-aqua.js"></script>
+<script src="js/modes/mode-nature.js"></script>
+<script src="js/modes/mode-piano.js"></script>
+<script src="js/modes/mode-clock.js"></script>
+
+<!-- mini-games -->
+<script src="js/games/games-shared.js"></script>
+<script src="js/games/game-tower-defense.js"></script>
+<script src="js/games/game-survivor.js"></script>
+<script src="js/games/game-cards.js"></script>
+<script src="js/games/games-host.js"></script>
+
+<!-- tools -->
+<script src="js/tools/tool-sandbox.js"></script>
+
+<!-- player -->
+<script src="js/player/playlist.js"></script>
+<script src="js/player/library.js"></script>
+<script src="js/player/transport.js"></script>
+
+<!-- boot: must be last -->
+<script src="js/main.js"></script>
+</body>
+</html>
