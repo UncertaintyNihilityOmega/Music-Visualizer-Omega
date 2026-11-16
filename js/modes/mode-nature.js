@@ -7,6 +7,65 @@
 
   var natGrowth = 0.14, natVit = 0, natLeaves = [], natFalling = [], natFlowers = [];
   var natTips = [], tipsById = {}, branchBudget = 0, leafSeq = 0;
+  var natWind = 0, natDay = 0.6, fireflies = [], stars = null;
+
+  // Day and night follow how big the passage is, slowly: a long calm
+  // stretch brings dusk and stars, a loud one brings the day back.
+  function drawSky(w, h, k, dt){
+    var cfg = Cfg.CFG.nature;
+    natDay = cfg.dayNight ? U.env(natDay, A.drive, 0.22, 0.1, dt) : 1;
+    var night = U.clamp01(1 - natDay * 1.5);
+    if (night > 0.01){
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, 'rgba(10,14,44,' + (night * 0.78).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(34,26,60,' + (night * 0.6).toFixed(3) + ')');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      if (!stars){
+        stars = [];
+        for (var i = 0; i < 46; i++) stars.push([(i * 0.618034) % 1, ((i * 0.754877) % 1) * 0.62, 0.5 + ((i * 3.3) % 1), (i * 1.7) % 6.283]);
+      }
+      ctx.fillStyle = '#FFFFFF';
+      for (var s = 0; s < stars.length; s++){
+        var st = stars[s];
+        ctx.globalAlpha = night * (0.35 + 0.45 * Math.sin(A.t * 1.3 + st[3]) * 0.5 + 0.2);
+        ctx.fillRect(st[0] * w, st[1] * h, st[2] * 1.6 * k, st[2] * 1.6 * k);
+      }
+      ctx.globalAlpha = 1;
+      // the moon sits where the day's sun glow is painted
+      ctx.fillStyle = 'rgba(244,240,214,' + (night * 0.85).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(w * 0.78, h * 0.18, Math.min(w, h) * 0.045, 0, 6.283);
+      ctx.fill();
+    }
+    return night;
+  }
+  // Fireflies: at night, each hi-hat lights one; a few drift about on their own.
+  function drawFireflies(w, h, k, dt, night){
+    var cfg = Cfg.CFG.nature;
+    if (cfg.fireflies && night > 0.25 && fireflies.length < 40){
+      var n = (A.hatHit > 0.2 ? 1 + Math.round(A.hatHit * 2) : 0) + (Math.random() < night * dt * 1.2 ? 1 : 0);
+      for (var i = 0; i < n; i++){
+        fireflies.push({ x: w * (0.05 + Math.random() * 0.9), y: h * (0.3 + Math.random() * 0.6), ph: Math.random() * 6.283,
+                         age: 0, life: 2 + Math.random() * 2.5, vx: (Math.random() - 0.5) * 22 * k, vy: -(4 + Math.random() * 12) * k });
+      }
+    }
+    for (var f = fireflies.length - 1; f >= 0; f--){
+      var ff = fireflies[f];
+      ff.age += dt;
+      if (ff.age > ff.life){ fireflies.splice(f, 1); continue; }
+      ff.x += (ff.vx + Math.sin(A.t * 1.4 + ff.ph) * 14 * k + natWind * 18 * k) * dt;
+      ff.y += (ff.vy + Math.cos(A.t * 1.1 + ff.ph) * 9 * k) * dt;
+      var a = Math.sin(ff.age / ff.life * Math.PI) * (0.55 + 0.45 * Math.sin(A.t * 6 + ff.ph)) * Math.min(1, night * 2);
+      var r = 7 * k;
+      var g = ctx.createRadialGradient(ff.x, ff.y, 0, ff.x, ff.y, r);
+      g.addColorStop(0, 'rgba(236,255,150,' + a.toFixed(3) + ')');
+      g.addColorStop(0.3, 'rgba(190,240,90,' + (a * 0.5).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(190,240,90,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(ff.x - r, ff.y - r, r * 2, r * 2);
+    }
+  }
 
   function hashRnd(seed){
     var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
@@ -24,6 +83,8 @@
       var bi = Math.min(bands.length - 1, depth);
       a += Math.sin(A.t * (0.55 + depth * 0.42) + seed * 6.283) * (0.028 + depth * 0.032) * (0.4 + bands[bi] * 2.6) * cfg.sway;
     }
+    // wind leans the whole tree: thin outer branches bend most, the trunk hardly at all
+    if (depth > 0) a += natWind * (0.012 + depth * 0.011);
     var x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L;
     var cx = x + Math.cos(a - 0.13) * L * 0.55, cy = y + Math.sin(a - 0.13) * L * 0.55;
 
@@ -132,6 +193,13 @@
   function drawNature(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.nature;
     Can.backdrop(1);
+    var night = drawSky(w, h, k, dt);
+
+    // Wind follows the balance of treble against the middle (like Rain's
+    // wind): bright, airy music blows one way, dark music the other, with a
+    // slow drift underneath so it is never perfectly still.
+    var gustNow = Math.sin(A.t * 0.23) * 0.35 + A.trebleTilt * 2.4;
+    natWind = U.env(natWind, gustNow * (0.3 + A.drive) * cfg.wind, 2.2, 2.2, dt);
 
     natVit = U.env(natVit, U.clamp01(A.level * 0.8 + A.intensity * 0.35), 2.2 * cfg.growth, 0.5 * cfg.decay, dt);
     natGrowth = U.env(natGrowth, 0.12 + natVit * 1.15, 0.55 * cfg.growth, 0.3 * cfg.decay, dt);
@@ -151,6 +219,12 @@
            (9 + natGrowth * 13) * k, 0, 1.7, 1, depthF, bands, maxDepth);
 
     /* --- leaves: attached until their lifespan runs out, then they fall --- */
+    // a snare shakes a few leaves loose (more of them in a loud passage)
+    var shed = cfg.snareLeaves && A.snareHit > 0.4 && natLeaves.length > 6 ? 1 + Math.round(A.snareHit * 3 * (0.3 + A.drive)) : 0;
+    for (var sh = 0; sh < shed; sh++){
+      var pick = natLeaves[Math.floor(Math.random() * natLeaves.length)];
+      pick.age = pick.life + 1;
+    }
     var occupied = {};
     for (var li = natLeaves.length - 1; li >= 0; li--){
       var l = natLeaves[li];
@@ -190,7 +264,7 @@
     }
     for (var fi = natFalling.length - 1; fi >= 0; fi--){
       var fl2 = natFalling[fi];
-      fl2.x += (fl2.vx + Math.sin(A.t * 1.7 + fl2.y * 0.01) * 24 * k) * dt;
+      fl2.x += (fl2.vx + Math.sin(A.t * 1.7 + fl2.y * 0.01) * 24 * k + (fl2.y < groundY ? natWind * 70 * k : 0)) * dt;
       fl2.y += fl2.vy * dt;
       fl2.vy = Math.min(fl2.vy + 16 * k * dt, 95 * k);
       fl2.ang += fl2.vr * dt;
@@ -225,6 +299,7 @@
         drawFlower(g2, k, groundY + 2 * k);
       }
     }
+    drawFireflies(w, h, k, dt, night);
   }
 
   function paintBG(c, w, h, k){
@@ -278,10 +353,12 @@
 
   Can.addResizeHook(function(){ natFlowers = []; });
 
-  App.modes.register('nature', { draw: drawNature, paintBG: paintBG, onTap: onTap });
+  App.modes.register('nature', { draw: drawNature, paintBG: paintBG, onTap: onTap, fx: 0.35,
+                                 reset: function(){ fireflies = []; } });
 
   App.cfg.registerDefaults('nature', {
-    growth: 1, decay: 1, depth: 8, angle: 1, ratio: 1, sway: 0,
+    growth: 1, decay: 1, depth: 8, angle: 1, ratio: 1, sway: 0, wind: 0.6,
+    dayNight: true, fireflies: true, snareLeaves: true,
     leafLife: 9, leafSize: 1, leafColor: '#5FA32E', leafMax: 200, leafRate: 1,
     bloomChance: 0.3, bloomColor: '#E8557F',
     flowers: true, flowerLife: 13, flowerMax: 22,
@@ -294,6 +371,10 @@
     ['angle', 'Branch spread', 'range', 0.4, 2, 0.05],
     ['ratio', 'Branch length ratio', 'range', 0.6, 1.3, 0.02],
     ['sway', 'Sway with music', 'range', 0, 2, 0.05],
+    ['wind', 'Wind (follows treble)', 'range', 0, 2, 0.05],
+    ['dayNight', 'Night when calm, day when loud', 'bool'],
+    ['fireflies', 'Fireflies at night (hi-hat)', 'bool'],
+    ['snareLeaves', 'Snare shakes leaves loose', 'bool'],
     ['leafLife', 'Leaf lifespan (seconds)', 'range', 1, 40, 0.5],
     ['leafRate', 'Leaf growth rate', 'range', 0.2, 3, 0.05],
     ['leafMax', 'Max leaves', 'range', 20, 400, 10],

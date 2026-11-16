@@ -18,6 +18,26 @@ What someone using the app would notice. Newest first.
 - **Basic mode** has four layouts (mirror, rise, edges, ring), three ranges (full, bass, voice), rounded peaks and
   a reflection.
 - Games page explains exactly what Normal, Hard and Insane change.
+- **Calm when the music is calm, lively when it is loud.** Every mode now knows how big the current part of the
+  song is. A verse is a drizzle, a small fire, straight strings; a chorus is a downpour, a tall fire, wide swings.
+- **Each drum has a job.** Kick drum: emoji rings, puddle rings, fish scatter, the clock's second hand jumps.
+  Snare: lightning, a plucked string, a crack in the ice, falling leaves. Hi-hat: sparkles, embers, glints,
+  bubbles, fireflies.
+- **Picture punch.** The whole picture zooms a little on a kick, shakes on a strong beat and brightens on a
+  snare, and holds still in calm passages. Settings > Performance & feel > "Picture punch" turns it down or off. It is gentler
+  when the device asks for reduced motion.
+- **String** was rebuilt: each string is its own slice of the sound, low to high. It follows the theme codes
+  (square steps for Cyberpunk, rings round a dark disc for Decensus Ad Nihilum).
+- **Emoji** and **Clock** follow the theme codes too (each code has its own emoji set and clock skin).
+- **Basic**: a "dots" layout on a curved line, peak caps that leave a trail, bars that brighten when loud, and
+  the theme's mark in the middle of the ring.
+- **Piano**: notes coloured by octave, a "melody only" switch, and the chord name in the corner.
+- **Nature**: night with stars when the music is calm, day when it is loud; wind; fireflies.
+- **Ice**: frost creeps in while the music is calm and shatters on the first hard hit.
+- **Aquatic**: the water surface follows the bass; fish swim as a school when calm.
+- With nothing playing, the modes follow a silent "ghost song" with a calm part, a build and a full part, so
+  every mode can be seen working before a song is added.
+- A new app icon ("Bold Layers").
 
 ### Fixed
 - **Piano mode works.** It never showed a note before: the detailed spectrum it needs was never being read.
@@ -29,6 +49,8 @@ What someone using the app would notice. Newest first.
 - The app no longer needs the internet for its fonts.
 
 ### Changed
+- Saved String, Fire and Clock settings are reset once (String was rebuilt; Fire's blue and Clock's style work
+  differently now).
 - Saved "Audio response" and "Basic" settings from older versions are reset once, because their numbers mean
   something different now. Everything else is kept.
 - Exported files are named `music-visualiser-omega-…`. Old exports still import.

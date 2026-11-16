@@ -52,7 +52,52 @@
       bg1: '#DCEEFF', bg2: '#FFFFFF'
     }}
   };
-  function theme(){ return THEMES[Cfg.CFG.clock.style] || THEMES.golden; }
+  // which of the four skins is on: the user's pick, or with "theme" the one
+  // the active theme code asks for (look.clock in themes.js)
+  function styleId(){
+    var s = Cfg.CFG.clock.style;
+    if (s === 'theme') s = (App.theme.look && App.theme.look.clock) || 'golden';
+    return THEMES[s] ? s : 'golden';
+  }
+  function theme(){ return THEMES[styleId()]; }
+
+  // kick drum: the second hand jumps forward a little and settles back
+  var tickKick = 0;
+  // chimes of light: rings that leave the clock when the music swells
+  var chimes = [], driveSlow = 0, chimeCd = 0;
+  function stepChimes(cx, cy, R, pal, k, dt){
+    driveSlow = U.env(driveSlow, A.drive, 0.45, 0.9, dt);
+    chimeCd -= dt;
+    if (Cfg.CFG.clock.chimes && A.drive - driveSlow > 0.16 && chimeCd <= 0 && chimes.length < 4){
+      chimes.push({ age: 0, life: 1.6 });
+      chimeCd = 1.4;
+    }
+    for (var i = chimes.length - 1; i >= 0; i--){
+      var c = chimes[i];
+      c.age += dt;
+      if (c.age > c.life){ chimes.splice(i, 1); continue; }
+      var f = c.age / c.life, rad = R * (1.2 + f * 1.9);
+      ctx.save();
+      ctx.strokeStyle = pal.accent;
+      ctx.shadowColor = pal.accent;
+      ctx.shadowBlur = 14 * k * Cfg.CFG.clock.glow;
+      ctx.globalAlpha = (1 - f) * 0.55;
+      ctx.lineWidth = (3 * (1 - f) + 0.6) * k;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, 0, 6.283);
+      ctx.stroke();
+      // twelve short rays, one per hour, riding the ring outward
+      ctx.lineWidth = 1.4 * k;
+      ctx.beginPath();
+      for (var r = 0; r < 12; r++){
+        var a = r / 12 * 6.283;
+        ctx.moveTo(cx + Math.cos(a) * rad * 0.94, cy + Math.sin(a) * rad * 0.94);
+        ctx.lineTo(cx + Math.cos(a) * rad * 1.06, cy + Math.sin(a) * rad * 1.06);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
 
   /* ---------- shared face + hands: a beveled bezel, an embossed dial, and
      properly tapered counterweighted hands, all reskinned per palette ---------- */
@@ -186,7 +231,9 @@
     hand(minF / 60, 0.68, 0.034, pal.minuteHand, 0.16);
 
     // second hand: a thin sweep with a small counter-circle tail
-    var a3 = (secF / 60) * 6.283 - Math.PI / 2;
+    if (cfg.kickTick && A.kickHit > 0.3 && A.drive > 0.1) tickKick = Math.max(tickKick, 0.4 + A.kickHit * 0.6);
+    tickKick *= Math.exp(-9 * A.dt);
+    var a3 = (secF / 60) * 6.283 - Math.PI / 2 + tickKick * 0.085;
     ctx.save();
     ctx.strokeStyle = pal.secondHand;
     ctx.lineCap = 'round';
@@ -616,24 +663,29 @@
 
   /* ---------- dispatch ---------- */
   function paintBG(c, w, h){
-    if (Cfg.CFG.clock.style === 'solarpunk') paintSolarBG(c, w, h);
+    if (styleId() === 'solarpunk') paintSolarBG(c, w, h);
+  }
+  function bgColors(){
+    var pal = theme().pal;
+    return { bg1: pal.bg1, bg2: pal.bg2 };
   }
   function draw(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.clock;
     var t = theme();
     Can.backdrop(1);
-    var style = cfg.style;
+    var style = styleId();
     if (style === 'golden'){ paintGoldenAmbience(w, h, k); stepGears(w, h, k, dt, cfg, t.pal); stepSand(w, h, k, dt, cfg); }
     else if (style === 'solarpunk'){ stepSolarLive(w, h, k, dt, cfg); stepSolarParticles(w, h, k, dt, cfg); }
     else if (style === 'cyberpunk'){ stepCyberLive(w, h, k, dt, cfg); stepCyberParticles(w, h, k, dt, cfg); }
     else { stepClouds(w, h, k, dt, cfg); stepHeavenParticles(w, h, k, dt, cfg); }
 
     var R = Math.min(w, h * 0.92) * 0.34;
+    stepChimes(w / 2, h * 0.52, R, t.pal, k, dt);
     if (style === 'heaven') drawWings(w / 2, h * 0.52, R, t.pal, k);
     drawFace(w / 2, h * 0.52, R, t.pal, cfg, k);
   }
   function onTap(x, y){
-    var style = Cfg.CFG.clock.style;
+    var style = styleId();
     var ringColor = { golden: '#D4AF37', solarpunk: '#3E7C4C', cyberpunk: '#FF2E9A', heaven: '#8FCFFF' }[style];
     App.taps.spawnRing(x, y, ringColor);
     var k = Can.dpr();
@@ -650,14 +702,16 @@
       for (var m = 0; m < 10; m++) spawnMote(x, y);
     }
   }
-  function reset(){ leafParts = []; glitches = []; motes = []; }
+  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; tickKick = 0; }
   Can.addResizeHook(function(){ sandReady = false; cloudsReady = false; });
 
-  App.modes.register('clock', { draw: draw, paintBG: paintBG, onTap: onTap, reset: reset });
+  App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, fx: 0.4 });
 
-  App.cfg.registerDefaults('clock', { style: 'golden', density: 1, glow: 0.6, handSpeed: 1 });
+  App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true });
   App.cfg.registerSchema({ id: 'clock', label: 'Clock', fields: [
-    ['style', 'Style', 'select', ['golden', 'solarpunk', 'cyberpunk', 'heaven']],
+    ['style', 'Style ("theme" follows the theme code)', 'select', ['theme', 'golden', 'solarpunk', 'cyberpunk', 'heaven']],
+    ['kickTick', 'Second hand jumps on the kick', 'bool'],
+    ['chimes', 'Rings of light when the music swells', 'bool'],
     ['density', 'Decoration density', 'range', 0.3, 2, 0.05],
     ['glow', 'Glow amount', 'range', 0, 1, 0.05],
     ['handSpeed', 'Background motion', 'range', 0.2, 2, 0.05]

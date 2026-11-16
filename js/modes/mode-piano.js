@@ -64,18 +64,46 @@
     for (var i = lo; i <= hi; i++) if (data[i] > mx) mx = data[i];
     return mx / 255;
   }
-  // Idle demo so the keyboard shows something musical instead of lighting up
-  // every key from the broadband idle signal.
-  var DEMO = [60, 64, 67, 72, 67, 64, 62, 65, 69, 74, 69, 65, 59, 62, 67, 71];
+  // With nothing playing, the keyboard plays the engine's silent "ghost
+  // song" (audio-engine.js): its bass note, its held chord and its running
+  // arpeggio, the same notes the other modes are reacting to.
   function demoNotes(out){
-    var step = Math.floor(A.t * 2.2) % DEMO.length;
-    var base = DEMO[step];
-    var frac = (A.t * 2.2) % 1;
-    var v = Math.max(0, 1 - frac) * 0.85;
-    out[base] = v;
-    if (base + 4 <= 108) out[base + 4] = v * 0.55;
-    if (base + 7 <= 108) out[base + 7] = v * 0.45;
-    if (base - 12 >= 21) out[base - 12] = v * 0.6;
+    var s = Aud.idleSong();
+    if (s.arp > 0.25) out[s.arpNote] = Math.min(1, s.arp);
+    if (s.bass > 0.2) out[s.chord.root] = Math.min(1, s.bass + 0.2);
+    for (var i = 0; i < 3; i++) out[s.chord.tones[i]] = Math.max(out[s.chord.tones[i]] || 0, 0.42);
+  }
+  // one colour per octave, low (red) to high (violet)
+  function octaveRGB(m){
+    var hue = ((Math.floor(m / 12) - 2) * 47 + 350) % 360, c = 0.62, x = c * (1 - Math.abs((hue / 60) % 2 - 1)), mm = 0.33;
+    var r = 0, g = 0, b = 0, hp = hue / 60;
+    if (hp < 1){ r = c; g = x; } else if (hp < 2){ r = x; g = c; } else if (hp < 3){ g = c; b = x; }
+    else if (hp < 4){ g = x; b = c; } else if (hp < 5){ r = x; b = c; } else { r = c; b = x; }
+    return [Math.round((r + mm) * 255), Math.round((g + mm) * 255), Math.round((b + mm) * 255)];
+  }
+  // Names the chord made by the notes that sounded in the last half second.
+  // Looks for a major or minor triad: a root, its third and its fifth,
+  // whatever octave each is in. Returns '' when the notes fit neither.
+  var chordShown = '', chordWant = '', chordSince = 0;
+  function chordName(now){
+    var pc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], total = 0, i;
+    for (i = 0; i < pianoSegs.length; i++){
+      var sg = pianoSegs[i];
+      if (now - sg.t1 > 0.5) continue;
+      var wgt = sg.v * Math.min(1, 0.15 + (sg.t1 - sg.t0) * 2);
+      pc[sg.m % 12] += wgt; total += wgt;
+    }
+    if (total < 0.5) return '';
+    var best = '', bestScore = 0.62;
+    for (var r = 0; r < 12; r++){
+      for (var q = 0; q < 2; q++){
+        var third = pc[(r + (q ? 3 : 4)) % 12], fifth = pc[(r + 7) % 12];
+        if (pc[r] < total * 0.12 || third < total * 0.1) continue;
+        var score = (pc[r] * 1.15 + third + fifth * 0.9) / total;
+        if (score > bestScore){ bestScore = score; best = NOTE_NAMES[r] + (q ? ' minor' : ' major'); }
+      }
+    }
+    return best;
   }
   // The fine spectrum arrives in decibels spread over 0..1. Notes are picked
   // in real signal strength instead, where a note really is many times
@@ -85,7 +113,16 @@
   var seen = {};       // note -> how many frames in a row it has been found
   function detectNotes(){
     var cfg = Cfg.CFG.piano, out = {};
-    if (!Aud.isLive()){ demoNotes(out); return out; }
+    if (!Aud.isLive()){
+      demoNotes(out);
+      if (cfg.melody){
+        var top = -1;
+        for (var dm in out) if (top < 0 || out[dm] > out[top]) top = dm;
+        var only = {}; if (top >= 0) only[top] = out[top];
+        return only;
+      }
+      return out;
+    }
 
     var lo = pianoKeys.lo, hi = pianoKeys.hi, m;
     var e = {}, list = [], peak = 1e-9;
@@ -123,7 +160,8 @@
       if (score > 0) scored.push({ m: m, v: score });
     }
     scored.sort(function(a, b){ return b.v - a.v; });
-    var poly = Math.max(1, Math.round(cfg.polyphony * (1 - noisy * 0.7)));
+    // "melody only": keep just the strongest note of each moment
+    var poly = cfg.melody ? 1 : Math.max(1, Math.round(cfg.polyphony * (1 - noisy * 0.7)));
     var now = {};
     for (var i = 0; i < scored.length && i < poly; i++){
       if (scored[i].v < cfg.threshold) break;
@@ -182,7 +220,7 @@
       var hgt = Math.max(2 * k, yBottom - yTop);
       var isBlack = !WHITE_SET[seg.m % 12];
       var fade = Math.max(0, 1 - (now - seg.t1) / (rollTime + 0.001));
-      ctx.fillStyle = U.rgba(isBlack ? ac : nc, (0.25 + seg.v * 0.6 * fade).toFixed(3));
+      ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(seg.m) : (isBlack ? ac : nc), (0.25 + seg.v * 0.6 * fade).toFixed(3));
       U.roundRect(ctx, kx.x + kx.w * 0.12, Math.max(0, yTop), kx.w * 0.76, hgt, Math.min(3 * k, kx.w * 0.3));
       ctx.fill();
     }
@@ -200,7 +238,7 @@
       ctx.fillStyle = kg;
       ctx.fillRect(wk.x + 0.5, keyTop, wk.w - 1, keyH);
       if (on){
-        ctx.fillStyle = U.rgba(ac, (0.85 + on * 0.15).toFixed(3));
+        ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(wk.m) : ac, (0.85 + on * 0.15).toFixed(3));
         ctx.fillRect(wk.x + 0.5, keyTop, wk.w - 1, 2.4 * k);
         ctx.fillRect(wk.x + 0.5, keyTop + keyH - 2.4 * k, wk.w - 1, 2.4 * k);
       }
@@ -221,8 +259,23 @@
       ctx.fillStyle = 'rgba(18,14,24,0.97)';
       ctx.fillRect(bk.x, keyTop, bk.w, keyH * 0.62);
       if (bon){
-        ctx.fillStyle = U.rgba(ac, (0.85 + bon * 0.15).toFixed(3));
+        ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(bk.m) : ac, (0.85 + bon * 0.15).toFixed(3));
         ctx.fillRect(bk.x, keyTop + keyH * 0.62 - 2.4 * k, bk.w, 2.4 * k);
+      }
+    }
+
+    // the chord being played, named in the corner. A new name has to hold
+    // for a quarter of a second before it replaces the old one.
+    if (cfg.chord){
+      var cn = chordName(now);
+      if (cn !== chordWant){ chordWant = cn; chordSince = now; }
+      if (chordWant !== chordShown && now - chordSince > (chordWant ? 0.25 : 1.2)) chordShown = chordWant;
+      if (chordShown){
+        ctx.font = '600 ' + Math.round(15 * k) + 'px "Segoe UI", system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = 'rgba(255,255,255,0.78)';
+        ctx.fillText(chordShown, 12 * k, 10 * k);
       }
     }
   }
@@ -277,12 +330,14 @@
     }
   }
 
-  function reset(){ pianoSegs = []; pianoOn = {}; pianoKeys = null; seen = {}; }
+  function reset(){ pianoSegs = []; pianoOn = {}; pianoKeys = null; seen = {}; chordShown = chordWant = ''; }
 
-  App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, reset: reset });
+  // fx: 0 - a keyboard that zooms and shakes is hard to read
+  App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, reset: reset, fx: 0 });
 
   App.cfg.registerDefaults('piano', {
-    low: 36, high: 96, threshold: 0.4, polyphony: 6, fall: 1, labels: true, sustain: 1,
+    low: 36, high: 96, threshold: 0.4, polyphony: 6, melody: false, octaves: true, chord: true,
+    fall: 1, labels: true, sustain: 1,
     keyColor: '#F4ECE1', activeColor: '#E0728A', noteColor: '#7BD3F7',
     bg1: '#161127', bg2: '#05030C'
   });
@@ -291,6 +346,9 @@
     ['high', 'Highest note (MIDI)', 'range', 48, 108, 1],
     ['threshold', 'Note detection threshold', 'range', 0.05, 0.9, 0.01],
     ['polyphony', 'Max notes at once', 'range', 1, 16, 1],
+    ['melody', 'Melody only (the strongest note of each moment)', 'bool'],
+    ['octaves', 'Colour notes by octave', 'bool'],
+    ['chord', 'Show the chord name', 'bool'],
     ['fall', 'Roll speed', 'range', 0.3, 3, 0.05],
     ['sustain', 'Note hold', 'range', 0.2, 3, 0.05],
     ['labels', 'Note labels', 'bool'],

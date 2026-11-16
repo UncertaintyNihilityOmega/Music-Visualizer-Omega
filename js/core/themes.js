@@ -18,6 +18,11 @@
                 glyphs      null for solid bars, or an array of characters /
                             emoji the bars are built from
                 rainbow     true = hue runs across the bars
+                inward      ring layout only: bars point into a dark disc
+              and how the other modes follow the theme:
+                digital     String: the strings move in square steps
+                emoji       Emoji: the set to use, quiet to loud (null = the user's own)
+                clock       Clock: which of its four skins to wear
    ========================================================================= */
 (function(){
   'use strict';
@@ -31,7 +36,8 @@
               card: 'rgba(28,20,52,.88)', field: 'rgba(255,255,255,.07)', ink: '#EFE9FF', muted: 'rgba(239,233,255,.62)',
               accent: '#B06BFF', accent2: '#FF5FD2', accentRgb: '176,107,255', line: 'rgba(176,107,255,.28)',
               onAccent: '#FFFFFF', shadow: '0 16px 34px rgba(0,0,0,.42)' },
-      look: { c1: '#6A5CFF', c2: '#FF5FD2', bg1: '#171033', bg2: '#06040E', dark: true, layout: 'mirror', glyphs: null }
+      look: { c1: '#6A5CFF', c2: '#FF5FD2', bg1: '#171033', bg2: '#06040E', dark: true, layout: 'mirror', glyphs: null,
+              emoji: null, clock: 'golden' }
     },
     newyear: {
       codes: ['new year', 'newyear', 'happy new year'],
@@ -40,7 +46,8 @@
               card: 'rgba(16,24,56,.9)', field: 'rgba(255,255,255,.08)', ink: '#F4F1E4', muted: 'rgba(244,241,228,.62)',
               accent: '#F2C55C', accent2: '#8FB8FF', accentRgb: '242,197,92', line: 'rgba(242,197,92,.3)',
               onAccent: '#1A1403', shadow: '0 16px 34px rgba(0,0,0,.45)' },
-      look: { c1: '#8FB8FF', c2: '#F2C55C', bg1: '#0D1638', bg2: '#03050F', dark: true, layout: 'rise', glyphs: ['✦', '❄', '✧'] }
+      look: { c1: '#8FB8FF', c2: '#F2C55C', bg1: '#0D1638', bg2: '#03050F', dark: true, layout: 'rise', glyphs: ['✦', '❄', '✧'],
+              emoji: ['✨', '❄️', '🥂', '🎉', '🎆'], clock: 'golden' }
     },
     halloween: {
       codes: ['halloween', 'spooky'],
@@ -49,7 +56,8 @@
               card: 'rgba(30,16,36,.9)', field: 'rgba(255,255,255,.07)', ink: '#F6E9D8', muted: 'rgba(246,233,216,.62)',
               accent: '#FF7A1A', accent2: '#9B5DE5', accentRgb: '255,122,26', line: 'rgba(255,122,26,.3)',
               onAccent: '#1B0D02', shadow: '0 16px 34px rgba(0,0,0,.5)' },
-      look: { c1: '#9B5DE5', c2: '#FF7A1A', bg1: '#1C0F24', bg2: '#050308', dark: true, layout: 'mirror', glyphs: ['🎃', '👻', '🦇'] }
+      look: { c1: '#9B5DE5', c2: '#FF7A1A', bg1: '#1C0F24', bg2: '#050308', dark: true, layout: 'mirror', glyphs: ['🎃', '👻', '🦇'],
+              emoji: ['🕸️', '🦇', '👻', '🎃', '💀'], clock: 'golden' }
     },
     love: {
       codes: ['love', 'our playlist'],
@@ -58,7 +66,8 @@
               card: '#FDF6F0', field: '#FFFFFF', ink: '#3B1A22', muted: 'rgba(59,26,34,.62)',
               accent: '#6E1E2E', accent2: '#C2626F', accentRgb: '194,98,111', line: 'rgba(189,146,87,.35)',
               onAccent: '#FDF6F0', shadow: '0 16px 34px rgba(110,30,46,.16)' },
-      look: { c1: '#BD9257', c2: '#C2626F', bg1: '#FFF8F3', bg2: '#F1D8D5', dark: false, layout: 'mirror', glyphs: ['♥'] }
+      look: { c1: '#BD9257', c2: '#C2626F', bg1: '#FFF8F3', bg2: '#F1D8D5', dark: false, layout: 'mirror', glyphs: ['♥'],
+              emoji: ['✨', '💕', '❤️', '💖', '🌟'], clock: 'golden' }
     },
     solarpunk: {
       codes: ['solarpunk'],
@@ -67,7 +76,8 @@
               card: '#FBFAEC', field: '#FFFFFF', ink: '#1F3A24', muted: 'rgba(31,58,36,.64)',
               accent: '#2F7D4A', accent2: '#E0A82E', accentRgb: '47,125,74', line: 'rgba(47,125,74,.28)',
               onAccent: '#FBFAEC', shadow: '0 16px 34px rgba(47,90,50,.16)' },
-      look: { c1: '#2F7D4A', c2: '#E0A82E', bg1: '#FFFBE6', bg2: '#DDEFC6', dark: false, layout: 'rise', glyphs: ['🌱', '🌿', '🌻'] }
+      look: { c1: '#2F7D4A', c2: '#E0A82E', bg1: '#FFFBE6', bg2: '#DDEFC6', dark: false, layout: 'rise', glyphs: ['🌱', '🌿', '🌻'],
+              emoji: ['🌱', '🍃', '🌿', '🌻', '☀️'], clock: 'solarpunk' }
     },
     cyberpunk: {
       codes: ['cyberpunk'],
@@ -77,7 +87,8 @@
               accent: '#00F0FF', accent2: '#FF00AA', accentRgb: '0,240,255', line: 'rgba(0,240,255,.32)',
               onAccent: '#001417', shadow: '0 0 0 1px rgba(0,240,255,.12), 0 16px 34px rgba(0,0,0,.6)',
               font: '"Cascadia Mono","Consolas","SF Mono","Menlo",monospace' },
-      look: { c1: '#00F0FF', c2: '#F6FF4D', bg1: '#070C14', bg2: '#010203', dark: true, layout: 'rise', glyphs: ['1', '0'] }
+      look: { c1: '#00F0FF', c2: '#F6FF4D', bg1: '#070C14', bg2: '#010203', dark: true, layout: 'rise', glyphs: ['1', '0'],
+              digital: true, emoji: ['💾', '🔌', '👾', '🤖', '⚡'], clock: 'cyberpunk' }
     },
     nihilum: {
       codes: ['decensus ad nihilum', 'descensus ad nihilum'],
@@ -86,7 +97,8 @@
               card: 'rgba(12,10,16,.94)', field: 'rgba(255,255,255,.06)', ink: '#D9D4E2', muted: 'rgba(217,212,226,.55)',
               accent: '#8E7CA8', accent2: '#FF9A4A', accentRgb: '142,124,168', line: 'rgba(142,124,168,.26)',
               onAccent: '#08060B', shadow: '0 16px 40px rgba(0,0,0,.8)' },
-      look: { c1: '#FF9A4A', c2: '#FFF1D6', bg1: '#06040A', bg2: '#000000', dark: true, layout: 'ring', inward: true, glyphs: null }
+      look: { c1: '#FF9A4A', c2: '#FFF1D6', bg1: '#06040A', bg2: '#000000', dark: true, layout: 'ring', inward: true, glyphs: null,
+              emoji: ['🌑', '🕳️', '☄️', '💫', '⭐'], clock: 'golden' }
     },
     incertum: {
       codes: ['ascensus ad incertum'],
@@ -95,7 +107,8 @@
               card: '#FFFFFF', field: '#F4F6FB', ink: '#1C1F2E', muted: 'rgba(28,31,46,.6)',
               accent: '#5B6CFF', accent2: '#FF6FB5', accentRgb: '91,108,255', line: 'rgba(91,108,255,.22)',
               onAccent: '#FFFFFF', shadow: '0 16px 34px rgba(80,100,200,.14)' },
-      look: { c1: '#5B6CFF', c2: '#FF6FB5', bg1: '#FFFFFF', bg2: '#EEF2FF', dark: false, layout: 'rise', rainbow: true, glyphs: null }
+      look: { c1: '#5B6CFF', c2: '#FF6FB5', bg1: '#FFFFFF', bg2: '#EEF2FF', dark: false, layout: 'rise', rainbow: true, glyphs: null,
+              emoji: ['☁️', '🕊️', '💫', '✨', '🌈'], clock: 'heaven' }
     }
   };
 

@@ -6,15 +6,20 @@
   var A = Aud.A;
 
   var fireParts = [], fireSparks = [], warmSprite = null, coldSprite = null;
-  var spriteKey = '', fireSway = 0;
+  var spriteKey = '', fireSway = 0, heatShown = 0, flameVals = null, flameState = null;
+  var FLAME_LEAN = 0.22;     // how far the tongues and embers lean to the hot colour at full heat
 
   function makeGlowSprite(rgb){
     var s = document.createElement('canvas');
     s.width = s.height = 64;
     var c = s.getContext('2d');
     var g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-    g.addColorStop(0, 'rgba(255,255,255,0.92)');
-    g.addColorStop(0.28, U.rgba(rgb, 0.7));
+    // the centre is a pale tint of the flame colour, not white: hundreds of
+    // these are added together, and a white centre turned the fire into a
+    // white block in a loud passage
+    var pale = [Math.round(U.lerp(rgb[0], 255, 0.45)), Math.round(U.lerp(rgb[1], 255, 0.45)), Math.round(U.lerp(rgb[2], 255, 0.45))];
+    g.addColorStop(0, U.rgba(pale, 0.8));
+    g.addColorStop(0.28, U.rgba(rgb, 0.62));
     g.addColorStop(1, U.rgba(rgb, 0));
     c.fillStyle = g;
     c.fillRect(0, 0, 64, 64);
@@ -37,31 +42,49 @@
     }
     Can.backdrop(cfg.trail);
 
-    // blue needs sustained intensity AND real high-end content, so a normal
-    // track stays orange and only the hardest passages burn through
-    var hard = A.intensity * 0.72 + A.high * 0.28;
+    // Blue needs a big passage: it follows drive (how loud this part of the
+    // song is), so a verse stays orange and only a loud chorus burns blue.
+    var hard = A.drive * 0.8 + A.intensity * 0.2;
     var heat = U.clamp01((hard - cfg.blueAt) / cfg.blueRange);
+    heatShown = U.env(heatShown, heat, 3, 1.2, dt);
+    var coreHeat = heatShown;
+    // The flames themselves only lean toward the hot colour. Halfway between
+    // orange and blue is grey, and added light turns grey into white, so the
+    // blue is shown by the core at the base and the tongues stay fire-coloured.
+    heat = heatShown * FLAME_LEAN;
+    // Everything here is added light on top of a picture that keeps
+    // (1 - trail) of the last frame, so brightness builds up to 1 / trail of
+    // what one frame draws. Scale what is drawn so a busy fire stays under white.
+    var expo = Math.min(1, (0.25 + cfg.trail) / 0.55);
 
     fireSway = U.env(fireSway, (Math.sin(A.t * 1.1 * mo) * 0.4 + (Aud.sourceValue(cfg.source) - 0.3) * 1.8), 6, 6, dt);
     var swayPx = fireSway * w * 0.035 * cfg.sway * (0.4 + A.intensity);
     var baseY = h - 3 * k;
-    var flameH = h * (0.28 + A.level * 0.55 + A.punch * 0.16) * cfg.height;
+    // idea A: a small fire in a calm passage, a tall one in a loud passage
+    var flameH = h * (0.17 + A.level * 0.34 + A.drive * 0.3 + A.punch * 0.14) * cfg.height;
 
     ctx.globalCompositeOperation = 'lighter';
 
-    var tongues = Math.round(cfg.tongues);
+    // The line of flames is a spectrum of the bass (30 to 800 Hz, the range
+    // the studied videos show): the lowest notes burn in the middle, higher
+    // ones toward the sides, so a kick drum throws up the centre flames.
+    var tongues = Math.round(cfg.tongues), halfT = Math.ceil(tongues / 2);
+    if (!flameVals || flameVals.length !== halfT){ flameVals = new Float32Array(halfT); flameState = new Float32Array(halfT); }
+    Aud.bars(flameVals, { lo: 30, hi: 800, scale: 'lin', blur: 0.4, state: flameState, attack: 55, release: 8 });
+    // each kick makes the air shimmer: the flames wobble sideways for a moment
+    var haze = 1 + A.kick * 1.8 * (0.3 + 0.7 * A.drive);
     for (var ti = 0; ti < tongues; ti++){
       var f = tongues === 1 ? 0.5 : ti / (tongues - 1);
-      var band = Aud.specAt(0.05 + f * 0.7);
+      var band = flameVals[Math.min(halfT - 1, Math.round(Math.abs(f - 0.5) * 2 * (halfT - 1)))];
       var centre = w * 0.5 + (f - 0.5) * w * (0.34 + A.intensity * 0.2) + swayPx;
-      var wave = Math.sin(A.t * (2.1 + ti * 0.41) * mo + ti * 1.7) * w * 0.022 * (0.35 + A.intensity * 1.6);
-      var hgt = flameH * (0.3 + band * 1.05) * (0.62 + Math.sin(f * Math.PI) * 0.62);
+      var wave = Math.sin(A.t * (2.1 + ti * 0.41) * mo + ti * 1.7) * w * 0.022 * (0.35 + A.intensity * 1.6) * haze;
+      var hgt = flameH * (0.3 + band * 1.05) * (0.8 + Math.sin(f * Math.PI) * 0.36);
       var halfW = w * (0.032 + band * 0.028) * (0.7 + A.level * 0.6);
       var tipX = centre + wave, tipY = baseY - hgt;
 
       var g = ctx.createLinearGradient(0, baseY, 0, tipY);
-      g.addColorStop(0, fireCol(2, heat, 0.45 + A.level * 0.25));
-      g.addColorStop(0.32, fireCol(1, heat, 0.28));
+      g.addColorStop(0, fireCol(2, heat, ((0.2 + A.level * 0.1) * expo).toFixed(3)));
+      g.addColorStop(0.32, fireCol(1, heat, (0.17 * expo).toFixed(3)));
       g.addColorStop(1, fireCol(0, heat, 0));
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -75,12 +98,12 @@
     var bedH = (14 + A.level * 38) * k;
     var bed = ctx.createLinearGradient(0, baseY - bedH, 0, baseY + 2 * k);
     bed.addColorStop(0, fireCol(1, heat, 0));
-    bed.addColorStop(1, fireCol(2, heat, 0.3 + A.level * 0.4));
+    bed.addColorStop(1, fireCol(2, heat, ((0.14 + A.level * 0.14) * expo).toFixed(3)));
     ctx.fillStyle = bed;
     ctx.fillRect(w * 0.08, baseY - bedH, w * 0.84, bedH + 2 * k);
 
     var cap = Math.round(300 * cfg.spawn);
-    var spawn = Math.round((A.level * 8 + A.punch * 16) * cfg.spawn);
+    var spawn = Math.round((A.level * 4 + A.drive * 5 + A.punch * 16 * (0.3 + 0.7 * A.drive)) * cfg.spawn);
     for (var s = 0; s < spawn && fireParts.length < cap; s++){
       var spread = w * (0.12 + A.level * 0.2);
       fireParts.push({
@@ -95,6 +118,8 @@
         heat: heat
       });
     }
+    // many overlapping embers add up, so each one is fainter in a crowd
+    var crowd = expo / (1 + fireParts.length / 110);
     for (var i = fireParts.length - 1; i >= 0; i--){
       var p = fireParts[i];
       p.vx += Math.sin(p.y * 0.011 / k + A.t * 3.1 + p.spin) * (70 + A.high * 300) * k * cfg.turb * dt;
@@ -107,7 +132,7 @@
       if (p.life <= 0 || p.y < -20 * k){ fireParts.splice(i, 1); continue; }
 
       var r = p.size * (0.35 + p.life * 0.95);
-      var a = p.life * p.life * 0.85;
+      var a = p.life * p.life * 0.85 * crowd;
       if (p.heat < 0.98){
         ctx.globalAlpha = a * (1 - p.heat);
         ctx.drawImage(warmSprite, p.x - r, p.y - r, r * 2, r * 2);
@@ -133,9 +158,22 @@
         });
       }
     }
+    // Hi-hat: a few light embers flicked up off the top of the flames
+    if (cfg.hatEmbers && A.hatHit > 0.25 && A.drive > 0.08){
+      var hn = Math.round((1 + A.hatHit * 5) * cfg.sparkAmt);
+      for (var hq = 0; hq < hn && fireSparks.length < 240; hq++){
+        fireSparks.push({
+          x: w * 0.5 + (Math.random() - 0.5) * w * 0.5 + swayPx,
+          y: baseY - flameH * (0.35 + Math.random() * 0.5),
+          vx: (Math.random() - 0.5) * 120 * k * mo,
+          vy: -(90 + Math.random() * 190) * k * mo,
+          life: 1, decay: (0.9 + Math.random() * 0.9) / cfg.life, heat: heat, light: true
+        });
+      }
+    }
     for (var j = fireSparks.length - 1; j >= 0; j--){
       var sk = fireSparks[j];
-      sk.vy += 210 * k * dt;
+      sk.vy += (sk.light ? 60 : 210) * k * dt;   // hi-hat embers are light: they float
       sk.vx *= Math.pow(0.5, dt);
       sk.x += sk.vx * dt;
       sk.y += sk.vy * dt;
@@ -149,6 +187,29 @@
     }
 
     ctx.globalCompositeOperation = 'source-over';
+
+    // The blue core: a hot heart at the base that only shows in a loud
+    // passage. Painted last and as paint, not added light: added to a base
+    // that is already bright it would only make white.
+    if (coreHeat > 0.02){
+      var coreH = flameH * (0.36 + A.kick * 0.1), coreW = w * (0.15 + A.level * 0.07);
+      var ccx = w * 0.5 + swayPx;
+      var core = ctx.createRadialGradient(ccx, baseY, 0, ccx, baseY, coreH);
+      var coolRGB = U.hexRGB(cfg.cool);
+      var coreTop = [Math.round(U.lerp(coolRGB[0], 255, 0.45)), Math.round(U.lerp(coolRGB[1], 255, 0.45)), Math.round(U.lerp(coolRGB[2], 255, 0.45))];
+      core.addColorStop(0, U.rgba(coreTop, (coreHeat * 0.3).toFixed(3)));
+      core.addColorStop(0.45, U.rgba(coolRGB, (coreHeat * 0.2).toFixed(3)));
+      core.addColorStop(1, U.rgba(coolRGB, 0));
+      ctx.save();
+      ctx.translate(ccx, baseY);
+      ctx.scale(coreW / coreH, 1);
+      ctx.translate(-ccx, -baseY);
+      ctx.fillStyle = core;
+      ctx.beginPath();
+      ctx.arc(ccx, baseY, coreH, Math.PI, 0);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   function paintBG(c, w, h, k){
@@ -212,13 +273,13 @@
     }
   }
 
-  function reset(){ fireParts = []; fireSparks = []; }
+  function reset(){ fireParts = []; fireSparks = []; heatShown = 0; flameState = null; flameVals = null; }
 
   App.modes.register('fire', { draw: drawFire, paintBG: paintBG, onTap: onTap, reset: reset });
 
   App.cfg.registerDefaults('fire', {
-    tongues: 9, height: 1, spawn: 1, life: 1, size: 1, sparks: true, sparkAmt: 1,
-    blueAt: 0.78, blueRange: 0.16, warm: '#FF7E14', cool: '#3E9CFF',
+    tongues: 9, height: 1, spawn: 1, life: 1, size: 1, sparks: true, hatEmbers: true, sparkAmt: 1,
+    blueAt: 0.72, blueRange: 0.2, warm: '#FF7E14', cool: '#3E9CFF',
     sway: 1, turb: 1, trail: 0.3, source: 'bass', bg1: '#170B10', bg2: '#05030A'
   });
   App.cfg.registerSchema({ id: 'fire', label: 'Fire', fields: [
@@ -231,8 +292,9 @@
     ['source', 'Sway follows', 'select', Aud.SOURCES],
     ['sway', 'Sway amount', 'range', 0, 3, 0.05],
     ['sparks', 'Beat sparks', 'bool'],
+    ['hatEmbers', 'Hi-hat embers', 'bool'],
     ['sparkAmt', 'Spark amount', 'range', 0.2, 3, 0.05],
-    ['blueAt', 'Blue starts at', 'range', 0.3, 1, 0.01],
+    ['blueAt', 'Blue core starts at (how loud the passage is)', 'range', 0.3, 1, 0.01],
     ['blueRange', 'Blue transition width', 'range', 0.03, 0.6, 0.01],
     ['warm', 'Warm flame colour', 'color'],
     ['cool', 'Hot (blue) colour', 'color'],

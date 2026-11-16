@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Icon PNG maker</title>
+<style>body{ font-family:"Segoe UI",system-ui,sans-serif; background:#14111c; color:#eee9f7; padding:24px; } canvas{ margin:6px; vertical-align:bottom; }</style>
+</head><body>
+<h1>Icon PNG maker</h1>
+<p>Draws <code>icons/icon.svg</code> at 512, 192, 180 and 32 pixels and saves each as <code>icons/icon-&lt;size&gt;.png</code>
+through the preview server (<code>node engine/serve.js</code>). Run it again whenever the icon changes.</p>
+<p id="log">Working...</p>
+<div id="out"></div>
+<script>
+(async function(){
+  var log = document.getElementById('log'), lines = [];
+  try {
+    var svg = await (await fetch('../icons/icon.svg', { cache: 'no-store' })).text();
+    var img = new Image();
+    await new Promise(function(ok, bad){ img.onload = ok; img.onerror = bad; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+    for (var size of [512, 192, 180, 32]){
+      var cv = document.createElement('canvas');
+      cv.width = cv.height = size;
+      cv.getContext('2d').drawImage(img, 0, 0, size, size);
+      document.getElementById('out').appendChild(cv);
+      var blob = await new Promise(function(ok){ cv.toBlob(ok, 'image/png'); });
+      var r = await fetch('/__dev/icon/' + size, { method: 'POST', body: blob });
+      lines.push(r.ok ? await r.text() : 'FAILED ' + size + ': ' + r.status);
+    }
+  } catch (e){ lines.push('FAILED: ' + e.message); }
+  log.textContent = lines.join(' | ');
+  window.__iconResult = lines;
+})();
+</script>
+</body></html>

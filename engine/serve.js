@@ -32,6 +32,23 @@ http.createServer((req, res) => {
     return;
   }
 
+  // engine/icon-png.html draws icons/icon.svg at each size in the browser
+  // (nothing on this machine can turn an SVG into a PNG) and posts the
+  // result here. Only these four file names can ever be written.
+  const icon = /^\/__dev\/icon\/(32|180|192|512)$/.exec(urlPath);
+  if (icon && req.method === 'POST'){
+    const chunks = [];
+    let size = 0;
+    req.on('data', c => { size += c.length; if (size > 2e6) req.destroy(); else chunks.push(c); });
+    req.on('end', () => {
+      const body = Buffer.concat(chunks);
+      if (body.length < 8 || body.readUInt32BE(0) !== 0x89504E47){ res.writeHead(400).end('not a PNG'); return; }
+      fs.writeFileSync(path.join(ROOT, 'icons', `icon-${icon[1]}.png`), body);
+      res.writeHead(200, { 'Content-Type': 'text/plain' }).end(`icons/icon-${icon[1]}.png ${body.length} bytes`);
+    });
+    return;
+  }
+
   if (urlPath.endsWith('/')) urlPath += 'index.html';
   const file = path.join(ROOT, urlPath);
   if (file !== ROOT && !file.startsWith(ROOT + path.sep)){ res.writeHead(403).end(); return; }   // no escaping the project folder

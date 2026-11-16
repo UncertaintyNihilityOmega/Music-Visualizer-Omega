@@ -60,6 +60,7 @@ before('js/pages/pages-mount.js', 'js/core/state.js', 'state.js looks page eleme
 before('js/core/settings.js', 'js/core/audio-engine.js', 'the engine registers its settings');
 before('js/core/analysis.js', 'js/core/audio-engine.js', 'the engine wraps the analyser');
 before('js/core/themes.js', 'js/modes/mode-basic.js', 'Basic draws with the theme look');
+before('js/core/fx.js', 'js/core/mode-registry.js', 'the frame loop wraps every mode in the picture layer');
 before('js/games/games-shared.js', 'js/games/games-host.js', 'the host uses the shared framework');
 before('js/core/audio-engine.js', 'js/player/transport.js', 'volume goes through the engine');
 

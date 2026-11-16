@@ -8,7 +8,13 @@
   var emojiParts = [];
   var photoImg = null;
 
+  var kickCd = 0;
+
+  // the emoji to use, quiet to loud: the theme code's set when "Follow
+  // theme" is on and the theme has one, otherwise the user's own list
   function emojiSet(){
+    var th = App.theme.look;
+    if (Cfg.CFG.emoji.followTheme && th && th.emoji && th.emoji.length) return th.emoji;
     var g = String(Cfg.CFG.emoji.set).split(',').map(function(x){ return x.trim(); }).filter(Boolean);
     return g.length ? g : ['❤️'];
   }
@@ -37,10 +43,17 @@
     } catch (e) {}
   })();
 
-  function spawnEmojiPart(x, y, kind, vScale){
+  // kind: 'bubble' rises, 'fade' drifts, 'ring' flies outward (kick), 'spark' twinkles (hi-hat)
+  function spawnEmojiPart(x, y, kind, vScale, o){
     var cfg = Cfg.CFG.emoji, k = Can.dpr();
-    if (emojiParts.length > 220) return;
+    if (emojiParts.length > 240) return;
     var set = emojiSet();
+    if (o){
+      emojiParts.push({ g: o.g || set[Math.floor(Math.random() * set.length)], x: x, y: y, kind: kind,
+                        vx: o.vx || 0, vy: o.vy || 0, rot: (Math.random() - 0.5) * 0.6, vr: (Math.random() - 0.5) * 2,
+                        size: o.size, age: 0, life: o.life });
+      return;
+    }
     emojiParts.push({
       g: set[Math.floor(Math.random() * set.length)],
       x: x, y: y, kind: kind,
@@ -68,18 +81,58 @@
     var pop = 1 + A.punch * cfg.pop;
     var box = photoBox();
 
+    // how busy the scene is: a calm passage spawns little, a loud one a lot
+    var busy = 0.25 + A.drive * 1.6;
+
+    // Kick drum: a ring of emoji thrown outward from the centre (or from
+    // the edge of the photo). The harder the kick and the louder the
+    // passage, the more of them and the faster they fly.
+    kickCd -= A.dt;
+    if (cfg.kickRing && A.kickHit > 0.3 && A.drive > 0.12 && kickCd <= 0){
+      kickCd = 0.16;
+      var ringN = Math.round((5 + A.kickHit * 9) * (0.4 + 0.6 * A.drive) * cfg.rate);
+      var r0 = box ? Math.max(box.w, box.h) * 0.52 : Math.min(w, h) * 0.05;
+      var speed = (110 + A.kickHit * 240) * k * (0.5 + 0.5 * A.drive) * Cfg.CFG.look.motion;
+      var a0 = Math.random() * 6.283;
+      for (var rn = 0; rn < ringN; rn++){
+        var ra = a0 + rn / ringN * 6.283;
+        spawnEmojiPart(cx + Math.cos(ra) * r0, cy + Math.sin(ra) * r0, 'ring', 0, {
+          vx: Math.cos(ra) * speed, vy: Math.sin(ra) * speed, life: 0.9 + A.drive * 0.5,
+          size: (13 + A.kickHit * 14) * k * cfg.size, g: set[Math.min(set.length - 1, Math.floor(A.kickHit * set.length))] });
+      }
+    }
+    // Hi-hat: small quick sparkles anywhere, in the quietest emoji of the set
+    if (cfg.hatSparks && A.hatHit > 0.25 && A.drive > 0.08){
+      var sn = 1 + Math.round(A.hatHit * 2 * cfg.rate);
+      for (var hs = 0; hs < sn; hs++){
+        spawnEmojiPart(w * (0.05 + Math.random() * 0.9), h * (0.06 + Math.random() * 0.88), 'spark', 0, {
+          life: 0.35 + Math.random() * 0.3, size: (7 + Math.random() * 8) * k * cfg.size, g: set[0] });
+      }
+    }
+
     // the photo keeps its own aspect ratio and sits in the middle of the scene
     if (box){
+      // it swells a little with each kick and brightens with the passage
+      var swell = 1 + A.kick * 0.045 * (0.3 + 0.7 * A.drive) * cfg.photoPulse;
+      var bx0 = cx - box.w * swell / 2, by0 = cy - box.h * swell / 2, bw0 = box.w * swell, bh0 = box.h * swell;
       ctx.save();
       ctx.shadowColor = 'rgba(110,30,46,0.35)';
       ctx.shadowBlur = (10 + A.level * 26) * k;
-      ctx.drawImage(photoImg, box.x, box.y, box.w, box.h);
+      ctx.drawImage(photoImg, bx0, by0, bw0, bh0);
       ctx.restore();
+      var lift = (A.drive * 0.1 + A.kick * 0.1 * A.drive) * cfg.photoPulse;
+      if (lift > 0.01){
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = Math.min(0.3, lift);
+        ctx.drawImage(photoImg, bx0, by0, bw0, bh0);
+        ctx.restore();
+      }
       ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       ctx.lineWidth = 2 * k;
-      ctx.strokeRect(box.x, box.y, box.w, box.h);
+      ctx.strokeRect(bx0, by0, bw0, bh0);
 
-      if (cfg.photoEmoji && Math.random() < (0.25 + A.level * 1.5) * cfg.photoRate * A.dt * 12){
+      if (cfg.photoEmoji && Math.random() < busy * cfg.photoRate * A.dt * 12){
         var edge = Math.random() < 0.45;
         var ex, ey;
         if (edge){
@@ -96,7 +149,7 @@
         }
         spawnEmojiPart(ex, ey, 'fade', A.level);
       }
-      if (cfg.photoBubbles && Math.random() < (0.2 + A.level * 1.4) * cfg.photoRate * A.dt * 12){
+      if (cfg.photoBubbles && Math.random() < busy * 0.9 * cfg.photoRate * A.dt * 12){
         spawnEmojiPart(box.x + Math.random() * box.w, box.y + box.h, 'bubble', A.level);
       }
     }
@@ -141,11 +194,11 @@
         }
       }
     } else if (cfg.shape === 'bubbles'){
-      if (Math.random() < (0.3 + A.level * 2.2) * cfg.rate * A.dt * 14){
+      if (Math.random() < busy * 1.3 * cfg.rate * A.dt * 14){
         spawnEmojiPart(Math.random() * w, h + 10 * k, 'bubble', A.level);
       }
     } else if (cfg.shape === 'fade'){
-      if (Math.random() < (0.3 + A.level * 2.2) * cfg.rate * A.dt * 14){
+      if (Math.random() < busy * 1.3 * cfg.rate * A.dt * 14){
         spawnEmojiPart(w * (0.06 + Math.random() * 0.88), h * (0.08 + Math.random() * 0.84), 'fade', A.level);
       }
     }
@@ -160,13 +213,15 @@
         pt.x += (pt.vx + Math.sin(A.t * 2 + pt.y * 0.01) * 16 * k) * A.dt;
         pt.y += pt.vy * A.dt * Cfg.CFG.look.motion;
       } else {
+        if (pt.kind === 'ring'){ var drag = Math.exp(-1.6 * A.dt); pt.vx *= drag; pt.vy *= drag; }
         pt.x += pt.vx * A.dt;
         pt.y += pt.vy * A.dt;
       }
       pt.rot += pt.vr * A.dt;
       var f3 = pt.age / pt.life;
       var alpha = Math.min(1, f3 / 0.18) * Math.min(1, (1 - f3) / 0.3);
-      Can.stampEmoji(Can.getEmojiSprite(pt.g), pt.x, pt.y, pt.rot, pt.size * (0.7 + A.punch * 0.3), alpha);
+      var grow = pt.kind === 'spark' ? Math.sin(f3 * Math.PI) * 1.25 : (pt.kind === 'ring' ? 0.75 + f3 * 0.5 : 0.7 + A.punch * 0.3);
+      Can.stampEmoji(Can.getEmojiSprite(pt.g), pt.x, pt.y, pt.rot, pt.size * grow, alpha);
     }
   }
 
@@ -188,7 +243,7 @@
     }
   }
 
-  function reset(){ emojiParts = []; }
+  function reset(){ emojiParts = []; kickCd = 0; }
 
   App.modes.register('emoji', { draw: drawEmoji, paintBG: paintBG, onTap: onTap, reset: reset });
 
@@ -196,13 +251,17 @@
   App.cfg.ACTIONS.photoClear = clearPhoto;
 
   App.cfg.registerDefaults('emoji', {
-    set: '✨,💕,❤️,💖,🌟',
+    followTheme: true, set: '✨,💕,❤️,💖,🌟',
     shape: 'line', size: 1, cols: 1, pop: 0.3, wobble: 1, life: 2.4, rate: 1,
-    photoSize: 0.62, photoEmoji: true, photoBubbles: true, photoRate: 1,
+    kickRing: true, hatSparks: true,
+    photoSize: 0.62, photoEmoji: true, photoBubbles: true, photoRate: 1, photoPulse: 1,
     bg1: '#FFF7FB', bg2: '#F6DAE5'
   });
   App.cfg.registerSchema({ id: 'emoji', label: 'Emoji', fields: [
-    ['set', 'Emojis (comma separated, quiet to loud)', 'text'],
+    ['followTheme', 'Use the theme code\'s emoji', 'bool'],
+    ['set', 'Your emojis (comma separated, quiet to loud)', 'text'],
+    ['kickRing', 'Kick drum throws a ring of emoji', 'bool'],
+    ['hatSparks', 'Hi-hat sparkles', 'bool'],
     ['shape', 'Layout', 'select', ['line', 'circle', 'heart', 'bubbles', 'fade']],
     ['size', 'Size', 'range', 0.4, 2.5, 0.05],
     ['cols', 'Density', 'range', 0.4, 2, 0.05],
@@ -216,6 +275,7 @@
     ['photoEmoji', 'Emojis around photo', 'bool'],
     ['photoBubbles', 'Bubble emojis up the photo', 'bool'],
     ['photoRate', 'Photo emoji rate', 'range', 0.2, 3, 0.05],
+    ['photoPulse', 'Photo pulses with the kick', 'range', 0, 2, 0.05],
     ['bg1', 'Background top', 'color'],
     ['bg2', 'Background bottom', 'color']
   ]});

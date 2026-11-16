@@ -107,12 +107,33 @@
   Can.getEmojiSprite = getEmojiSprite;
   Can.stampEmoji = stampEmoji;
 
-  App.cfg.registerDefaults('look', { dprCap: 1.5, fps: 60, motion: 1, glow: 0.5 });
+  /* ---------- Glyph sprites ----------
+     A text character (1, 0, a heart, a star) pre-drawn once per colour;
+     emoji in the same call keep their own colours. Used wherever a theme
+     builds things out of characters: Basic's bars, String's beads. */
+  var glyphCache = {};
+  Can.glyphSprite = function(ch, color){
+    var key = ch + '|' + color;
+    if (glyphCache[key]) return glyphCache[key];
+    var px = 48, cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    var c = cv.getContext('2d');
+    c.font = 'bold ' + Math.round(px * 0.86) + 'px "Cascadia Mono","Consolas","Segoe UI Symbol","Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillStyle = color;
+    c.fillText(ch, px / 2, px / 2 + px * 0.04);
+    glyphCache[key] = cv;
+    return cv;
+  };
+
+  App.cfg.registerDefaults('look', { dprCap: 1.5, fps: 60, motion: 1, glow: 0.5, fx: 1 });
   App.cfg.registerSchema({ id: 'look', label: 'Performance & feel', fields: [
     ['dprCap', 'Render resolution', 'range', 1, 2, 0.25],
     ['fps', 'Frame rate cap', 'select', [30, 45, 60]],
     ['motion', 'Motion speed', 'range', 0.2, 2, 0.05],
-    ['glow', 'Glow amount', 'range', 0, 1, 0.05]
+    ['glow', 'Glow amount', 'range', 0, 1, 0.05],
+    ['fx', 'Picture punch (zoom, shake and flash on hits; 0 = off)', 'range', 0, 2, 0.05]
   ]}, 1);
   App.cfg.onGroupChange('look', function(key){
     if (key === 'dprCap' || key === null) resizeCanvas();

@@ -43,11 +43,47 @@ with 14 s memory):
 "Beats a minute" counts every detected bass hit, including off-beat bass notes, so it can be double the song's
 tempo. A true tempo needs the whole-song analysis (ROADMAP item 6).
 
+### Drive (how big this part of the song is, 0 to 1)
+`drive` stretches `energy` between `DRIVE_LO` 0.14 and `DRIVE_HI` 0.46 (`js/core/analysis.js`). Measured
+2026-11-16 on the loudest and quietest 15 s of each song:
+
+| Song | Quiet part is this strong | Drive loud | Drive quiet |
+| --- | --- | --- | --- |
+| Decensus Ad Nihilum | 19% | 1.00 | 0.16 |
+| Checkmate | 53% | 0.90 | 0.58 |
+| To Be Human | 35% | 1.00 | 0.14 |
+| Want Some Fun | 38% | 1.00 | 0.22 |
+| Horror mix (first 600 s) | 21% | 0.79 | 0.25 |
+
+Checkmate has no truly quiet part, so its 0.58 is right. The made-up "20 dB drop" in `test.js` reads 0.29,
+because it is measured 7 to 12 s after the drop, when the auto level has already turned the quiet part up; its
+limit is 0.35. `DRIVE_LO` was left alone: raising it would flatten real quiet passages to 0.
+
 Settings tried and rejected (`--tune`, measured with auto level 0.6 and before the kick rule was added to beat
 detection): curve 0.35 (loud passages too flat: 0 to 4 beats a minute in three songs), curve 0.65 (quiet
 passages nearly vanish: level about 0.1 or less in four of five songs), no treble lift (overall level roughly
 halves because the top bands contribute almost nothing), auto level 1.0 and 0.3 (same shape, only the scale
 changes; 0.8 puts loud passages near 0.5 and quiet ones near 0.2).
+
+## Browser probes (`engine/probe.js`)
+The checks that need a real canvas. Not part of the app. In the preview, load it from the console or a
+session's script tool, then call `Probe.*`:
+
+```
+var s = document.createElement('script'); s.src = 'engine/probe.js'; document.head.appendChild(s);
+await Probe.songs()                   // load test-songs and play
+await Probe.run(Probe.MODES, 52, 3)   // per mode: ms per frame, lit share, errors
+await Probe.motion(['rain'], 46, 5, 3)// change per frame; compare a loud second with a quiet one
+await Probe.white('fire', 52, 3)      // share of the picture burnt out to white
+```
+
+It steps frames with a timer, so it works while the browser pane is hidden (animation frames do not fire
+there). Speed is milliseconds per frame, never a frame rate.
+
+Measured 2026-11-16 (song 1, loud passage, canvas 944 x 320): every mode draws a frame in 0.6 to 3.0 ms on
+average, 5.8 ms at worst (a frame at 60 a second has 16.7 ms). Fire burnt out to white over 36% of the picture
+before its fix; after it 6% on average and 12% at worst. The loud and quiet motion numbers for every mode are
+in docs/MODES.md.
 
 ## Timing
 `songtest.js` takes about 28 s for the five songs on this machine (the hour-long file is cut at 600 s).

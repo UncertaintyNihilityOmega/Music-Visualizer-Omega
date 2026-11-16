@@ -12,7 +12,8 @@
   M.registry = {};
   M.current = 'basic';
 
-  // def: { draw(), paintBG(c,w,h,k)?, onTap(x,y)?, drawTapFX()?, reset()? }
+  // def: { draw(), paintBG(c,w,h,k)?, bgColors()?, onTap(x,y)?, drawTapFX()?, reset()?, fx? }
+  //   fx: 0..1, how much of the picture layer (js/core/fx.js) this mode wants; left out = 1
   M.register = function(id, def){ M.registry[id] = def; };
 
   var autoLoaded = {};
@@ -48,6 +49,7 @@
     // matches the original behavior of resetting everything on every switch
     for (var id in M.registry) if (M.registry[id].reset) M.registry[id].reset();
     if (App.taps && App.taps.reset) App.taps.reset();
+    if (App.fx) App.fx.reset();
 
     var ctx = App.canvas.ctx, canvas = App.canvas.canvas;
     ctx.globalAlpha = 1;
@@ -82,7 +84,14 @@
       if (now - lastDraw < 1000 / cap - 1) return;
       lastDraw = now;
     }
-    Aud.frame();   // real sound when a track or the mic is live, the idle preview otherwise
+    frame(now);
+  }
+  // One frame at time `now` (milliseconds). The loop calls it; a test can
+  // call it directly with its own clock to step the idle preview while the
+  // page is in the background and animation frames are not firing.
+  function frame(now){
+    var Aud = App.audio;
+    Aud.frame(now);   // real sound when a track or the mic is live, the idle preview otherwise
 
     var ctx = App.canvas.ctx;
     ctx.globalAlpha = 1;
@@ -94,10 +103,17 @@
       App.games.drawGame();
     } else {
       var mode = M.registry[M.current] || M.registry.basic;
+      // the picture layer (zoom / shake / flash on hits) wraps the mode's own
+      // drawing; mode.fx says how much of it this mode wants (default: all)
+      var cv = App.canvas.canvas;
+      App.fx.begin(ctx, cv.width, cv.height, mode.fx);
       mode.draw();
       App.taps.drawTaps();
+      ctx.shadowBlur = 0;
+      App.fx.end(ctx, cv.width, cv.height);
     }
   }
+  M.frame = frame;
   M.startLoop = function(){ drawVisualizer(); };
 
   /* ---------- init: wire the mode buttons, restore last mode ---------- */

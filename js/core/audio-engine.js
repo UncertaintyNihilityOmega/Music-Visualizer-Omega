@@ -158,41 +158,126 @@
     return Aud.source === 'mic' || !S.audio.paused;
   };
 
-  /* ---------- Idle preview (no track loaded / paused) ---------- */
-  function fillSyntheticData(){
-    var t = performance.now() / 1000;
-    var fd = Aud.freqData, n = fd.length;
-    var phase = (t % 1.15) / 1.15;
-    var pulse = Math.exp(-phase * 7);
+  /* ---------- Idle preview (no track loaded / paused) ----------
+     With nothing playing, the engine is fed a small silent "ghost song" made
+     of numbers, so every mode shows what it does with real music: a kick
+     drum, a bass line, a snare, hi-hats, a held chord and a running
+     arpeggio, at 96 beats a minute. It loops every 8 bars (20 s):
+       bars 1-2  calm    chord and arpeggio only, a soft kick
+       bars 3-4  build   kick on every beat, hi-hats come in
+       bars 5-8  full    snare, busy hats, bass line, faster arpeggio
+     so the calm-to-loud behaviour of a mode can be seen without a song.
+     Nothing here makes sound. */
+  var IDLE_BPM = 96;
+  // four chords, one per bar: root and the notes the arpeggio walks (MIDI numbers)
+  var IDLE_CHORDS = [
+    { root: 45, tones: [57, 60, 64, 69] },   // A minor
+    { root: 41, tones: [53, 57, 60, 65] },   // F
+    { root: 48, tones: [60, 64, 67, 72] },   // C
+    { root: 43, tones: [55, 59, 62, 67] }    // G
+  ];
+  var IDLE_ARP = [0, 1, 2, 3, 2, 1, 2, 3];
+  var IDLE_BASS = [1, 0, 0.7, 0, 0.85, 0, 0.7, 0.5];   // bass-note strength on each half beat
+  function midiHz(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+  // where the ghost song is at time t (seconds)
+  function idleSong(t){
+    var beat = t * IDLE_BPM / 60, bar = Math.floor(beat / 4), inBar = beat - bar * 4;
+    var loopBar = bar % 8, fb = inBar - Math.floor(inBar);
+    // how full the arrangement is: 0.35 calm, rising through the build, 1 full
+    var full = loopBar < 2 ? 0.35 : (loopBar < 4 ? 0.35 + ((loopBar - 2) * 4 + inBar) / 8 * 0.65 : 1);
+    var section = loopBar < 2 ? 'calm' : (loopBar < 4 ? 'build' : 'full');
+    var chord = IDLE_CHORDS[bar % 4];
+    var half = Math.floor(inBar * 2), fHalf = inBar * 2 - half;
+    var q = Math.floor(inBar * 4), fQ = inBar * 4 - q;
+    var s = { section: section, full: full, chord: chord, beatInBar: Math.floor(inBar) };
+    // kick: beats 1 and 3 while calm, every beat after that
+    var kickOn = section !== 'calm' || Math.floor(inBar) % 2 === 0;
+    s.kick = kickOn ? Math.exp(-fb * 0.625 * 14) * (section === 'calm' ? 0.6 : 1) : 0;
+    // snare on beats 2 and 4 of the full part, and a fill at the end of the build
+    var snareOn = (section === 'full' && Math.floor(inBar) % 2 === 1) || (loopBar === 3 && inBar >= 3);
+    s.snare = snareOn ? Math.exp(-(loopBar === 3 && inBar >= 3 ? fQ * 0.156 : fb * 0.625) * 17) : 0;
+    // hi-hat: off beats in the build, every quarter beat when full
+    s.hat = section === 'calm' ? 0
+          : (section === 'build' ? (half % 2 === 1 ? Math.exp(-fHalf * 0.3125 * 26) * 0.7 : 0)
+                                 : Math.exp(-fQ * 0.156 * 30) * (q % 2 === 1 ? 1 : 0.55));
+    // bass line: only once the build starts
+    s.bassHz = midiHz(chord.root);
+    s.bass = section === 'calm' ? 0 : IDLE_BASS[half] * Math.exp(-fHalf * 0.3125 * 4.5) * full;
+    // arpeggio: half-beat steps while calm, quarter-beat steps after
+    var step = section === 'calm' ? half : q, fStep = section === 'calm' ? fHalf * 0.3125 : fQ * 0.156;
+    s.arpNote = chord.tones[IDLE_ARP[step % 8]] + (section === 'full' && step % 8 >= 4 ? 12 : 0);
+    s.arpHz = midiHz(s.arpNote);
+    s.arp = Math.exp(-fStep * (section === 'calm' ? 4 : 7)) * (0.55 + 0.45 * full);
+    return s;
+  }
+  // t in seconds; left out = the engine's own clock (A.t), which is what the last frame used
+  Aud.idleSong = function(t){ return idleSong(t === undefined ? A.t : t); };
+
+  var idleLog2 = null, idleRate = 0;
+  function bump(l2, centreL2, widthOct){ var d = (l2 - centreL2) / widthOct; return d > 3 || d < -3 ? 0 : Math.exp(-0.5 * d * d); }
+  function fillSyntheticData(t){
+    if (t === undefined) t = performance.now() / 1000;
+    var fd = Aud.freqData, n = fd.length, nyq = Aud.sampleRate / 2, i;
+    if (!idleLog2 || idleLog2.length !== n || idleRate !== nyq){
+      idleLog2 = new Float32Array(n);
+      for (i = 0; i < n; i++) idleLog2[i] = Math.log(Math.max(20, i / n * nyq)) / Math.LN2;
+      idleRate = nyq;
+    }
+    var s = idleSong(t), L2 = Math.log2 || function(x){ return Math.log(x) / Math.LN2; };
+    var kickL2 = L2(52 + 34 * s.kick), bassL2 = L2(s.bassHz * 2), arpL2 = L2(s.arpHz);
+    var padL2 = [L2(midiHz(s.chord.tones[0])), L2(midiHz(s.chord.tones[1])), L2(midiHz(s.chord.tones[2]))];
+    var snareL2 = L2(1700), hatL2 = L2(9000);
+    var body = 0.1 + 0.5 * Math.pow(s.full, 1.5);
     // val is how strong this bin should LOOK (0..1); it is written back
     // through the inverse of the engine's loudness curve and treble lift so
     // the preview has the same shape whatever those two settings are.
-    var c = cfg(), p = c.curve > 0 ? c.curve : 0, range = MAX_DB - MIN_DB, nyq = Aud.sampleRate / 2;
-    for (var i = 0; i < n; i++){
-      var f = i / n;
-      var envp = 0.5 + 0.5 * Math.sin(t * 0.6 - f * 6);
-      var wob = 0.5 + 0.5 * Math.sin(t * 1.7 + f * 23 + Math.sin(t * 0.31 + f * 4) * 3);
-      var kick = Math.exp(-f * 90) * pulse;
-      var val = ((envp * 0.4 + wob * 0.3) * Math.exp(-f * 1.7) + kick * 0.85) * 0.75;
+    var c = cfg(), p = c.curve > 0 ? c.curve : 0, range = MAX_DB - MIN_DB;
+    for (i = 0; i < n; i++){
+      var l2 = idleLog2[i];
+      // the body of the mix: real music fills the whole spectrum, not just
+      // its notes. Two slow waves travel through it in opposite directions,
+      // so the bars roll like water and none ever sits dead.
+      var flow = 0.5 + 0.3 * Math.sin((l2 * 0.55 - t * 0.45) * 6.283) + 0.2 * Math.sin((l2 * 1.3 + t * 0.3) * 6.283);
+      var val = body * (0.4 + 0.6 * flow) * bump(l2, 9.4, 2.6);
+      val += 0.7 * s.kick * bump(l2, kickL2, 0.6);
+      val += 0.5 * s.bass * (bump(l2, bassL2, 0.24) + 0.45 * bump(l2, bassL2 + 1, 0.2));
+      var pad = (0.6 + 0.4 * Math.sin(t * 0.7)) * bump(l2, padL2[0], 0.1)
+              + (0.6 + 0.4 * Math.sin(t * 0.9 + 2)) * bump(l2, padL2[1], 0.1)
+              + (0.6 + 0.4 * Math.sin(t * 1.1 + 4)) * bump(l2, padL2[2], 0.1);
+      val += 0.22 * pad * (0.6 + 0.4 * s.full);
+      val += s.arp * (0.5 * bump(l2, arpL2, 0.09) + 0.24 * bump(l2, arpL2 + 1, 0.09) + 0.12 * bump(l2, arpL2 + 1.585, 0.09));
+      val += 0.5 * s.snare * bump(l2, snareL2, 1.5);
+      val += 0.42 * s.hat * bump(l2, hatL2, 0.7);
+      if (val > 1) val = 1;
       if (p){
-        var hz = Math.max(40, Math.min(12000, f * nyq));
+        var hz = Math.max(40, Math.min(12000, i / n * nyq));
         var lift = c.tilt * Math.log(hz / 100) / Math.LN2;
         val = 1 + (20 * Math.log(Math.max(0.002, val)) / Math.LN10 / p - lift) / range;
       }
       fd[i] = Math.max(0, Math.min(255, val * 255));
     }
-    var td = Aud.timeData, m = td.length;
+    // the matching wave shape (what String mode draws): the same notes as
+    // slow-drifting sine waves, so the line flows instead of jittering
+    var td = Aud.timeData, m = td.length, w = 6.283 / Aud.sampleRate;
+    var kHz = 50 + 40 * s.kick, bHz = s.bassHz * 2, aHz = s.arpHz;
+    var p0 = midiHz(s.chord.tones[0]), p1 = midiHz(s.chord.tones[2]);
+    var padA = 0.07 * (0.6 + 0.4 * s.full);
     for (var j = 0; j < m; j++){
-      var f2 = j / m;
-      td[j] = 128 + Math.sin(t * 1.4 + f2 * Math.PI * 3) * 14 * (0.6 + 0.4 * Math.sin(t * 0.4));
+      var y = 0.5 * s.kick * Math.sin(j * w * kHz + t * 2.1)
+            + 0.34 * s.bass * Math.sin(j * w * bHz + t * 1.3)
+            + padA * (Math.sin(j * w * p0 + t * 0.9) + Math.sin(j * w * p1 - t * 0.7))
+            + 0.2 * s.arp * Math.sin(j * w * aHz + t * 3.1)
+            + 0.09 * s.snare * (Math.sin(j * w * 1370 + t * 17) + Math.sin(j * w * 2290 + t * 29) + Math.sin(j * w * 3710 + t * 41))
+            + 0.07 * s.hat * (Math.sin(j * w * 6500 + t * 53) + Math.sin(j * w * 9100 + t * 71));
+      td[j] = Math.max(0, Math.min(255, 128 + y * 118));
     }
   }
   Aud.fillSyntheticData = fillSyntheticData;
 
   /* ---------- one frame: fetch data, analyse ---------- */
   var lastT = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  Aud.frame = function(){
-    var now = performance.now();
+  Aud.frame = function(nowMs){
+    var now = nowMs === undefined ? performance.now() : nowMs;
     var dt = (now - lastT) / 1000;
     lastT = now;
     if (Aud.isLive()){
@@ -200,7 +285,7 @@
       Aud.analyser.getByteTimeDomainData(Aud.timeData);
       if (Aud.wantPitch > 0) Aud.pitchAnalyser.getByteFrequencyData(Aud.pitchData);
     } else {
-      fillSyntheticData();
+      fillSyntheticData(now / 1000);
     }
     if (Aud.wantPitch > 0) Aud.wantPitch--;
     An.analyze(dt, now / 1000, cfg());

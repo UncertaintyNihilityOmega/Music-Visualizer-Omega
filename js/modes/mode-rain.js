@@ -7,6 +7,7 @@
 
   var rainDrops = [], rainSplash = [], rainInited = false;
   var windVel = 0, gust = 0, boltFlash = 0, bolt = null, puddleH = 0;
+  var ambient = 0, activeDrops = 0, boltCd = 0;
 
   function initRain(){
     rainDrops = [];
@@ -20,6 +21,8 @@
         len: 0.7 + Math.random() * 0.6
       });
     }
+    ambient = count;
+    activeDrops = count * 0.3;
     rainInited = true;
   }
   function drawRain(){
@@ -39,10 +42,31 @@
     var windPx = windVel * 240 * k * mo;
     puddleH = cfg.puddle ? U.env(puddleH, (4 + A.intensity * 22) * k, 1.4, 0.5, dt) : 0;
 
+    // Idea A: how hard it rains follows how big the passage is. A calm
+    // verse is a drizzle (a fifth of the drops), a loud chorus a downpour.
+    // Drops from a tap sit at the end of the list and always fall.
+    var share = cfg.follow ? 0.18 + 0.82 * A.drive : 1;
+    activeDrops = U.env(activeDrops, ambient * share, 1.6, 0.7, dt);
+    var activeN = Math.min(ambient, Math.round(activeDrops));
+
+    // Kick drum: rings spread across the standing water, as wide as the kick is hard
+    if (cfg.puddle && cfg.splash && A.kickHit > 0.3 && A.drive > 0.1){
+      var rings = 1 + Math.round(A.kickHit * 3);
+      for (var kr = 0; kr < rings && rainSplash.length < 160; kr++){
+        rainSplash.push({ x: Math.random() * w, y: h - puddleH * (0.2 + Math.random() * 0.5), r: k,
+                          max: (16 + A.kickHit * 46) * k * (0.5 + A.drive), a: 0.55 + A.kickHit * 0.3, tilt: windVel });
+      }
+      puddleH += A.kickHit * 5 * k;
+    }
+
     var drop = U.hexRGB(cfg.color);
     ctx.lineCap = 'round';
     for (var i = 0; i < rainDrops.length; i++){
       var d = rainDrops[i];
+      if (!d.tap){
+        if (i >= activeN){ d.idle = true; continue; }
+        if (d.idle){ d.idle = false; d.y = -Math.random() * h * 0.4; d.x = Math.random() * w; }   // comes back in from the top
+      }
       var vy = fallPx * (0.55 + d.z * 0.75);
       var vx = windPx * (1.45 - d.z * 0.7);
       d.x += vx * dt;
@@ -64,6 +88,7 @@
             rainSplash.push({ x: d.x, y: h - puddleH * 0.35, r: k, max: 18 * k, a: 0.8, tilt: windVel });
           }
           rainDrops.splice(i, 1);
+          i--;
           continue;
         }
         if (cfg.splash && rainSplash.length < 140){
@@ -106,7 +131,13 @@
       ctx.fill();
     }
 
-    if (cfg.lightning && A.beat && A.beatStrength > cfg.boltAt && A.intensity > 0.5 && Math.random() < 0.3){
+    // Lightning strikes on a hard snare in a loud passage (a crack of sound
+    // for a crack of light), a few seconds apart at most, and the thunder
+    // shakes the picture.
+    boltCd -= dt;
+    if (cfg.lightning && A.snareHit > cfg.boltAt && A.drive > 0.5 && boltCd <= 0){
+      boltCd = 1.6 + Math.random() * 2.4;
+      App.fx.jolt(0.5 + A.snareHit * 0.6);
       boltFlash = 1;
       bolt = [];
       var bx = w * (0.15 + Math.random() * 0.7), by = 0;
@@ -164,15 +195,16 @@
   function reset(){ rainInited = false; }
   Can.addResizeHook(reset);
 
-  App.modes.register('rain', { draw: drawRain, paintBG: paintBG, onTap: onTap, reset: reset });
+  App.modes.register('rain', { draw: drawRain, paintBG: paintBG, onTap: onTap, reset: reset, fx: 0.6 });
 
   App.cfg.registerDefaults('rain', {
-    drops: 1, fall: 1, wind: 1, gust: 1, source: 'treble', len: 1,
+    drops: 1, follow: true, fall: 1, wind: 1, gust: 1, source: 'treble', len: 1,
     color: '#5A2130', splash: true, puddle: true, lightning: true,
     boltAt: 0.6, trail: 0.3, bg1: '#B9C7D4', bg2: '#EDE7E3'
   });
   App.cfg.registerSchema({ id: 'rain', label: 'Rain', fields: [
-    ['drops', 'Drop count', 'range', 0.2, 2.5, 0.05],
+    ['drops', 'Drop count (in a downpour)', 'range', 0.2, 2.5, 0.05],
+    ['follow', 'Drizzle when calm, downpour when loud', 'bool'],
     ['fall', 'Fall speed', 'range', 0.3, 2.5, 0.05],
     ['source', 'Wind follows', 'select', Aud.SOURCES],
     ['wind', 'Wind strength', 'range', 0, 3, 0.05],
@@ -180,8 +212,8 @@
     ['len', 'Streak length', 'range', 0.3, 2.5, 0.05],
     ['splash', 'Splashes', 'bool'],
     ['puddle', 'Standing water', 'bool'],
-    ['lightning', 'Lightning', 'bool'],
-    ['boltAt', 'Lightning threshold', 'range', 0.2, 1, 0.02],
+    ['lightning', 'Lightning on a hard snare', 'bool'],
+    ['boltAt', 'Lightning threshold (snare strength)', 'range', 0.2, 1, 0.02],
     ['trail', 'Trail fade', 'range', 0.05, 1, 0.02],
     ['color', 'Drop colour', 'color'],
     ['bg1', 'Sky top', 'color'],

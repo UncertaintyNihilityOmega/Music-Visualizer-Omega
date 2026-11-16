@@ -61,6 +61,7 @@ function run(audio, v){
   const cfg = Object.assign({}, DEFAULT_CFG, v.cfg);
   const hop = SR / FPS, frames = Math.floor(audio.length / hop) - 1, tau = v.smoothing;
   const out = { level: new Float32Array(frames), bass: new Float32Array(frames), loud: new Float32Array(frames),
+                drive: new Float32Array(frames),
                 beat: new Uint8Array(frames), kick: new Uint8Array(frames), snare: new Uint8Array(frames),
                 hat: new Uint8Array(frames), onset: new Uint8Array(frames), frames };
   let pk = 0, ps = 0, ph = 0;
@@ -73,7 +74,7 @@ function run(audio, v){
       bytes[i] = b < 0 ? 0 : (b > 255 ? 255 : b);
     }
     const A = An.analyze(1 / FPS, f / FPS, cfg);
-    out.level[f] = A.level; out.bass[f] = A.bass; out.loud[f] = A.loudness;
+    out.level[f] = A.level; out.bass[f] = A.bass; out.loud[f] = A.loudness; out.drive[f] = A.drive;
     out.beat[f] = A.beat ? 1 : 0; out.onset[f] = A.onset ? 1 : 0;
     // a pulse counts once, on the frame it jumps up
     out.kick[f] = A.kick > pk + 0.05 ? 1 : 0; out.snare[f] = A.snare > ps + 0.05 ? 1 : 0; out.hat[f] = A.hat > ph + 0.05 ? 1 : 0;
@@ -83,13 +84,13 @@ function run(audio, v){
 }
 function windowStats(o, f0, f1){
   const n = f1 - f0, bass = Array.from(o.bass.subarray(f0, f1)).sort((a, b) => a - b);
-  let level = 0, sat = 0, beats = 0, kicks = 0, snares = 0, hats = 0, onsets = 0;
+  let level = 0, drive = 0, sat = 0, beats = 0, kicks = 0, snares = 0, hats = 0, onsets = 0;
   for (let f = f0; f < f1; f++){
-    level += o.level[f]; if (o.bass[f] > 0.97) sat++;
+    level += o.level[f]; drive += o.drive[f]; if (o.bass[f] > 0.97) sat++;
     beats += o.beat[f]; kicks += o.kick[f]; snares += o.snare[f]; hats += o.hat[f]; onsets += o.onset[f];
   }
   const perMin = c => Math.round(c / (n / FPS) * 60);
-  return { level: level / n, bassP10: bass[Math.floor(n * 0.1)], bassMed: bass[n >> 1], bassP90: bass[Math.floor(n * 0.9)],
+  return { level: level / n, drive: drive / n, bassP10: bass[Math.floor(n * 0.1)], bassMed: bass[n >> 1], bassP90: bass[Math.floor(n * 0.9)],
            sat: sat / n, beats: perMin(beats), kicks: perMin(kicks), snares: perMin(snares), hats: perMin(hats), onsets: perMin(onsets) };
 }
 // loudest and quietest 15 s, judged on the raw signal so every variant gets the same windows
@@ -126,12 +127,12 @@ for (const name of files){
   const audio = decode(path.join(DIR, name));
   const w = pickWindows(audio);
   console.log(`\n${name}   (${(audio.length / SR).toFixed(0)} s analysed; loud window at ${(w.loud[0] / FPS).toFixed(0)} s, quiet at ${(w.quiet[0] / FPS).toFixed(0)} s, quiet is ${(w.quietRms / w.loudRms * 100).toFixed(0)}% as strong)`);
-  console.log('  setting        part   level  bass p10/med/p90   pinned  beats kicks snares hats onsets  (per minute)');
+  console.log('  setting        part   level drive  bass p10/med/p90   pinned  beats kicks snares hats onsets  (per minute)');
   for (const v of VARIANTS){
     const o = run(audio, v);
     const L = windowStats(o, w.loud[0], w.loud[1]), Q = windowStats(o, w.quiet[0], w.quiet[1]);
     for (const [tag, s] of [['loud ', L], ['quiet', Q]]){
-      console.log(`  ${v.name.padEnd(13)}  ${tag}  ${fmt(s.level)}  ${fmt(s.bassP10)} ${fmt(s.bassMed)} ${fmt(s.bassP90)}   ${(s.sat * 100).toFixed(0).padStart(4)}%  ${String(s.beats).padStart(5)} ${String(s.kicks).padStart(5)} ${String(s.snares).padStart(6)} ${String(s.hats).padStart(4)} ${String(s.onsets).padStart(6)}`);
+      console.log(`  ${v.name.padEnd(13)}  ${tag}  ${fmt(s.level)} ${fmt(s.drive)}  ${fmt(s.bassP10)} ${fmt(s.bassMed)} ${fmt(s.bassP90)}   ${(s.sat * 100).toFixed(0).padStart(4)}%  ${String(s.beats).padStart(5)} ${String(s.kicks).padStart(5)} ${String(s.snares).padStart(6)} ${String(s.hats).padStart(4)} ${String(s.onsets).padStart(6)}`);
     }
     if (v === SHIPPED){
       const problems = [];
@@ -139,6 +140,8 @@ for (const name of files){
       if (L.beats < 20 && L.kicks < 20) problems.push('almost no beats or kicks found in the loud part');
       if (L.bassP90 - L.bassP10 < 0.15) problems.push('bass barely moves in the loud part');
       if (w.quietRms / w.loudRms < 0.6 && Q.level > L.level * 0.92) problems.push('the quiet part looks as busy as the loud part');
+      // "drive" is what the modes scale by: when the quiet part really is much quieter it must read lower
+      if (w.quietRms / w.loudRms < 0.6 && Q.drive > L.drive - 0.15) problems.push(`drive barely differs between loud (${L.drive.toFixed(2)}) and quiet (${Q.drive.toFixed(2)})`);
       if (problems.length){ failures++; console.log('  FAIL: ' + problems.join('; ')); }
       else console.log('  ok');
     }

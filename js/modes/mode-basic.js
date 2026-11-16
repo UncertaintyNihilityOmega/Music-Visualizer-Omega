@@ -15,7 +15,6 @@
 
   var vals = null, state = null, peakCaps = null, barGradient = null, gradKey = '';
   var tapPlus = [];
-  var glyphCache = {};
 
   var RANGES = {
     full:  { lo: 28,  hi: 16000, scale: 'log' },
@@ -50,21 +49,7 @@
     }
   }
 
-  // a text glyph pre-drawn once per (character, colour); emoji keep their own colours
-  function glyphSprite(ch, color){
-    var key = ch + '|' + color;
-    if (glyphCache[key]) return glyphCache[key];
-    var px = 48, cv = document.createElement('canvas');
-    cv.width = cv.height = px;
-    var c = cv.getContext('2d');
-    c.font = 'bold ' + Math.round(px * 0.86) + 'px "Cascadia Mono","Consolas","Segoe UI Symbol","Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",monospace';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillStyle = color;
-    c.fillText(ch, px / 2, px / 2 + px * 0.04);
-    glyphCache[key] = cv;
-    return cv;
-  }
+  var glyphSprite = Can.glyphSprite;   // a character pre-drawn once per colour (canvas-core.js)
   function hash(a, b, c){
     var x = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
     return x - Math.floor(x);
@@ -113,13 +98,83 @@
     }
   }
 
+  // Bars brighten a little as the passage gets louder: the path just filled
+  // is filled again with a thin wash (white on dark themes, the middle
+  // colour on light ones). Nothing happens in a calm passage.
+  function loudWash(lk){
+    var a = A.drive * Cfg.CFG.basic.loudTint * 0.3;
+    if (a < 0.01) return;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = lk.dark ? 'rgba(255,255,255,' + a.toFixed(3) + ')' : U.rgba(U.hexRGB(lk.c2), (a * 1.3).toFixed(3));
+    ctx.fill();
+  }
+  // The theme's mark (the omega, a pumpkin...) in the middle of the ring,
+  // jumping with the kick drum.
+  function drawLogo(lk, cx, cy, R, k){
+    var th = App.theme.THEMES[App.theme.current], mark = th && Cfg.CFG.basic.followTheme ? th.mark : 'Ω';
+    var size = R * 1.05 * (1 + A.kick * 0.14 * (0.3 + 0.7 * A.drive));
+    ctx.save();
+    ctx.globalAlpha = 0.82 + A.kick * 0.18;
+    if (Cfg.CFG.basic.glow * Cfg.CFG.look.glow > 0.01){
+      ctx.shadowColor = lk.c2;
+      ctx.shadowBlur = (8 + A.kick * 26) * k;
+    }
+    ctx.drawImage(glyphSprite(mark, lk.dark ? '#FFFFFF' : lk.c1), cx - size / 2, cy - size / 2, size, size);
+    ctx.restore();
+  }
+
   function drawBasic(){
     var w = canvas.width, h = canvas.height, cy = h / 2, cx = w / 2, k = Can.dpr(), cfg = Cfg.CFG.basic;
     var lk = look(), layout = layoutOf(lk);
     Can.backdrop(1);
     var capColor = lk.dark ? 'rgba(255,255,255,0.45)' : 'rgba(60,20,30,0.3)';
+    var trailColor = lk.dark ? 'rgba(255,255,255,0.09)' : 'rgba(60,20,30,0.07)';
     var glyphs = lk.glyphs && lk.glyphs.length ? lk.glyphs : null;
     var i, v, barH;
+
+    if (layout === 'dots'){
+      // Dotted bars standing on a curved line, bass at both outer edges and
+      // treble meeting in the middle: the look of the second test video.
+      var cols = Math.max(24, Math.min(150, Math.round(w / (11 * k) * cfg.bars)));
+      var halfN = Math.ceil(cols / 2);
+      sample(halfN);
+      var colW = w / cols, dot = Math.max(2 * k, colW * 0.58), stepY = dot * 1.45;
+      var baseY = h * 0.8, rise = h * 0.13, maxDots = Math.floor(h * 0.6 / stepY);
+      ctx.fillStyle = fillFor(lk, w, h);
+      glowOn(lk, k);
+      ctx.beginPath();
+      var tops = [];
+      for (i = 0; i < cols; i++){
+        v = vals[Math.min(halfN - 1, i < halfN ? i : cols - 1 - i)];
+        var x0 = i * colW + colW / 2;
+        var by = baseY - Math.sin(Math.PI * i / (cols - 1)) * rise;
+        var nd = Math.max(1, Math.round(v * maxDots));
+        for (var dj = 0; dj < nd; dj++){
+          var dy = by - dj * stepY;
+          ctx.moveTo(x0 + dot / 2, dy);
+          ctx.arc(x0, dy, dot / 2, 0, 6.283);
+        }
+        tops.push(x0, by - (nd - 1) * stepY);
+      }
+      ctx.fill();
+      loudWash(lk);
+      ctx.shadowBlur = 0;
+      // the top dot of each column, in the second colour
+      ctx.fillStyle = lk.rainbow ? capColor : lk.c2;
+      ctx.beginPath();
+      for (i = 0; i < tops.length; i += 2){ ctx.moveTo(tops[i] + dot / 2, tops[i + 1]); ctx.arc(tops[i], tops[i + 1], dot / 2, 0, 6.283); }
+      ctx.fill();
+      // the curved line itself
+      ctx.strokeStyle = lk.dark ? 'rgba(255,255,255,0.22)' : 'rgba(60,20,30,0.2)';
+      ctx.lineWidth = 1.2 * k;
+      ctx.beginPath();
+      for (i = 0; i < cols; i++){
+        var lx = i * colW + colW / 2, ly = baseY - Math.sin(Math.PI * i / (cols - 1)) * rise + dot * 1.1;
+        if (i === 0) ctx.moveTo(lx, ly); else ctx.lineTo(lx, ly);
+      }
+      ctx.stroke();
+      return;
+    }
 
     if (layout === 'ring'){
       var n = Math.max(48, Math.min(160, Math.round(96 * cfg.bars)));
@@ -160,6 +215,8 @@
         ctx.strokeStyle = U.rgba(U.hexRGB(lk.c2), (0.5 + A.punch * 0.5).toFixed(3));
         ctx.lineWidth = (1.2 + A.punch * 2) * k;
         ctx.stroke();
+      } else if (cfg.logo){
+        drawLogo(lk, cx, cy, R, k);
       }
     } else if (layout === 'rise' || layout === 'edges'){
       // bars standing on a floor near the bottom, with a soft reflection
@@ -180,7 +237,7 @@
         if (glyphs) glyphBar(lk, i, x, floor, bw, barH, -1, cell);
         else ctx.rect(x, floor - barH, bw, barH);
       }
-      if (!glyphs){ ctx.fill(); ctx.shadowBlur = 0; }
+      if (!glyphs){ ctx.fill(); loudWash(lk); ctx.shadowBlur = 0; }
       // reflection
       ctx.save();
       ctx.globalAlpha = 0.18;
@@ -194,13 +251,23 @@
       ctx.fill();
       ctx.restore();
       if (cfg.peaks && !glyphs){
+        var trail = cfg.peakTrail ? [] : null;
         ctx.beginPath();
         for (i = 0; i < count; i++){
           var src3 = layout === 'edges' ? (i < half ? i : count - 1 - i) : i;
-          ctx.rect(i * barW + (barW - bw) / 2, floor - peakCaps[Math.min(half - 1, src3)] * maxH - 3 * k, bw, 2 * k);
+          var si3 = Math.min(half - 1, src3), capTop = floor - peakCaps[si3] * maxH - 3 * k;
+          ctx.rect(i * barW + (barW - bw) / 2, capTop, bw, 2 * k);
+          if (trail) trail.push(i * barW + (barW - bw) / 2, capTop + 2 * k, (floor - Math.max(1.5 * k, vals[si3] * maxH)) - capTop - 2 * k);
         }
         ctx.fillStyle = capColor;
         ctx.fill();
+        // the fading trail a falling cap leaves between itself and its bar
+        if (trail){
+          ctx.beginPath();
+          for (i = 0; i < trail.length; i += 3) if (trail[i + 2] > k) ctx.rect(trail[i], trail[i + 1], bw, trail[i + 2]);
+          ctx.fillStyle = trailColor;
+          ctx.fill();
+        }
       }
     } else {
       // 'mirror': bass in the centre, mirrored left/right and up/down
@@ -226,7 +293,7 @@
           ctx.rect(xL, cy, bw2, barH);
         }
       }
-      if (!glyphs){ ctx.fill(); ctx.shadowBlur = 0; }
+      if (!glyphs){ ctx.fill(); loudWash(lk); ctx.shadowBlur = 0; }
       if (cfg.peaks && !glyphs){
         ctx.beginPath();
         for (var p = 0; p < barCount; p++){
@@ -239,6 +306,21 @@
         }
         ctx.fillStyle = capColor;
         ctx.fill();
+        // the fading trail a falling cap leaves between itself and its bar
+        if (cfg.peakTrail){
+          ctx.beginPath();
+          for (var pt = 0; pt < barCount; pt++){
+            var top2 = Math.max(1.5 * k, vals[pt] * maxH2), gapH = peakCaps[pt] * maxH2 - top2;
+            if (gapH <= k) continue;
+            var xr2 = cx + pt * barW2, xl2 = cx - (pt + 1) * barW2;
+            ctx.rect(xr2, cy - top2 - gapH, bw2, gapH);
+            ctx.rect(xl2, cy - top2 - gapH, bw2, gapH);
+            ctx.rect(xr2, cy + top2, bw2, gapH);
+            ctx.rect(xl2, cy + top2, bw2, gapH);
+          }
+          ctx.fillStyle = trailColor;
+          ctx.fill();
+        }
       }
     }
 
@@ -312,12 +394,13 @@
 
   App.cfg.registerDefaults('basic', {
     followTheme: true, layout: 'theme', range: 'full',
-    bars: 1, gamma: 1, blur: 0.35, smooth: 0.45, peaks: true, peakFall: 0.6, glow: 0.4, wave: true,
+    bars: 1, gamma: 1, blur: 0.35, smooth: 0.45, peaks: true, peakFall: 0.6, peakTrail: true,
+    loudTint: 0.5, logo: true, glow: 0.4, wave: true,
     c1: '#BD9257', c2: '#C2626F', bg1: '#FFF8F3', bg2: '#F1D8D5'
   });
   App.cfg.registerSchema({ id: 'basic', label: 'Basic', fields: [
     ['followTheme', 'Follow theme (colours, shape of bars)', 'bool'],
-    ['layout', 'Layout', 'select', ['theme', 'mirror', 'rise', 'edges', 'ring']],
+    ['layout', 'Layout', 'select', ['theme', 'mirror', 'rise', 'edges', 'dots', 'ring']],
     ['range', 'Frequencies shown', 'select', ['full', 'bass', 'voice']],
     ['bars', 'Bar density', 'range', 0.4, 2, 0.05],
     ['gamma', 'Bar contrast', 'range', 0.5, 2.5, 0.05],
@@ -325,6 +408,9 @@
     ['smooth', 'Bar smoothing', 'range', 0, 1, 0.05],
     ['peaks', 'Peak caps', 'bool'],
     ['peakFall', 'Peak fall speed', 'range', 0.1, 2, 0.05],
+    ['peakTrail', 'Peak caps leave a trail', 'bool'],
+    ['loudTint', 'Bars brighten when loud', 'range', 0, 1, 0.05],
+    ['logo', 'Theme mark in the ring, pulsing with the kick', 'bool'],
     ['glow', 'Bar glow', 'range', 0, 1, 0.05],
     ['wave', 'Waveform line', 'bool'],
     ['c1', 'Bar colour (edges) - when not following theme', 'color'],

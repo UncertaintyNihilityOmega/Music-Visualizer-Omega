@@ -133,5 +133,55 @@ check('a loud passage is clearly visible', loud > 0.3, `level ${loud.toFixed(2)}
   check('shape() rises steadily and stays at or below 1', ok);
 }
 
+// 8. energy and drive: "how big is this part of the song"
+{
+  const An = createAnalyzer(), bytes = new Uint8Array(BINS);
+  An.setData(bytes, SR, MIN_DB, MAX_DB);
+  let dLoud = 0, dQuiet = 0, nl2 = 0, nq2 = 0, hitFrames = 0, hitSum = 0;
+  for (let f = 0; f < 22 * FPS; f++){
+    const t = f / FPS, sc = song(t < 10 ? 0 : -20)(t);
+    spectrum(bytes, sc.bed, sc.bumps);
+    const A = An.analyze(1 / FPS, t, DEFAULT_CFG);
+    if (t > 5 && t < 10){ dLoud += A.drive; nl2++; if (A.kickHit > 0){ hitFrames++; hitSum += A.kickHit; } }
+    if (t > 17 && t < 22){ dQuiet += A.drive; nq2++; }
+  }
+  dLoud /= nl2; dQuiet /= nq2;
+  check('drive is high in a loud passage', dLoud > 0.6, `drive ${dLoud.toFixed(2)}`);
+  // The window is 7 to 12 s after the drop, by which time the auto level (14 s memory) has turned the quiet
+  // part up by about half, on purpose. Real quiet passages read 0.14 to 0.25 (engine/README.md); this steady
+  // made-up signal is the hardest case, so the limit is 0.35: still under half of the loud passage's drive.
+  check('drive falls to calm when the music drops 20 dB', dQuiet < 0.35 && dQuiet < dLoud * 0.5, `drive ${dQuiet.toFixed(2)}`);
+  // 5 s at 120 a minute = 10 kicks; kickHit must be a one-frame event, not a held value
+  check('kickHit fires once per kick (one frame each)', hitFrames >= 8 && hitFrames <= 12 && hitSum > 0, `${hitFrames} frames in 5 s`);
+  const An0 = createAnalyzer(), b0 = new Uint8Array(BINS);
+  An0.setData(b0, SR, MIN_DB, MAX_DB);
+  for (let f = 0; f < 120; f++) An0.analyze(1 / FPS, f / FPS, DEFAULT_CFG);
+  check('silence gives zero energy and drive', An0.A.energy === 0 && An0.A.drive === 0, `energy ${An0.A.energy}`);
+}
+
+// 9. the picture layer (js/core/fx.js): still when calm, moves on a kick when loud, settles again
+{
+  const fx = require('../js/core/fx.js');
+  const run = (drive, amount) => {
+    const s = fx.create();
+    let maxZoom = 1, maxShake = 0, maxFlash = 0;
+    for (let f = 0; f < 60; f++){
+      const hitNow = f === 10;
+      const pulse = f >= 10 ? Math.exp(-9 * (f - 10) / FPS) : 0;
+      fx.step(s, { kick: pulse, snare: pulse, beat: hitNow, beatStrength: hitNow ? 0.9 : 0, drive }, 1 / FPS, amount);
+      maxZoom = Math.max(maxZoom, s.zoom); maxShake = Math.max(maxShake, Math.abs(s.x), Math.abs(s.y)); maxFlash = Math.max(maxFlash, s.flash);
+    }
+    return { maxZoom, maxShake, maxFlash, end: s };
+  };
+  const loudHit = run(1, 1), calmHit = run(0.1, 1), off = run(1, 0);
+  check('picture layer: a kick in a loud passage zooms, shakes and flashes', loudHit.maxZoom > 1.015 && loudHit.maxShake > 0.1 && loudHit.maxFlash > 0.03,
+        `zoom ${loudHit.maxZoom.toFixed(3)}, shake ${loudHit.maxShake.toFixed(2)}, flash ${loudHit.maxFlash.toFixed(3)}`);
+  check('picture layer: the same kick in a calm passage barely moves it', calmHit.maxZoom < 1.002 && calmHit.maxShake < 0.02,
+        `zoom ${calmHit.maxZoom.toFixed(4)}, shake ${calmHit.maxShake.toFixed(3)}`);
+  check('picture layer: it settles back within a second', loudHit.end.zoom < 1.003 && Math.abs(loudHit.end.x) < 0.01, `zoom ${loudHit.end.zoom.toFixed(4)}`);
+  check('picture layer: amount 0 switches it off', off.maxZoom === 1 && off.maxShake === 0 && off.maxFlash === 0);
+  check('picture layer: zoom never passes 10%', run(1, 2).maxZoom <= 1.1);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

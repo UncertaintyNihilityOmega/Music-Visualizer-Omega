@@ -26,6 +26,8 @@
     attack: 34, release: 9, intensityRelease: 2.6,
     beatSens: 1.32, beatGate: 0.12, onsetSens: 1.5
   };
+  // energy at or below DRIVE_LO counts as fully calm, at or above DRIVE_HI as fully loud
+  var DRIVE_LO = 0.14, DRIVE_HI = 0.46;
 
   // One small "is this band jumping up right now?" detector. It keeps about
   // 0.7 s of history and fires when the newest value clears the recent
@@ -65,9 +67,14 @@
       beat: false, beatStrength: 0, gain: 1,
       // added in engine v2
       loudness: 0,        // raw overall level this frame, before auto level (0-1)
-      energy: 0,          // slow average of loudness: "how big is this part of the song"
+      energy: 0,          // slow average of the levelled loudness: "how big is this part of the song"
+      drive: 0,           // energy stretched to 0-1: 0 = a calm passage, 1 = a loud one (modes scale by this)
       onset: false, onsetStrength: 0,   // any new sound starting (drum, note, word)
-      kick: 0, snare: 0, hat: 0         // decaying 0-1 pulses for low / middle / high hits
+      kick: 0, snare: 0, hat: 0,        // decaying 0-1 pulses for low / middle / high hits
+      // the same three hits as one-frame events: the hit's strength (0-1) on
+      // the frame it lands, 0 on every other frame. Use these to START
+      // something (a crack, a spark); use the pulses above to SIZE something.
+      kickHit: 0, snareHit: 0, hatHit: 0
     };
 
     var rangeDb = 70;   // how many decibels the byte scale 0..255 covers
@@ -218,7 +225,13 @@
       A.gain = Math.max(0.4, Math.min(4, ag)) * cfg.sensitivity;
 
       A.loudness = raw;
-      A.energy = env(A.energy, raw, 0.9, 0.35, dt);
+      // energy: the levelled loudness averaged over a second or two, so it
+      // tells a verse from a chorus instead of following every drum hit.
+      // drive: the same thing stretched so a calm passage reads near 0 and a
+      // loud one near 1 (DRIVE_LO / DRIVE_HI were set from the test songs:
+      // engine/README.md).
+      A.energy = env(A.energy, finish(raw, cfg), 1.2, 0.45, dt);
+      A.drive = clamp01((A.energy - DRIVE_LO) / (DRIVE_HI - DRIVE_LO));
       A.sub = finish(cSub, cfg);
       A.bass = finish(cBass, cfg);
       A.lowMid = finish(cLowMid, cfg);
@@ -259,8 +272,9 @@
       A.punch = A.beat ? Math.max(A.punch, A.beatStrength) : A.punch * Math.exp(-5.5 * dt);
 
       // hits by range, and "anything new" (onset)
-      runHitDetector(snareD, fMid, os, 0.05, dt);
-      runHitDetector(hatD, fHigh, os, 0.04, dt);
+      A.kickHit = kickNow;
+      A.snareHit = runHitDetector(snareD, fMid, os, 0.05, dt);
+      A.hatHit = runHitDetector(hatD, fHigh, os, 0.04, dt);
       var on = runHitDetector(onsetD, flux, os, 0.03, dt);
       A.kick = kickD.pulse; A.snare = snareD.pulse; A.hat = hatD.pulse;
       A.onset = on > 0;
@@ -270,6 +284,7 @@
 
     function reset(){
       bassHist.length = 0; beatCooldown = 0; autoPeak = 0.3;
+      A.energy = 0; A.drive = 0;
       kickD.hist.length = snareD.hist.length = hatD.hist.length = onsetD.hist.length = 0;
       for (var i = 0; i < prevSpec.length; i++) prevSpec[i] = 0;
     }

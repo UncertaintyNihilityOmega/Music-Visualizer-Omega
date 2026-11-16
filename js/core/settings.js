@@ -38,8 +38,10 @@
   // groups whose saved values must be dropped. v2 (0.1.0): the audio engine
   // gained a loudness curve, so an old saved noise floor / contrast would
   // silence everything; Basic gained new options with a new default look.
-  var CFG_VERSION = 2;
-  var DROP_BELOW = { 2: ['audio', 'basic'] };
+  // v3: String was rebuilt (its numbers mean different things), Fire's blue
+  // now follows drive, and Clock's default style became "theme".
+  var CFG_VERSION = 3;
+  var DROP_BELOW = { 2: ['audio', 'basic'], 3: ['strings', 'fire', 'clock'] };
   C.saveCfg = function(){
     try {
       localStorage.setItem('viz.cfg', JSON.stringify(C.CFG));
