@@ -76,8 +76,17 @@
   Aud.setVolume = function(v){ Aud.volume = Math.max(0, Math.min(1, v)); applyVolume(); };
   Aud.setMuted = function(m){ Aud.muted = !!m; applyVolume(); };
 
+  // iPhone and iPad (Safari's Audio Session API; other browsers do not have
+  // it): tell the phone this is music. Without it, sound that passes through
+  // the analysis is treated like a game's sound effects and the ring/silent
+  // switch mutes it. The microphone needs the two-way kind.
+  function sessionType(type){
+    try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {}
+  }
+
   function ensureAudioGraph(){
     if (Aud.audioCtx) return;
+    sessionType('playback');
     Aud.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     Aud.analyser = Aud.audioCtx.createAnalyser();
     Aud.analyser.fftSize = FFT_BINS * 2;
@@ -123,7 +132,8 @@
     if (Aud.source === 'mic') return Promise.resolve();
     if (!Aud.micSupported()) return Promise.reject(new Error('This browser cannot use the microphone here (it needs https or localhost).'));
     ensureAudioGraph();
-    if (Aud.audioCtx.state === 'suspended') Aud.audioCtx.resume();
+    sessionType('play-and-record');
+    if (Aud.audioCtx.state !== 'running' && Aud.audioCtx.state !== 'closed') Aud.audioCtx.resume();
     // the three "clean-up" options are for phone calls; for music they pump
     // and gate the level, which makes the visuals lurch
     return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
@@ -138,6 +148,7 @@
         stream.getAudioTracks().forEach(function(tr){ tr.addEventListener('ended', function(){ Aud.stopMic(); }); });
         if (Aud.onSourceChange) Aud.onSourceChange('mic');
       }, function(err){
+        sessionType('playback');
         var denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
         throw new Error(denied ? 'Microphone permission was not given.' : 'No microphone could be opened.');
       });
@@ -150,6 +161,7 @@
     micNode = null;
     try { mediaNode.connect(Aud.analyser); mediaNode.connect(Aud.pitchAnalyser); } catch (e) {}
     Aud.source = 'file';
+    sessionType('playback');
     An.reset();
     if (Aud.onSourceChange) Aud.onSourceChange('file');
   };

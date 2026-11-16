@@ -63,10 +63,15 @@ canvas{ width:100%; height:clamp(200px, 34vw, 320px); display:block; border-radi
 .mode-sep{ display:inline-block; width:1px; height:22px; background:var(--line); margin:0 5px; }
 .mode-sep.fs-only{ display:none; }
 .viz-card:fullscreen .mode-row{ display:inline-flex; }
+.viz-card.viz-fill .mode-row{ display:inline-flex; }
 .viz-card:fullscreen .modes-wrap{ display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:6px; }
+.viz-card.viz-fill .modes-wrap{ display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:6px; }
 .viz-card:fullscreen .game-row{ margin-top:10px; padding-top:0; }
+.viz-card.viz-fill .game-row{ margin-top:10px; padding-top:0; }
 .viz-card:fullscreen .game-row::before{ display:none; }
+.viz-card.viz-fill .game-row::before{ display:none; }
 .viz-card:fullscreen .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
+.viz-card.viz-fill .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
 
 .mode-btn, .pill-btn, .tab-btn{
   border:1px solid var(--line); background:var(--field); color:var(--ink);
@@ -116,6 +121,21 @@ canvas{ width:100%; height:clamp(200px, 34vw, 320px); display:block; border-radi
 .viz-card:fullscreen .viz-fs{ top:12px; right:12px; }
 .viz-card:-webkit-full-screen{ background:#07050d; position:static; left:0; right:0; width:100%; height:100%; margin:0; }
 .viz-card:-webkit-full-screen canvas{ height:calc(100vh - 96px); border-radius:0; }
+/* the same, for a browser with no fullscreen for an element (iPhone): the card fills the window (main.js) */
+.viz-card.viz-fill{
+  position:fixed; top:0; left:0; right:0; bottom:0; z-index:60; width:auto; height:auto; margin:0; border-radius:0;
+  background:#07050d; display:flex; flex-direction:column; justify-content:center; padding:0 0 14px;
+}
+.viz-card.viz-fill canvas{ height:calc(100vh - 96px); height:calc(100dvh - 96px); border-radius:0; }
+.viz-card.viz-fill .now-playing{ color:#f2ecff; }
+.viz-card.viz-fill .mode-btn{ background:rgba(255,255,255,.12); color:#f2ecff; }
+.viz-card.viz-fill .mode-btn.active{ background:linear-gradient(135deg,var(--accent2),var(--accent)); color:var(--on-accent); }
+.viz-card.viz-fill .viz-fs{ top:12px; right:12px; }
+html.viz-fill-on, html.viz-fill-on body{ overflow:hidden; }
+/* iPhone zooms the page when a text box with small letters is tapped; 16px stops that */
+@supports (-webkit-touch-callout:none){
+  input[type=text], input[type=url], input[type=number], select, textarea{ font-size:16px !important; }
+}
 
 /* Page tabs */
 .tabs{ display:flex; gap:6px; margin:0 0 14px; padding:5px; border:1px solid var(--line); border-radius:999px; background:var(--card); }

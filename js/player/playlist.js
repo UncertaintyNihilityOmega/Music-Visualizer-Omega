@@ -22,8 +22,50 @@
     }
     S.order = indices;
     S.orderPos = S.currentIndex === -1 ? 0 : S.order.indexOf(S.currentIndex);
+    applyLoop();
   }
   P.rebuildOrder = rebuildOrder;
+
+  /* ---------- Looping one song ----------
+     "Repeat one" (and "repeat all" with a single song) is done by the player
+     itself (el.loop), not by starting the song again from script when it
+     ends. On a phone with the screen off the page's script may be paused or
+     its play() refused at that moment, and the music stopped (reported by
+     the user, 2026-11-16: "sometimes it stops, but sometimes it works"). */
+  function applyLoop(){
+    var one = S.repeatMode === 'one' || (S.repeatMode === 'all' && S.playlist.length === 1);
+    audio.loop = one;
+    S.plainAudio.loop = one;
+  }
+  P.applyLoop = applyLoop;
+
+  /* ---------- Starting sound safely ----------
+     play() can be refused while the page is hidden. Then the song is owed:
+     it starts as soon as the page is seen again (background.js calls
+     resumeOwed). A refusal while the page is on screen is left alone, so a
+     song never starts by surprise later. */
+  S.playOwed = false;
+  function safePlay(el){
+    var p;
+    try { p = el.play(); } catch (e) { p = null; }
+    if (p && p.catch) p.catch(function(){ if (document.hidden) S.playOwed = true; });
+  }
+  P.safePlay = safePlay;
+  P.resumeOwed = function(){
+    if (!S.playOwed) return;
+    S.playOwed = false;
+    var el = S.player();
+    if (el.paused && S.currentIndex !== -1) safePlay(el);
+  };
+  // the sound engine may have been put to sleep while the app was away
+  function wakeEngine(){
+    var ctx = Aud.audioCtx;
+    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed' && ctx.resume){
+      var p = ctx.resume();
+      if (p && p.catch) p.catch(function(){});
+    }
+  }
+  P.wakeEngine = wakeEngine;
 
   /* ---------- Playback ---------- */
   function loadAndPlay(i){
@@ -31,7 +73,8 @@
     if (!track) return;
     S.corsNoteEl.textContent = '';
     Aud.ensureAudioGraph();
-    if (Aud.audioCtx.state === 'suspended') Aud.audioCtx.resume();
+    wakeEngine();
+    S.playOwed = false;
     if (Aud.source === 'mic') Aud.stopMic();   // playing a song hands the visuals back to the music
     S.nowPlayingEl.textContent = track.name;
     renderPlaylist();
@@ -56,8 +99,7 @@
       audio.pause();
       S.usingPlain = true;
       plain.src = track.url;
-      var pp = plain.play();
-      if (pp && pp.catch) pp.catch(function(){});
+      safePlay(plain);
       if (track.noRead) S.corsNoteEl.textContent = P.NO_READ_NOTE;
       return;
     }
@@ -65,8 +107,7 @@
     audio.crossOrigin = 'anonymous';
     audio.src = track.url;
     audio.load();
-    var p = audio.play();
-    if (p && p.catch) p.catch(function(){ /* ignore autoplay edge cases */ });
+    safePlay(audio);
   }
   P.start = start;
   P.NO_READ_NOTE = '🔒 This address lets the music play but does not let the app read its sound, so the picture shows the idle preview. ' +

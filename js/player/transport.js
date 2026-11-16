@@ -26,7 +26,13 @@
     function mine(){ return el === S.player(); }
     el.addEventListener('ended', function(){
       if (!mine()) return;
-      if (S.repeatMode === 'one'){ el.currentTime = 0; el.play(); return; }
+      // a looping song never gets here (el.loop, see playlist.js); this is the net under it
+      if (el.loop || S.repeatMode === 'one'){
+        try { el.currentTime = 0; } catch (e) {}
+        P.wakeEngine();
+        P.safePlay(el);
+        return;
+      }
       P.goNext(true);
     });
     el.addEventListener('play', function(){ if (mine()){ S.playBtn.textContent = '❚❚'; S.playBtn.setAttribute('aria-label', 'Pause'); } });
@@ -45,9 +51,10 @@
       return;
     }
     Aud.ensureAudioGraph();
-    if (Aud.audioCtx.state === 'suspended') Aud.audioCtx.resume();
+    P.wakeEngine();
+    S.playOwed = false;          // the user's own tap decides now
     var el = S.player();
-    if (el.paused) el.play(); else el.pause();
+    if (el.paused) P.safePlay(el); else el.pause();
   });
   document.getElementById('nextBtn').addEventListener('click', function(){ P.goNext(false); });
   document.getElementById('prevBtn').addEventListener('click', P.goPrev);
@@ -63,6 +70,7 @@
     S.repeatMode = repeatModes[(idx + 1) % repeatModes.length];
     S.repeatBtn.classList.toggle('active', S.repeatMode !== 'none');
     S.repeatBtn.classList.toggle('one', S.repeatMode === 'one');   // the icon gains a small "1"
+    P.applyLoop();
     S.repeatBtn.title = S.repeatMode === 'none' ? 'Repeat off' : (S.repeatMode === 'all' ? 'Repeat all' : 'Repeat one');
   });
 

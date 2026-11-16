@@ -91,6 +91,8 @@ App.pages.define('music', {
     var reRow = document.getElementById('reconnectRow');
     var reBtn = document.getElementById('reconnectBtn');
     var note = document.getElementById('libraryNote');
+    // a browser that can open neither kind of folder (an iPhone's) gets no folder button: "Add files" does the job
+    if (!Lib.supported() && !('webkitdirectory' in document.getElementById('folder-input'))) openBtn.hidden = true;
     document.getElementById('addFilesBtn').addEventListener('click', function(){
       document.getElementById('file-input').click();
     });

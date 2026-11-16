@@ -12,7 +12,20 @@
   /* ---------- Fullscreen visualizer ---------- */
   var vizCard = document.getElementById('vizCard');
   var fsBtn = document.getElementById('fsBtn');
+  // An iPhone's browser has no fullscreen for a page element (an iPad's and
+  // every other browser's has). There the button makes the picture fill the
+  // window instead: the class "viz-fill" in styles.css.
+  var canFs = !!(vizCard.requestFullscreen || vizCard.webkitRequestFullscreen);
+  function isFull(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement) || vizCard.classList.contains('viz-fill');
+  }
   function toggleFullscreen(){
+    if (!canFs){
+      var on = vizCard.classList.toggle('viz-fill');
+      document.documentElement.classList.toggle('viz-fill-on', on);
+      onFsChange();
+      return;
+    }
     var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     if (fsEl){
       (document.exitFullscreen || document.webkitExitFullscreen).call(document);
@@ -21,10 +34,10 @@
       if (req) req.call(vizCard);
     }
   }
-  if (!(vizCard.requestFullscreen || vizCard.webkitRequestFullscreen)) fsBtn.style.display = 'none';
+  App.toggleFullscreen = toggleFullscreen;
   fsBtn.addEventListener('click', toggleFullscreen);
   function onFsChange(){
-    fsBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? '✕' : '⛶';
+    fsBtn.textContent = isFull() ? '✕' : '⛶';
     setTimeout(Can.resizeCanvas, 60);
   }
   document.addEventListener('fullscreenchange', onFsChange);

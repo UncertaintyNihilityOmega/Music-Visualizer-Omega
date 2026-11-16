@@ -121,6 +121,7 @@
     } else {
       wake();
       B.toForeground();
+      P.resumeOwed();      // a song whose start was refused while the page was hidden
     }
   });
   // some phones pause the engine without hiding the page (a call, another app's sound)

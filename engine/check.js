@@ -221,6 +221,19 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   for (const size of ['192x192', '512x512']) if (!(man.icons || []).some(i => i.sizes === size && i.type === 'image/png')) err(`manifest.webmanifest: a ${size} PNG icon is needed for the app to be installable`);
   if (man.display !== 'standalone' || !man.start_url || !man.name) err('manifest.webmanifest: name, start_url and display "standalone" are needed for the app to be installable');
   if (!read('js/player/background.js').includes('setActionHandler')) err('background.js: the lock-screen controls (Media Session) are missing');
+  // found by the user on a phone, 2026-11-16: a song on repeat sometimes stopped at its end. A looping song is
+  // looped by the player itself, and no file starts sound with a bare play() whose refusal nobody hears about.
+  const pl = read('js/player/playlist.js'), tr = read('js/player/transport.js');
+  if (!/audio\.loop\s*=/.test(pl) || !/plainAudio\.loop\s*=/.test(pl)) err('playlist.js: "repeat one" must be done with el.loop on both players (applyLoop), not by script when the song ends');
+  if (!/P\.applyLoop\(\)/.test(tr)) err('transport.js: the repeat button must call P.applyLoop()');
+  for (const f of ['js/player/playlist.js', 'js/player/transport.js']){
+    const bare = read(f).split('\n').filter(l => /\.play\(\)/.test(l) && !/safePlay|p = el\.play\(\)/.test(l));
+    if (bare.length) err(`${f}: starts sound with a bare play() (${bare[0].trim()}); use P.safePlay so a refusal while the page is hidden is made up for`);
+  }
+  // iPhone and iPad
+  if (!read('js/core/audio-engine.js').includes("sessionType('playback')")) err('audio-engine.js: the iPhone sound session must be set to "playback", or the silent switch mutes the music');
+  if (!/apple-touch-icon/.test(read('index.html')) || !/apple-mobile-web-app-capable/.test(read('index.html'))) err('index.html: the iPhone Home Screen tags (apple-touch-icon, apple-mobile-web-app-capable) are missing');
+  if (!read('js/main.js').includes('viz-fill') || !read('css/styles.css').includes('.viz-card.viz-fill')) err('the fill-the-window stand-in for fullscreen on iPhone (main.js, styles.css) is missing');
 }
 
 notes.push(`${appJs.length} app scripts, ${buttons.length} modes, version ${appVer}`);

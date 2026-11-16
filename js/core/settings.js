@@ -296,6 +296,7 @@
       openGroup(App.games.isGameMode(App.modes.current) ? 'games' : App.modes.current);
       var fs = document.fullscreenElement || document.webkitFullscreenElement;
       if (fs) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else if (document.getElementById('vizCard').classList.contains('viz-fill')) App.toggleFullscreen();   // the iPhone stand-in (main.js)
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     paintLayoutBar();
