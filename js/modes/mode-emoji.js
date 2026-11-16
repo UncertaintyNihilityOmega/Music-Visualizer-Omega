@@ -19,6 +19,17 @@
     return g.length ? g : ['❤️'];
   }
 
+  // The background follows the theme code too (a pale pink page under a dark
+  // code looked wrong): the theme's own canvas colours while "Follow theme" is on.
+  function bgColors(){
+    var th = App.theme.look;
+    return Cfg.CFG.emoji.followTheme && th ? { bg1: th.bg1, bg2: th.bg2 } : null;
+  }
+  function bubbleRGB(){
+    var th = App.theme.look;
+    return Cfg.CFG.emoji.followTheme && th ? App.util.hexRGB(th.c2).join(',') : '194,98,111';
+  }
+
   function loadPhoto(file){
     if (!file || !/^image\//.test(file.type)) return;
     var fr = new FileReader();
@@ -228,7 +239,7 @@
   function paintBG(c, w, h, k){
     for (var b = 0; b < 26; b++){
       var bx = (b * 137.5) % w, by = ((b * 251.7) % h), br = (8 + (b % 5) * 9) * k;
-      c.fillStyle = 'rgba(194,98,111,' + (0.03 + (b % 4) * 0.012).toFixed(3) + ')';
+      c.fillStyle = 'rgba(' + bubbleRGB() + ',' + (0.03 + (b % 4) * 0.012).toFixed(3) + ')';
       c.beginPath();
       c.arc(bx, by, br, 0, Math.PI * 2);
       c.fill();
@@ -245,7 +256,7 @@
 
   function reset(){ emojiParts = []; kickCd = 0; }
 
-  App.modes.register('emoji', { draw: drawEmoji, paintBG: paintBG, onTap: onTap, reset: reset });
+  App.modes.register('emoji', { draw: drawEmoji, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset });
 
   App.cfg.ACTIONS.photoPick = loadPhoto;
   App.cfg.ACTIONS.photoClear = clearPhoto;
@@ -258,7 +269,7 @@
     bg1: '#FFF7FB', bg2: '#F6DAE5'
   });
   App.cfg.registerSchema({ id: 'emoji', label: 'Emoji', fields: [
-    ['followTheme', 'Use the theme code\'s emoji', 'bool'],
+    ['followTheme', 'Follow theme (emoji set and background)', 'bool'],
     ['set', 'Your emojis (comma separated, quiet to loud)', 'text'],
     ['kickRing', 'Kick drum throws a ring of emoji', 'bool'],
     ['hatSparks', 'Hi-hat sparkles', 'bool'],

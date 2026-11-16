@@ -35,6 +35,19 @@ for (const f of jsFiles){
   catch (e){ err(`${f}: does not parse: ${e.message}`); }
 }
 
+/* 1b. a short name used in a file is defined in that file (found by hand, 2026-11-16: Emoji mode called
+       U.hexRGB without "U = App.util"; it parses, and only fails when that line runs) */
+{
+  const SHORT = { U: 'App.util', Cfg: 'App.cfg', Can: 'App.canvas', Aud: 'App.audio' };
+  for (const f of walk('js', '.js')){
+    const src = read(f);
+    for (const [name, full] of Object.entries(SHORT)){
+      if (new RegExp('(^|[^\\w.$\'"])' + name + '\\.\\w').test(src) && !new RegExp('\\b' + name + '\\s*=').test(src))
+        err(`${f}: uses ${name}.something but never sets ${name} (= ${full})`);
+    }
+  }
+}
+
 /* 2. index.html loads every app script exactly once, and each one exists */
 const html = read('index.html');
 const loaded = [...html.matchAll(/<script\s+src="([^"]+)"/g)].map(m => m[1]);

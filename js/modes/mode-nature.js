@@ -99,6 +99,18 @@
     var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
     return x - Math.floor(x);
   }
+  var branchPaths = [];
+  function drawBranches(){
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (var d = 0; d < branchPaths.length; d++){
+      var bp = branchPaths[d];
+      if (!bp) continue;
+      ctx.strokeStyle = bp.style;
+      ctx.lineWidth = bp.width;
+      ctx.stroke(bp.path);
+    }
+  }
   function branch(x, y, ang, len, wid, depth, seed, id, depthF, bands, maxDepth){
     if (branchBudget-- <= 0) return;
     var reveal = U.clamp01(depthF - depth);
@@ -116,24 +128,32 @@
     var x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L;
     var cx = x + Math.cos(a - 0.13) * L * 0.55, cy = y + Math.sin(a - 0.13) * L * 0.55;
 
-    var LK = curLook;
-    ctx.strokeStyle = LK.trunk ? U.rgba(trunkRGB, (0.4 + reveal * 0.6).toFixed(3))
-                    : 'hsla(' + (26 + natVit * 12) + ',' + (24 + natVit * 18) + '%,' +
-                      (20 + natVit * 10 + depth * 1.5) + '%,' + (0.35 + reveal * 0.6) + ')';
-    ctx.lineWidth = Math.max(0.6 * Can.dpr(), wid * (0.3 + reveal * 0.7));
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    if (LK.branch === 'straight') ctx.lineTo(x2, y2);
+    // Every branch of one depth has the same colour and width, so each depth is
+    // collected into one path and drawn with one stroke after the walk (drawBranches).
+    // Measured 2026-11-16: a full tree was up to 1600 separate strokes, 35 to 50 ms a frame.
+    var LK = curLook, bp = branchPaths[depth];
+    if (!bp){
+      bp = branchPaths[depth] = {
+        path: new Path2D(),
+        style: LK.trunk ? U.rgba(trunkRGB, (0.4 + reveal * 0.6).toFixed(3))
+                        : 'hsla(' + (26 + natVit * 12) + ',' + (24 + natVit * 18) + '%,' +
+                          (20 + natVit * 10 + depth * 1.5) + '%,' + (0.35 + reveal * 0.6) + ')',
+        // a lightning tree is thin: a bolt, not a trunk
+        width: Math.max(0.6 * Can.dpr(), wid * (0.3 + reveal * 0.7) * (LK.branch === 'bolt' ? 0.42 : 1))
+      };
+    }
+    var P2 = bp.path;
+    P2.moveTo(x, y);
+    if (LK.branch === 'straight') P2.lineTo(x2, y2);
     else if (LK.branch === 'bolt'){
       // a lightning tree: each branch has two kinks that jump to new places a few times a second
       var jt = Math.floor(A.t * (5 + A.drive * 9)), px = -Math.sin(a), py = Math.cos(a);
       var j1 = (hashRnd(seed * 3.7 + jt) - 0.5) * L * 0.34, j2 = (hashRnd(seed * 9.1 + jt) - 0.5) * L * 0.34;
-      ctx.lineTo(x + (x2 - x) * 0.33 + px * j1, y + (y2 - y) * 0.33 + py * j1);
-      ctx.lineTo(x + (x2 - x) * 0.66 + px * j2, y + (y2 - y) * 0.66 + py * j2);
-      ctx.lineTo(x2, y2);
+      P2.lineTo(x + (x2 - x) * 0.33 + px * j1, y + (y2 - y) * 0.33 + py * j1);
+      P2.lineTo(x + (x2 - x) * 0.66 + px * j2, y + (y2 - y) * 0.66 + py * j2);
+      P2.lineTo(x2, y2);
     }
-    else ctx.quadraticCurveTo(cx, cy, x2, y2);
-    ctx.stroke();
+    else P2.quadraticCurveTo(cx, cy, x2, y2);
 
     var childReveal = depthF - (depth + 1);
     if (childReveal <= 0.6 || depth >= maxDepth){
@@ -281,9 +301,11 @@
     natTips.length = 0;
     tipsById = {};
     branchBudget = 1600;
+    branchPaths = [];
     ctx.lineCap = 'round';
     branch(w / 2, groundY, -Math.PI / 2, h * 0.235 * (0.72 + natGrowth * 0.5),
            (9 + natGrowth * 13) * k, 0, 1.7, 1, depthF, bands, maxDepth);
+    drawBranches();
 
     /* --- leaves: attached until their lifespan runs out, then they fall --- */
     // a snare shakes a few leaves loose (more of them in a loud passage)

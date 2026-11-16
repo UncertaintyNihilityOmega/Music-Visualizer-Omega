@@ -6,6 +6,9 @@
 - All work is committed and pushed. No lock is left.
 - Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` not run (the analysis did
   not change), browser check at desktop and 375 px with a real song: no errors.
+- After the list: Emoji's background follows the codes; Nature draws its tree in one stroke per depth; a
+  `check.js` rule for short names used but never set; 90 mode-and-code pairs stepped with no error.
+- Not started: item 16 (design pass on the games). The run ended before it; Solarium is first.
 - Run of 2026-11-16 (the user joined it): install and offline (item 4), background play, mode and game
   buttons regrouped, games renamed, Rain / Nature / Clock follow the codes, the Tessa code, the Liquid mode,
   icons on buttons, unused files removed. Details under "Done".
@@ -38,9 +41,9 @@
 9. **Game audit.** Play-test every row of docs/GAME-AUDIT.md and fix what fails: P6 Defense; P7 Survivor;
    P8 Cards + Sandbox. Done when: every row says "confirmed" or "fixed" with the date.
 10. **More themes.** More code words, and theme looks for the modes that have none yet: Ice, Aquatic, Piano
-    (they sit right of the line in the mode row until they do), and the game arenas. Emoji's background does
-    not follow dark themes yet. Done when: every visual mode follows every code.
-11. **Phone pass.** Every page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways
+    (they sit right of the line in the mode row until they do), and the game arenas. Done when: every visual mode follows every code.
+11. **Phone pass.** Measure the two heaviest modes first (Nature with a full tree, Fire's hearth style: about
+    15 ms a frame on the desktop, see engine/README.md) and make them lighter if a phone drops frames. Every page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways
     scroll, microphone over https, folder fallback where the folder API is missing. Done when: a Reader session
     finds nothing blocking.
 12. **Debug pass and release v0.1.0.** Full routine: self-test, check, songtest, every mode for 10 s with two

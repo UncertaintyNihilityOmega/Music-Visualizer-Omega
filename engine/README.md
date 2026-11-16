@@ -95,3 +95,14 @@ in docs/MODES.md.
 - A fault in the sound numbers: add a made-up spectrum to `test.js` that shows it.
 - A fault that needs a real song: add a condition to the `problems` list in `songtest.js`.
 - A fault in structure (a missing file, a wrong order, a stray internet link): add it to `check.js`.
+
+### Timing frames in a hidden pane (found 2026-11-16)
+Stepping frames by hand in a hidden pane does not make the browser draw them: it saves the drawing up and does
+it all at once, so one frame in a few hundred seems to take seconds (6.2 s was seen in Nature) and the average
+is wrong. Two ways to get a number that means something:
+- no read-back: good for comparing light modes (1 to 4 ms a frame), wrong for modes with many shapes;
+- read one pixel after every frame (`ctx.getImageData(0, 0, 1, 1)`): the stalls go, but every frame then pays
+  about 8 ms for the read-back itself (Liquid reads 9.7 ms this way and 1.1 ms without).
+Measured with the read-back, idle song, full part, 583 x 216 canvas: Nature 23.5 ms before the tree was drawn
+one stroke per depth; plain look 19.4; 5 branch levels 12.1; Liquid 9.7. Without the read-back Fire's hearth
+style is the heaviest mode at 15 ms. Real frame rate must be measured with the pane on screen, or on a phone.
