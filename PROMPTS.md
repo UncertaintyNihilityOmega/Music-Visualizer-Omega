@@ -10,11 +10,12 @@ way AGENT-RUN.md describes. Do not use subagents.
 
 ## Scheduled run
 ```
-Music Visualiser Omega: scheduled run. Follow AGENT-RUN.md exactly: check the lock, read ORGANIZER.md and
-ROADMAP.md, check usage, do ONE queue step that is not waiting on the user, run the gates, commit that step's
-files (push only if ROADMAP item 3 is done), update ROADMAP.md, remove the lock. Do not use subagents. If every
-item is waiting on the user, write that in ROADMAP "Now" and stop.
+Music Visualiser Omega: automatic run. Follow AGENT-RUN.md exactly: check the lock, read ORGANIZER.md and
+ROADMAP.md, then loop: check usage, do one queue step that is not waiting on the user, run the gates, commit
+that step's files (push only with a standing approval in ORGANIZER.md), update ROADMAP.md. Stop when the usage
+gate says so or every step left needs the user; then remove the lock. Do not use subagents.
 ```
+The scheduled task `music-visualiser-omega-next-step` stores a longer version of this prompt.
 
 ## A specific item
 ```

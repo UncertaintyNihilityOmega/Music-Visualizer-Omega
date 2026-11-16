@@ -54,6 +54,11 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-15: The work of this plan, when the queue's release item is done, is snapshot **v0.1.0**.
 - 2026-11-15: v1.x will add a large survivor game whose spells are visualisers. Engine not chosen: docs/GAME-PLAN.md.
 - 2026-11-16: Visuals should stay calm in quiet passages and move a lot in active ones (seen in the test videos).
+- 2026-11-16: Gold unit (Basic mode and engine v2) approved. Icon 12 "Bold Layers" chosen.
+- 2026-11-16: v1.x game stays on HTML + JavaScript (no separate engine).
+- 2026-11-16: Old files deleted: `Music_Visualizer-Project.html`, `serve.ps1`.
+- 2026-11-16: Runs may use the preview server, and may do several steps: keep going until the 5-hour meter is
+  at 75% or the weekly one at 95% (AGENT-RUN.md). No agents.
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,
