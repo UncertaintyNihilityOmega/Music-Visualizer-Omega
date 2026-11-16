@@ -50,13 +50,116 @@
       bezelOuter: '#A8CFEE', bezelInner: '#E8F4FF', bezelHighlight: '#FFFFFF', bezelStud: '#F2C879',
       wing: 'rgba(255,255,255,0.92)', wingLine: 'rgba(170,215,255,0.75)',
       bg1: '#DCEEFF', bg2: '#FFFFFF'
+    }},
+    // The skins below share one decoration (stepOrbit): a ring of sound bars
+    // round the face and the theme's own characters drifting past.
+    //   decor: glyphs = what drifts, move = 'rise' | 'fall' | 'inward' | 'arc'
+    omega: { decor: { glyphs: ['Ω', '✦', '✧'], move: 'rise' }, pal: {
+      accent: '#FF5FD2', faceCenter: '#2D1D58', faceMid: '#1A1036', faceEdge: '#0B0618', rim: '#B06BFF',
+      numeral: '#EFE9FF', numeralShadow: 'rgba(0,0,0,0.6)', tick: 'rgba(176,107,255,0.65)',
+      hourHand: '#EFE9FF', minuteHand: '#C9A6FF', secondHand: '#FF5FD2',
+      bezelOuter: '#2B1A55', bezelInner: '#6A45C8', bezelHighlight: '#E2CCFF', bezelStud: '#FF5FD2',
+      bg1: '#171033', bg2: '#06040E'
+    }},
+    newyear: { decor: { glyphs: ['✦', '❄', '✧'], move: 'fall' }, pal: {
+      accent: '#F2C55C', faceCenter: '#1B2B63', faceMid: '#101C46', faceEdge: '#060B22', rim: '#F2C55C',
+      numeral: '#F8E6B0', numeralShadow: 'rgba(0,0,0,0.6)', tick: 'rgba(143,184,255,0.65)',
+      hourHand: '#F8E6B0', minuteHand: '#F2C55C', secondHand: '#8FB8FF',
+      bezelOuter: '#16224F', bezelInner: '#8A6A2C', bezelHighlight: '#FFE9A8', bezelStud: '#8FB8FF',
+      bg1: '#0D1638', bg2: '#03050F'
+    }},
+    halloween: { decor: { glyphs: ['🦇', '👻', '🎃'], move: 'rise' }, pal: {
+      accent: '#FF7A1A', faceCenter: '#3A1C0C', faceMid: '#22100E', faceEdge: '#0B0508', rim: '#FF7A1A',
+      numeral: '#FFB870', numeralShadow: 'rgba(0,0,0,0.7)', tick: 'rgba(155,93,229,0.7)',
+      hourHand: '#FFB870', minuteHand: '#FF7A1A', secondHand: '#7CE04A',
+      bezelOuter: '#24102B', bezelInner: '#5B2E8A', bezelHighlight: '#C9A0F5', bezelStud: '#FF7A1A',
+      bg1: '#1C0F24', bg2: '#050308'
+    }},
+    love: { decor: { glyphs: ['♥'], move: 'rise' }, pal: {
+      accent: '#C2626F', faceCenter: '#FFFFFF', faceMid: '#FDF3EE', faceEdge: '#F3DCD9', rim: '#BD9257',
+      numeral: '#6E1E2E', numeralShadow: 'rgba(110,30,46,0.22)', tick: 'rgba(189,146,87,0.7)',
+      hourHand: '#6E1E2E', minuteHand: '#9B3A4B', secondHand: '#C2626F',
+      bezelOuter: '#BD9257', bezelInner: '#E6C99A', bezelHighlight: '#FFF6E2', bezelStud: '#C2626F',
+      bg1: '#FFF8F3', bg2: '#F1D8D5'
+    }},
+    nihilum: { decor: { glyphs: ['●', '·'], move: 'inward' }, pal: {
+      accent: '#FF9A4A', faceCenter: '#000000', faceMid: '#030204', faceEdge: '#0B0810', rim: '#FF9A4A',
+      numeral: '#D9D4E2', numeralShadow: 'rgba(255,154,74,0.4)', tick: 'rgba(142,124,168,0.6)',
+      hourHand: '#D9D4E2', minuteHand: '#8E7CA8', secondHand: '#FF9A4A',
+      bezelOuter: '#08060B', bezelInner: '#3B2A14', bezelHighlight: '#FFD9A8', bezelStud: '#FF9A4A',
+      bg1: '#06040A', bg2: '#000000'
     }}
   };
+
+  /* ---------- the shared decoration of the theme skins ---------- */
+  var orbit = [];
+  function spawnOrbit(w, h, cx, cy, R, dec, x, y){
+    var p = { g: Math.floor(Math.random() * dec.glyphs.length), age: 0, life: 4 + Math.random() * 4,
+              size: 0.7 + Math.random() * 0.9, ph: Math.random() * 6.283, rot: (Math.random() - 0.5) * 0.6 };
+    if (dec.move === 'inward'){
+      p.a = Math.random() * 6.283; p.r = R * (2.2 + Math.random() * 1.2);
+    } else {
+      p.x = x !== undefined ? x : Math.random() * w;
+      p.y = y !== undefined ? y : (dec.move === 'fall' ? -0.05 * h : 1.05 * h);
+    }
+    orbit.push(p);
+  }
+  function stepOrbit(w, h, cx, cy, R, k, dt, cfg, pal, dec){
+    // ring of sound bars: bass at the top, treble at the bottom, the same on both sides
+    var bands = [A.sub, A.bass, A.lowMid, A.mid, A.high, A.air], N = 72;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(1.5 * k, R * 0.03);
+    for (var i = 0; i < N; i++){
+      var half = i < N / 2 ? i / (N / 2) : (N - i) / (N / 2);        // 0 at the top, 1 at the bottom
+      var bf = half * (bands.length - 1), b0 = Math.floor(bf), b1 = Math.min(bands.length - 1, b0 + 1);
+      var v = bands[b0] + (bands[b1] - bands[b0]) * (bf - b0);
+      v = v * (0.75 + 0.25 * Math.sin(i * 2.4 + A.t * 3));
+      var ang = -Math.PI / 2 + i / N * 6.283, r0 = R * 1.2, r1 = r0 + R * (0.03 + v * 0.5);
+      ctx.strokeStyle = i % 2 ? pal.rim : pal.accent;
+      ctx.globalAlpha = 0.25 + v * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ang) * r0, cy + Math.sin(ang) * r0);
+      ctx.lineTo(cx + Math.cos(ang) * r1, cy + Math.sin(ang) * r1);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // the theme's characters: few when calm, many when the music is big; a hi-hat adds one
+    var max = Math.round((8 + A.drive * 34) * cfg.density);
+    if (orbit.length < max && Math.random() < (0.6 + A.drive * 9) * dt * cfg.density) spawnOrbit(w, h, cx, cy, R, dec);
+    if (A.hatHit > 0.35 && orbit.length < max + 6) spawnOrbit(w, h, cx, cy, R, dec);
+    var speed = (16 + A.drive * 60) * k * cfg.handSpeed;
+    for (var j = orbit.length - 1; j >= 0; j--){
+      var p = orbit[j];
+      p.age += dt;
+      var x, y;
+      if (dec.move === 'inward'){
+        p.r -= speed * 0.9 * dt * (1 + (R * 2.5) / Math.max(R, p.r));
+        p.a += dt * (0.5 + R / Math.max(R * 0.5, p.r));
+        x = cx + Math.cos(p.a) * p.r; y = cy + Math.sin(p.a) * p.r * 0.82;
+        if (p.r < R * 1.02){ orbit.splice(j, 1); continue; }
+      } else {
+        p.y += (dec.move === 'fall' ? 1 : -1) * speed * (0.5 + p.size * 0.5) * dt;
+        p.x += Math.sin(A.t * 0.9 + p.ph) * 14 * k * dt;
+        x = p.x; y = p.y;
+        if (y < -0.1 * h || y > 1.1 * h){ orbit.splice(j, 1); continue; }
+      }
+      if (p.age > p.life * 3){ orbit.splice(j, 1); continue; }
+      var s = (12 + 12 * p.size) * k * (1 + A.kick * 0.35);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, p.age * 1.5) * (0.35 + 0.4 * p.size * 0.6) * (0.6 + cfg.glow * 0.4);
+      ctx.translate(x, y);
+      ctx.rotate(p.rot + Math.sin(A.t + p.ph) * 0.25);
+      ctx.drawImage(Can.glyphSprite(dec.glyphs[p.g], pal.accent), -s / 2, -s / 2, s, s);
+      ctx.restore();
+    }
+  }
   // which of the four skins is on: the user's pick, or with "theme" the one
   // the active theme code asks for (look.clock in themes.js)
   function styleId(){
     var s = Cfg.CFG.clock.style;
-    if (s === 'theme') s = (App.theme.look && App.theme.look.clock) || 'golden';
+    if (s === 'theme') s = (App.theme.look && App.theme.look.clock) || 'omega';
     return THEMES[s] ? s : 'golden';
   }
   function theme(){ return THEMES[styleId()]; }
@@ -674,7 +777,9 @@
     var t = theme();
     Can.backdrop(1);
     var style = styleId();
-    if (style === 'golden'){ paintGoldenAmbience(w, h, k); stepGears(w, h, k, dt, cfg, t.pal); stepSand(w, h, k, dt, cfg); }
+    var R0 = Math.min(w, h * 0.92) * 0.34;
+    if (t.decor) stepOrbit(w, h, w / 2, h * 0.52, R0, k, dt, cfg, t.pal, t.decor);
+    else if (style === 'golden'){ paintGoldenAmbience(w, h, k); stepGears(w, h, k, dt, cfg, t.pal); stepSand(w, h, k, dt, cfg); }
     else if (style === 'solarpunk'){ stepSolarLive(w, h, k, dt, cfg); stepSolarParticles(w, h, k, dt, cfg); }
     else if (style === 'cyberpunk'){ stepCyberLive(w, h, k, dt, cfg); stepCyberParticles(w, h, k, dt, cfg); }
     else { stepClouds(w, h, k, dt, cfg); stepHeavenParticles(w, h, k, dt, cfg); }
@@ -686,9 +791,14 @@
   }
   function onTap(x, y){
     var style = styleId();
-    var ringColor = { golden: '#D4AF37', solarpunk: '#3E7C4C', cyberpunk: '#FF2E9A', heaven: '#8FCFFF' }[style];
+    var ringColor = { golden: '#D4AF37', solarpunk: '#3E7C4C', cyberpunk: '#FF2E9A', heaven: '#8FCFFF' }[style] || theme().pal.accent;
     App.taps.spawnRing(x, y, ringColor);
     var k = Can.dpr();
+    if (theme().decor){
+      for (var o = 0; o < 6; o++) spawnOrbit(canvas.width, canvas.height, canvas.width / 2, canvas.height * 0.52, 1, theme().decor,
+                                             x + (Math.random() - 0.5) * 40 * k, y + (Math.random() - 0.5) * 40 * k);
+      return;
+    }
     if (style === 'golden'){
       for (var i = 0; i < sand.length; i++){
         var g = sand[i];
@@ -702,14 +812,14 @@
       for (var m = 0; m < 10; m++) spawnMote(x, y);
     }
   }
-  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; tickKick = 0; }
+  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; tickKick = 0; }
   Can.addResizeHook(function(){ sandReady = false; cloudsReady = false; });
 
   App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, fx: 0.4 });
 
   App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true });
   App.cfg.registerSchema({ id: 'clock', label: 'Clock', fields: [
-    ['style', 'Style', 'layout', ['theme', 'golden', 'solarpunk', 'cyberpunk', 'heaven']],
+    ['style', 'Style', 'layout', ['theme'].concat(Object.keys(THEMES))],
     ['kickTick', 'Second hand jumps on the kick', 'bool'],
     ['chimes', 'Rings of light when the music swells', 'bool'],
     ['density', 'Decoration density', 'range', 0.3, 2, 0.05],

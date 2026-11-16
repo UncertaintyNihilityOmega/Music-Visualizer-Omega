@@ -1,4 +1,14 @@
-/* ---------- Nature (was "Tree"): stands still, grows, sheds ---------- */
+/* ---------- Nature (was "Tree"): stands still, grows, sheds ----------
+   The tree follows the theme code (look.nature in themes.js):
+     trunk, leaf, bloom   colours;  bloomChance  share of leaves that are blossoms (1 = a cherry tree)
+     bg1, bg2             sky and ground;  hill = colour of the hills and ground
+     dark     true = a night scene: stars and fireflies always, no sun
+     glow     true = leaves give off light
+     branch   'curve' (wood) | 'straight' (drawn with a ruler) | 'bolt' (jagged, flickers like lightning)
+     leafShape 'leaf' | 'square' | 'spark'
+     shed     pieces a second that fall from the tree on their own (petals, snow)
+     rainbow  true = each leaf has its own hue;  fly = firefly colour "r,g,b"
+   "Follow theme" off = the user's own colours on a plain green tree. */
 (function(){
   'use strict';
   var Can = App.canvas, Aud = App.audio, Cfg = App.cfg, U = App.util;
@@ -9,18 +19,31 @@
   var natTips = [], tipsById = {}, branchBudget = 0, leafSeq = 0;
   var natWind = 0, natDay = 0.6, fireflies = [], stars = null;
 
+  var OWN = { branch: 'curve', leafShape: 'leaf', fly: '236,255,150', hill: '#8CAA8C' };
+  function look(){
+    var cfg = Cfg.CFG.nature, th = App.theme && App.theme.look;
+    if (cfg.followTheme && th && th.nature) return th.nature;
+    OWN.leaf = cfg.leafColor; OWN.bloom = cfg.bloomColor; OWN.bloomChance = cfg.bloomChance;
+    OWN.bg1 = cfg.bg1; OWN.bg2 = cfg.bg2; OWN.trunk = null;
+    return OWN;
+  }
+  function bgColors(){ var L = look(); return { bg1: L.bg1, bg2: L.bg2 }; }
+
   // Day and night follow how big the passage is, slowly: a long calm
   // stretch brings dusk and stars, a loud one brings the day back.
   function drawSky(w, h, k, dt){
     var cfg = Cfg.CFG.nature;
     natDay = cfg.dayNight ? U.env(natDay, A.drive, 0.22, 0.1, dt) : 1;
-    var night = U.clamp01(1 - natDay * 1.5);
+    var L = look();
+    var night = L.dark ? 1 : U.clamp01(1 - natDay * 1.5);
     if (night > 0.01){
-      var g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, 'rgba(10,14,44,' + (night * 0.78).toFixed(3) + ')');
-      g.addColorStop(1, 'rgba(34,26,60,' + (night * 0.6).toFixed(3) + ')');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
+      if (!L.dark){
+        var g = ctx.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, 'rgba(10,14,44,' + (night * 0.78).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(34,26,60,' + (night * 0.6).toFixed(3) + ')');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+      }
       if (!stars){
         stars = [];
         for (var i = 0; i < 46; i++) stars.push([(i * 0.618034) % 1, ((i * 0.754877) % 1) * 0.62, 0.5 + ((i * 3.3) % 1), (i * 1.7) % 6.283]);
@@ -59,14 +82,19 @@
       var a = Math.sin(ff.age / ff.life * Math.PI) * (0.55 + 0.45 * Math.sin(A.t * 6 + ff.ph)) * Math.min(1, night * 2);
       var r = 7 * k;
       var g = ctx.createRadialGradient(ff.x, ff.y, 0, ff.x, ff.y, r);
-      g.addColorStop(0, 'rgba(236,255,150,' + a.toFixed(3) + ')');
-      g.addColorStop(0.3, 'rgba(190,240,90,' + (a * 0.5).toFixed(3) + ')');
-      g.addColorStop(1, 'rgba(190,240,90,0)');
+      var fly = look().fly || '236,255,150';
+      g.addColorStop(0, 'rgba(' + fly + ',' + a.toFixed(3) + ')');
+      g.addColorStop(0.3, 'rgba(' + fly + ',' + (a * 0.45).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(' + fly + ',0)');
       ctx.fillStyle = g;
       ctx.fillRect(ff.x - r, ff.y - r, r * 2, r * 2);
     }
   }
 
+  function flowerHue(){
+    var hs = look().flowerHues || [340, 48, 268, 12, 190];
+    return hs[Math.floor(Math.random() * hs.length)] + Math.random() * 16;
+  }
   function hashRnd(seed){
     var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
     return x - Math.floor(x);
@@ -88,12 +116,23 @@
     var x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L;
     var cx = x + Math.cos(a - 0.13) * L * 0.55, cy = y + Math.sin(a - 0.13) * L * 0.55;
 
-    ctx.strokeStyle = 'hsla(' + (26 + natVit * 12) + ',' + (24 + natVit * 18) + '%,' +
+    var LK = curLook;
+    ctx.strokeStyle = LK.trunk ? U.rgba(trunkRGB, (0.4 + reveal * 0.6).toFixed(3))
+                    : 'hsla(' + (26 + natVit * 12) + ',' + (24 + natVit * 18) + '%,' +
                       (20 + natVit * 10 + depth * 1.5) + '%,' + (0.35 + reveal * 0.6) + ')';
     ctx.lineWidth = Math.max(0.6 * Can.dpr(), wid * (0.3 + reveal * 0.7));
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.quadraticCurveTo(cx, cy, x2, y2);
+    if (LK.branch === 'straight') ctx.lineTo(x2, y2);
+    else if (LK.branch === 'bolt'){
+      // a lightning tree: each branch has two kinks that jump to new places a few times a second
+      var jt = Math.floor(A.t * (5 + A.drive * 9)), px = -Math.sin(a), py = Math.cos(a);
+      var j1 = (hashRnd(seed * 3.7 + jt) - 0.5) * L * 0.34, j2 = (hashRnd(seed * 9.1 + jt) - 0.5) * L * 0.34;
+      ctx.lineTo(x + (x2 - x) * 0.33 + px * j1, y + (y2 - y) * 0.33 + py * j1);
+      ctx.lineTo(x + (x2 - x) * 0.66 + px * j2, y + (y2 - y) * 0.66 + py * j2);
+      ctx.lineTo(x2, y2);
+    }
+    else ctx.quadraticCurveTo(cx, cy, x2, y2);
     ctx.stroke();
 
     var childReveal = depthF - (depth + 1);
@@ -118,35 +157,58 @@
              seed * 1.618 + i * 2.71 + 0.31, id * 4 + i + 1, depthF, bands, maxDepth);
     }
   }
+  var curLook = OWN, trunkRGB = [90, 60, 40], leafRGB = [95, 163, 46], bloomRGB = [232, 85, 127];
   function drawLeafShape(l, k, alpha){
-    var cfg = Cfg.CFG.nature;
+    var LK = curLook;
     var s = l.size;
     ctx.save();
     ctx.translate(l.x, l.y);
     ctx.rotate(l.ang);
+    if (LK.glow){
+      // light given off by the leaf: a wide faint disc under it
+      var gc = l.bloom ? bloomRGB : leafRGB;
+      ctx.fillStyle = LK.rainbow ? 'hsla(' + (l.hue || 0) + ',90%,65%,' + (alpha * 0.16).toFixed(3) + ')' : U.rgba(gc, (alpha * 0.16).toFixed(3));
+      ctx.beginPath();
+      ctx.arc(s * 0.5, 0, s * 2.1, 0, 6.283);
+      ctx.fill();
+    }
     if (l.bloom){
-      var bc = U.hexRGB(cfg.bloomColor);
+      var bc = bloomRGB;
       ctx.fillStyle = U.rgba(bc, alpha.toFixed(3));
+      // five petals in one path: a cherry tree is 200 blossoms, so one fill each, not five
+      ctx.beginPath();
       for (var p = 0; p < 5; p++){
-        var pa = p * 1.2566;
-        ctx.beginPath();
-        ctx.ellipse(Math.cos(pa) * s * 0.5, Math.sin(pa) * s * 0.5, s * 0.46, s * 0.3, pa, 0, 6.283);
-        ctx.fill();
+        var pa = p * 1.2566, ex = Math.cos(pa) * s * 0.5, ey = Math.sin(pa) * s * 0.5;
+        ctx.moveTo(ex + Math.cos(pa) * s * 0.46, ey + Math.sin(pa) * s * 0.46);
+        ctx.ellipse(ex, ey, s * 0.46, s * 0.3, pa, 0, 6.283);
       }
+      ctx.fill();
       ctx.fillStyle = 'rgba(255,222,130,' + alpha.toFixed(3) + ')';
       ctx.beginPath();
       ctx.arc(0, 0, s * 0.2, 0, 6.283);
       ctx.fill();
     } else {
-      var lc = U.hexRGB(cfg.leafColor);
-      var wilt = l.life > 0 ? U.clamp01(l.age / l.life) : 0;
+      var lc = leafRGB;
+      var wilt = LK.glow ? 0 : (l.life > 0 ? U.clamp01(l.age / l.life) : 0);
       var r = Math.round(U.lerp(lc[0], 150, wilt * 0.8)),
           g = Math.round(U.lerp(lc[1], 96, wilt * 0.8)),
           b = Math.round(U.lerp(lc[2], 40, wilt * 0.8));
-      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(3) + ')';
-      ctx.beginPath();
-      ctx.ellipse(s * 0.7, 0, s, s * 0.42, 0, 0, 6.283);
-      ctx.fill();
+      ctx.fillStyle = LK.rainbow ? 'hsla(' + (l.hue || 0) + ',85%,58%,' + alpha.toFixed(3) + ')'
+                                 : 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(3) + ')';
+      if (LK.leafShape === 'square'){
+        ctx.fillRect(s * 0.1, -s * 0.5, s, s);
+      } else if (LK.leafShape === 'spark'){
+        // a four-pointed spark
+        ctx.beginPath();
+        ctx.moveTo(s * 1.5, 0); ctx.lineTo(s * 0.72, s * 0.2); ctx.lineTo(s * 0.5, s); ctx.lineTo(s * 0.28, s * 0.2);
+        ctx.lineTo(-s * 0.5, 0); ctx.lineTo(s * 0.28, -s * 0.2); ctx.lineTo(s * 0.5, -s); ctx.lineTo(s * 0.72, -s * 0.2);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(s * 0.7, 0, s, s * 0.42, 0, 0, 6.283);
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
@@ -193,6 +255,11 @@
   function drawNature(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.nature;
     Can.backdrop(1);
+    var LK = curLook = look();
+    if (LK.trunk) trunkRGB = U.hexRGB(LK.trunk);
+    leafRGB = U.hexRGB(LK.leaf);
+    bloomRGB = U.hexRGB(LK.bloom);
+    var bloomChance = LK.bloomChance === undefined ? cfg.bloomChance : LK.bloomChance;
     var night = drawSky(w, h, k, dt);
 
     // Wind follows the balance of treble against the middle (like Rain's
@@ -233,7 +300,7 @@
       if (!tip || l.age > l.life){
         if (natFalling.length > 110) natFalling.shift();
         natFalling.push({
-          x: l.x, y: l.y, ang: l.ang, size: l.size, bloom: l.bloom, age: 0, life: 1,
+          x: l.x, y: l.y, ang: l.ang, size: l.size, bloom: l.bloom, hue: l.hue, age: 0, life: 1,
           vx: (Math.random() - 0.5) * 26 * k, vy: (10 + Math.random() * 20) * k,
           vr: (Math.random() - 0.5) * 2.4, fade: 1
         });
@@ -257,9 +324,20 @@
         natLeaves.push({
           id: t2.id, x: t2.x, y: t2.y, ang: t2.a, age: 0,
           life: cfg.leafLife * (0.6 + Math.random() * 0.8),
-          size: (4 + Math.random() * 6) * k * cfg.leafSize,
-          bloom: Math.random() < cfg.bloomChance * U.clamp01(natVit * 1.6)
+          size: (4 + Math.random() * 6) * k * cfg.leafSize, hue: (t2.id * 47) % 360,
+          bloom: Math.random() < (bloomChance >= 1 ? 1 : bloomChance * U.clamp01(natVit * 1.6))
         });
+      }
+    }
+    // the theme's own slow fall (cherry petals, snow): more of it when the music is big
+    if (LK.shed && natTips.length && natFalling.length < 110){
+      var nShed = LK.shed * (0.4 + A.drive * 1.6) * dt;
+      nShed = Math.floor(nShed) + (Math.random() < nShed % 1 ? 1 : 0);
+      for (var sd = 0; sd < nShed; sd++){
+        var st2 = natTips[Math.floor(Math.random() * natTips.length)];
+        natFalling.push({ x: st2.x, y: st2.y, ang: Math.random() * 6.283, size: (2.5 + Math.random() * 3.5) * k * cfg.leafSize,
+                          bloom: bloomChance >= 1, hue: (st2.id * 47) % 360, age: 0, life: 1,
+                          vx: (Math.random() - 0.5) * 30 * k, vy: (8 + Math.random() * 16) * k, vr: (Math.random() - 0.5) * 3, fade: 1 });
       }
     }
     for (var fi = natFalling.length - 1; fi >= 0; fi--){
@@ -279,7 +357,7 @@
         natFlowers.push({
           x: w * (0.04 + Math.random() * 0.92),
           size: (3 + Math.random() * 4) * k,
-          hue: [340, 48, 268, 12, 190][Math.floor(Math.random() * 5)] + Math.random() * 16,
+          hue: flowerHue(),
           type: Math.floor(Math.random() * 3),
           petals: 5 + Math.floor(Math.random() * 3),
           rot: Math.random() * 6.283,
@@ -303,12 +381,15 @@
   }
 
   function paintBG(c, w, h, k){
-    var sun = c.createRadialGradient(w * 0.78, h * 0.18, 0, w * 0.78, h * 0.18, w * 0.32);
-    sun.addColorStop(0, 'rgba(255,238,190,0.55)');
-    sun.addColorStop(1, 'rgba(255,238,190,0)');
-    c.fillStyle = sun;
-    c.fillRect(0, 0, w, h);
-    c.fillStyle = 'rgba(140,170,140,0.16)';   // far hills
+    var L = look(), hill = U.hexRGB(L.hill || '#8CAA8C');
+    if (!L.dark){
+      var sun = c.createRadialGradient(w * 0.78, h * 0.18, 0, w * 0.78, h * 0.18, w * 0.32);
+      sun.addColorStop(0, 'rgba(255,238,190,0.55)');
+      sun.addColorStop(1, 'rgba(255,238,190,0)');
+      c.fillStyle = sun;
+      c.fillRect(0, 0, w, h);
+    }
+    c.fillStyle = U.rgba(hill, L.dark ? 0.3 : 0.16);   // far hills
     c.beginPath();
     c.moveTo(0, h * 0.82);
     c.quadraticCurveTo(w * 0.25, h * 0.66, w * 0.5, h * 0.8);
@@ -317,7 +398,7 @@
     c.lineTo(0, h);
     c.closePath();
     c.fill();
-    c.fillStyle = 'rgba(120,150,90,0.22)';    // near ground
+    c.fillStyle = U.rgba(hill, L.dark ? 0.5 : 0.24);    // near ground
     c.beginPath();
     c.moveTo(0, h - 14 * k);
     c.quadraticCurveTo(w * 0.5, h - 26 * k, w, h - 14 * k);
@@ -330,12 +411,12 @@
   // Touch: shakes leaves and blossoms loose, and plants a flower where you touched
   function onTap(x, y){
     var k = Can.dpr(), cfg = Cfg.CFG.nature;
-    App.taps.spawnRing(x, y, '#9AD46A');
+    App.taps.spawnRing(x, y, look().leaf);
     for (var lf = 0; lf < 9; lf++){
       natFalling.push({
         x: x + (Math.random() - 0.5) * 46 * k, y: y + (Math.random() - 0.5) * 30 * k,
         ang: Math.random() * 6.283, size: (3.5 + Math.random() * 5) * k * cfg.leafSize,
-        bloom: Math.random() < 0.4, age: 0, life: 1,
+        bloom: Math.random() < Math.max(0.4, look().bloomChance || 0), hue: Math.random() * 360, age: 0, life: 1,
         vx: (Math.random() - 0.5) * 40 * k, vy: (8 + Math.random() * 24) * k,
         vr: (Math.random() - 0.5) * 2.6, fade: 1
       });
@@ -343,7 +424,7 @@
     if (cfg.flowers){
       natFlowers.push({
         x: x, size: (4 + Math.random() * 4) * k,
-        hue: [340, 48, 268, 12, 190][Math.floor(Math.random() * 5)] + Math.random() * 16,
+        hue: flowerHue(),
         type: Math.floor(Math.random() * 3), petals: 5 + Math.floor(Math.random() * 3),
         rot: Math.random() * 6.283, bend: (Math.random() - 0.5) * 0.8,
         age: 0, life: cfg.flowerLife * (0.8 + Math.random() * 0.6), scale: 0, alpha: 0
@@ -353,11 +434,11 @@
 
   Can.addResizeHook(function(){ natFlowers = []; });
 
-  App.modes.register('nature', { draw: drawNature, paintBG: paintBG, onTap: onTap, fx: 0.35,
+  App.modes.register('nature', { draw: drawNature, paintBG: paintBG, bgColors: bgColors, onTap: onTap, fx: 0.35,
                                  reset: function(){ fireflies = []; } });
 
   App.cfg.registerDefaults('nature', {
-    growth: 1, decay: 1, depth: 8, angle: 1, ratio: 1, sway: 0, wind: 0.6,
+    followTheme: true, growth: 1, decay: 1, depth: 8, angle: 1, ratio: 1, sway: 0, wind: 0.6,
     dayNight: true, fireflies: true, snareLeaves: true,
     leafLife: 9, leafSize: 1, leafColor: '#5FA32E', leafMax: 200, leafRate: 1,
     bloomChance: 0.3, bloomColor: '#E8557F',
@@ -365,6 +446,7 @@
     bg1: '#E7F0F7', bg2: '#F9F0E1'
   });
   App.cfg.registerSchema({ id: 'nature', label: 'Nature', fields: [
+    ['followTheme', 'Follow theme (the tree, its colours and the sky)', 'bool'],
     ['growth', 'Growth speed', 'range', 0.2, 3, 0.05],
     ['decay', 'Die-back speed', 'range', 0.2, 3, 0.05],
     ['depth', 'Max branch levels', 'range', 3, 9, 1],
@@ -392,5 +474,6 @@
   // Tree -> Nature rename, so it silently never fired.
   App.cfg.onGroupChange('nature', function(key){
     if (key === 'depth' || key === 'ratio' || key === 'angle' || key === null) natLeaves = [];
+    if (key === 'followTheme' || key === null) App.canvas.invalidateBG();
   });
 })();

@@ -105,7 +105,7 @@ try {
     if (!t.look || !LAYOUTS.includes(t.look.layout)) err(`theme "${id}": look.layout must be one of ${LAYOUTS.join(', ')}`);
     // Fire's look: null (the user's own colours) or four colours; the hearth must be dark, because
     // the flames are added light and vanish on a pale background
-    if (t.look && t.look.fire !== null){
+    if (t.look && t.look.fire){
       const f = t.look.fire;
       const styles = (/var STYLE_IDS = \[([^\]]*)\]/.exec(read('js/modes/mode-fire.js')) || [, ''])[1].replace(/['\s]/g, '').split(',');
       if (f && f.style && !styles.includes(f.style)) err(`theme "${id}": look.fire.style "${f.style}" is not a style mode-fire.js knows (${styles.join(', ')})`);
@@ -118,6 +118,24 @@ try {
         }
       }
     }
+    // Rain, Nature and Clock follow every theme too (user, 2026-11-16: a code must change more than colours)
+    const hex = v => /^#[0-9a-f]{6}$/i.test(v || '');
+    const R = t.look && t.look.rain, N = t.look && t.look.nature;
+    if (!R) err(`theme "${id}": look.rain is missing`);
+    else {
+      for (const k of ['color', 'bolt', 'bg1', 'bg2']) if (!hex(R[k])) err(`theme "${id}": look.rain.${k} must be a #rrggbb colour`);
+      if (!['streak', 'snow', 'glyph'].includes(R.shape)) err(`theme "${id}": look.rain.shape must be streak, snow or glyph`);
+      if (R.shape === 'glyph' && !(R.glyphs && R.glyphs.length)) err(`theme "${id}": look.rain needs glyphs`);
+    }
+    if (!N) err(`theme "${id}": look.nature is missing`);
+    else {
+      for (const k of ['trunk', 'leaf', 'bloom', 'hill', 'bg1', 'bg2']) if (!hex(N[k])) err(`theme "${id}": look.nature.${k} must be a #rrggbb colour`);
+      if (!['curve', 'straight', 'bolt'].includes(N.branch)) err(`theme "${id}": look.nature.branch must be curve, straight or bolt`);
+      if (!['leaf', 'square', 'spark'].includes(N.leafShape)) err(`theme "${id}": look.nature.leafShape must be leaf, square or spark`);
+    }
+    const clockSrc = read('js/modes/mode-clock.js');
+    if (!t.look || !new RegExp('\\n    ' + t.look.clock + ': \\{').test(clockSrc)) err(`theme "${id}": look.clock "${t.look && t.look.clock}" is not a skin in mode-clock.js`);
+    if (!t.look || !t.look.fire) err(`theme "${id}": look.fire is missing (every theme, the default too, gives Fire a form)`);
     if (!t.codes || !t.codes.length) err(`theme "${id}": has no code word`);
     for (const c of t.codes || []){
       if (seen[norm(c)]) err(`themes "${seen[norm(c)]}" and "${id}" share the code "${c}"`);

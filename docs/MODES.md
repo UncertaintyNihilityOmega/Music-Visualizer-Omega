@@ -131,6 +131,22 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   swells; the four skins follow the theme code ("theme" is the default style).
 - Ideas left: tick exactly on the beat once a tempo is known (needs the song map, ROADMAP 6).
 
+## Theme looks (2026-11-16)
+Every theme code gives these modes a form of their own, not only colours. The tables are in `js/core/themes.js`
+(`look.rain`, `look.nature`, `look.clock`, `look.fire`); the fields are listed at the top of each mode file, and
+`engine/check.js` fails when a theme lacks one. Modes that follow the codes sit left of the line in the mode row.
+
+| Code | Rain | Nature | Clock | Fire |
+| --- | --- | --- | --- | --- |
+| Omega (default) | violet night rain | glowing violet tree at night | violet skin, Ω drifting | violet hearth |
+| New Year | snow | frosted tree, gold lights, snow | midnight and gold, snowflakes | fireworks |
+| Halloween | bats, leaves, spiders | dead tree, orange leaves | orange and purple, bats | cauldron |
+| Love | hearts | cherry tree shedding petals | cream and rose, hearts | candles |
+| Solarpunk | sun shower | green tree, yellow blossom | its own skin (leaves) | sun |
+| Cyberpunk | falling 1s and 0s | neon tree of straight lines, square leaves | its own skin (grid) | pixels |
+| Decensus Ad Nihilum | rain that rises | pale tree with embers | black face, dots spiral in | vortex |
+| Ascensus Ad Incertum | rainbow rain | rainbow tree | heaven skin | aurora |
+
 ## Games (Undarum, Artificium, Dungeon of Echoes, Solarium; once Survivor, Defense, Cards, Sandbox)
 - Listen to: `level` (enemy health and speed), the spectrum (background), `punch`.
 - Ideas: waves and bosses placed by the song map instead of a timer (the first step toward the v1.x game);

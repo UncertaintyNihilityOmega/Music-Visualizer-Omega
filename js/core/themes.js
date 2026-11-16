@@ -22,11 +22,13 @@
               and how the other modes follow the theme:
                 digital     String: the strings move in square steps
                 emoji       Emoji: the set to use, quiet to loud (null = the user's own)
-                clock       Clock: which of its four skins to wear
+                clock       Clock: which of its skins to wear (the table at the top of mode-clock.js)
+                rain        Rain: what falls and its colours (fields listed at the top of mode-rain.js)
+                nature      Nature: the tree, its leaves and the sky (fields at the top of mode-nature.js)
                 fire        Fire: { style, warm, cool, bg1, bg2 }: style = one of the forms listed at
                             the top of mode-fire.js (candles, sun, vortex...), then flame colour, hot core colour and
                             the hearth (always dark: the flames are added light), plus
-                            rainbow: true for a different hue per flame. null = the user's own
+                            rainbow: true for a different hue per flame
    ========================================================================= */
 (function(){
   'use strict';
@@ -41,8 +43,11 @@
               accent: '#B06BFF', accent2: '#FF5FD2', accentRgb: '176,107,255', line: 'rgba(176,107,255,.28)',
               onAccent: '#FFFFFF', shadow: '0 16px 34px rgba(0,0,0,.42)' },
       look: { c1: '#6A5CFF', c2: '#FF5FD2', bg1: '#171033', bg2: '#06040E', dark: true, layout: 'mirror', glyphs: null,
-              emoji: null, clock: 'golden',
-              fire: null }
+              emoji: null, clock: 'omega',
+              rain: { shape: 'streak', color: '#B79CFF', bolt: '#FF8FE6', bg1: '#1A1238', bg2: '#07050F' },
+              nature: { trunk: '#7D62C9', leaf: '#C77DFF', bloom: '#FF5FD2', bloomChance: 0.35, glow: true, dark: true, branch: 'curve', leafShape: 'leaf',
+                        hill: '#3A2A78', fly: '255,150,235', flowerHues: [270, 300, 320, 250], bg1: '#171033', bg2: '#06040E' },
+              fire: { style: 'hearth', warm: '#B24BFF', cool: '#FF5FD2', bg1: '#171033', bg2: '#06040E' } }
     },
     newyear: {
       codes: ['new year', 'newyear', 'happy new year'],
@@ -52,7 +57,10 @@
               accent: '#F2C55C', accent2: '#8FB8FF', accentRgb: '242,197,92', line: 'rgba(242,197,92,.3)',
               onAccent: '#1A1403', shadow: '0 16px 34px rgba(0,0,0,.45)' },
       look: { c1: '#8FB8FF', c2: '#F2C55C', bg1: '#0D1638', bg2: '#03050F', dark: true, layout: 'rise', glyphs: ['✦', '❄', '✧'],
-              emoji: ['✨', '❄️', '🥂', '🎉', '🎆'], clock: 'golden',
+              emoji: ['✨', '❄️', '🥂', '🎉', '🎆'], clock: 'newyear',
+              rain: { shape: 'snow', fall: 0.3, color: '#F4F1E4', bolt: '#F2C55C', bg1: '#0D1638', bg2: '#03050F' },
+              nature: { trunk: '#DDE6F7', leaf: '#F2C55C', bloom: '#8FB8FF', bloomChance: 0.3, glow: true, dark: true, branch: 'curve', leafShape: 'spark',
+                        shed: 7, hill: '#C9D6F2', fly: '255,230,150', flowerHues: [45, 215], bg1: '#0D1638', bg2: '#03050F' },
               fire: { style: 'fireworks', warm: '#E08A14', cool: '#8FB8FF', bg1: '#0D1638', bg2: '#03050F' } }
     },
     halloween: {
@@ -63,7 +71,10 @@
               accent: '#FF7A1A', accent2: '#9B5DE5', accentRgb: '255,122,26', line: 'rgba(255,122,26,.3)',
               onAccent: '#1B0D02', shadow: '0 16px 34px rgba(0,0,0,.5)' },
       look: { c1: '#9B5DE5', c2: '#FF7A1A', bg1: '#1C0F24', bg2: '#050308', dark: true, layout: 'mirror', glyphs: ['🎃', '👻', '🦇'],
-              emoji: ['🕸️', '🦇', '👻', '🎃', '💀'], clock: 'golden',
+              emoji: ['🕸️', '🦇', '👻', '🎃', '💀'], clock: 'halloween',
+              rain: { shape: 'glyph', glyphs: ['🦇', '🍂', '🕷️'], spin: true, fall: 0.5, color: '#FF7A1A', bolt: '#7CE04A', bg1: '#1C0F24', bg2: '#050308' },
+              nature: { trunk: '#0A0608', leaf: '#FF7A1A', bloom: '#9B5DE5', bloomChance: 0.12, dark: true, branch: 'straight', leafShape: 'leaf',
+                        shed: 2, hill: '#120A16', fly: '255,150,60', flowerHues: [25, 275], bg1: '#3A1E4A', bg2: '#0B0610' },
               fire: { style: 'cauldron', warm: '#58D82C', cool: '#9B5DE5', bg1: '#1C0F24', bg2: '#050308' } }
     },
     love: {
@@ -74,7 +85,10 @@
               accent: '#6E1E2E', accent2: '#C2626F', accentRgb: '194,98,111', line: 'rgba(189,146,87,.35)',
               onAccent: '#FDF6F0', shadow: '0 16px 34px rgba(110,30,46,.16)' },
       look: { c1: '#BD9257', c2: '#C2626F', bg1: '#FFF8F3', bg2: '#F1D8D5', dark: false, layout: 'mirror', glyphs: ['♥'],
-              emoji: ['✨', '💕', '❤️', '💖', '🌟'], clock: 'golden',
+              emoji: ['✨', '💕', '❤️', '💖', '🌟'], clock: 'love',
+              rain: { shape: 'glyph', glyphs: ['♥'], spin: true, fall: 0.4, color: '#C2626F', bolt: '#BD9257', bg1: '#FFF8F3', bg2: '#F1D8D5' },
+              nature: { trunk: '#4A2A2A', leaf: '#F7B6C8', bloom: '#F58FB0', bloomChance: 1, branch: 'curve', leafShape: 'leaf',
+                        shed: 9, hill: '#E7A6B4', fly: '255,190,210', flowerHues: [335, 350, 20], bg1: '#FCE7EC', bg2: '#FFF6EF' },
               fire: { style: 'candles', warm: '#FF3D6E', cool: '#FFB36B', bg1: '#2A0E16', bg2: '#0C0407' } }
     },
     solarpunk: {
@@ -86,6 +100,9 @@
               onAccent: '#FBFAEC', shadow: '0 16px 34px rgba(47,90,50,.16)' },
       look: { c1: '#2F7D4A', c2: '#E0A82E', bg1: '#FFFBE6', bg2: '#DDEFC6', dark: false, layout: 'rise', glyphs: ['🌱', '🌿', '🌻'],
               emoji: ['🌱', '🍃', '🌿', '🌻', '☀️'], clock: 'solarpunk',
+              rain: { shape: 'streak', color: '#2F7D4A', bolt: '#E0A82E', bg1: '#FFF4C4', bg2: '#DDEFC6' },
+              nature: { trunk: '#6B4A2A', leaf: '#3FA34D', bloom: '#F2C230', bloomChance: 0.45, branch: 'curve', leafShape: 'leaf',
+                        hill: '#6FAE5A', fly: '236,255,150', flowerHues: [48, 30, 330, 190], bg1: '#DFF3FF', bg2: '#F5F3C8' },
               fire: { style: 'sun', warm: '#E8B01E', cool: '#4FCB62', bg1: '#12260F', bg2: '#040A04' } }
     },
     cyberpunk: {
@@ -98,6 +115,9 @@
               font: '"Cascadia Mono","Consolas","SF Mono","Menlo",monospace' },
       look: { c1: '#00F0FF', c2: '#F6FF4D', bg1: '#070C14', bg2: '#010203', dark: true, layout: 'rise', glyphs: ['1', '0'],
               digital: true, emoji: ['💾', '🔌', '👾', '🤖', '⚡'], clock: 'cyberpunk',
+              rain: { shape: 'glyph', glyphs: ['1', '0'], fall: 0.85, color: '#00F0FF', bolt: '#FF00AA', bg1: '#070C14', bg2: '#010203' },
+              nature: { trunk: '#00F0FF', leaf: '#FF00AA', bloom: '#F6FF4D', bloomChance: 0.2, glow: true, dark: true, branch: 'straight', leafShape: 'square',
+                        hill: '#0B3A46', fly: '246,255,77', flowerHues: [185, 320, 62], bg1: '#070C14', bg2: '#010203' },
               fire: { style: 'pixels', warm: '#00C8F0', cool: '#FF00AA', bg1: '#070C14', bg2: '#010203' } }
     },
     nihilum: {
@@ -108,7 +128,10 @@
               accent: '#8E7CA8', accent2: '#FF9A4A', accentRgb: '142,124,168', line: 'rgba(142,124,168,.26)',
               onAccent: '#08060B', shadow: '0 16px 40px rgba(0,0,0,.8)' },
       look: { c1: '#FF9A4A', c2: '#FFF1D6', bg1: '#06040A', bg2: '#000000', dark: true, layout: 'ring', inward: true, glyphs: null,
-              emoji: ['🌑', '🕳️', '☄️', '💫', '⭐'], clock: 'golden',
+              emoji: ['🌑', '🕳️', '☄️', '💫', '⭐'], clock: 'nihilum',
+              rain: { shape: 'streak', up: true, color: '#FF9A4A', bolt: '#FFF1D6', bg1: '#06040A', bg2: '#000000' },
+              nature: { trunk: '#B9B2C6', leaf: '#FF9A4A', bloom: '#FFF1D6', bloomChance: 0.15, glow: true, dark: true, branch: 'curve', leafShape: 'leaf',
+                        shed: 3, hill: '#2A2233', fly: '255,170,90', flowerHues: [28, 275], bg1: '#06040A', bg2: '#000000' },
               fire: { style: 'vortex', warm: '#6A3CC4', cool: '#FF9A4A', bg1: '#06040A', bg2: '#000000' } }
     },
     incertum: {
@@ -120,6 +143,9 @@
               onAccent: '#FFFFFF', shadow: '0 16px 34px rgba(80,100,200,.14)' },
       look: { c1: '#5B6CFF', c2: '#FF6FB5', bg1: '#FFFFFF', bg2: '#EEF2FF', dark: false, layout: 'rise', rainbow: true, glyphs: null,
               emoji: ['☁️', '🕊️', '💫', '✨', '🌈'], clock: 'heaven',
+              rain: { shape: 'streak', rainbow: true, color: '#5B6CFF', bolt: '#FF6FB5', bg1: '#FFFFFF', bg2: '#EEF2FF' },
+              nature: { trunk: '#C9B27A', leaf: '#5B6CFF', bloom: '#FF6FB5', bloomChance: 0.3, rainbow: true, branch: 'curve', leafShape: 'leaf',
+                        hill: '#BFD0FF', fly: '255,220,150', bg1: '#FFFFFF', bg2: '#EEF2FF' },
               fire: { style: 'aurora', warm: '#FF8AD0', cool: '#9FD0FF', bg1: '#151A2E', bg2: '#05060C', rainbow: true } }
     }
   };

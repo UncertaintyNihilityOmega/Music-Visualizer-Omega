@@ -5,6 +5,16 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **Rain, Nature and Clock follow the theme codes.** Rain: violet night rain (Omega), snow (New Year), bats and
+  leaves (Halloween), falling hearts (Love), a sun shower (Solarpunk), falling 1s and 0s (Cyberpunk), rain that
+  rises (Decensus Ad Nihilum), rainbow rain (Ascensus Ad Incertum). Nature: a glowing violet tree (Omega), a
+  cherry tree that sheds petals (Love), a frosted tree in the snow, a dead tree with orange leaves, a neon tree
+  drawn with a ruler, an ember tree, a rainbow tree. Clock: five new skins. Each mode has a "Follow theme" switch.
+- **Fire, Nature, Clock and Rain start in the Omega look** (violet and pink on a dark sky), because Omega is the
+  default theme.
+- **The mode buttons are in two groups**: modes that change with the codes on the left of a line, the others on
+  the right. Games: Undarum (was Survivor) and Artificium (was Defense) first, then a line, then the mini-games
+  Dungeon of Echoes (was Cards) and Solarium (was Sandbox).
 - **Install the app.** Music > "Install the app" puts it on the home screen or desktop like any other app. Once
   opened one time it works with no network. A new version arrives on its own: it shows after one reload.
 - **Plays in the background.** The lock screen and the notification show the song with play, pause, next and
