@@ -2,7 +2,8 @@
 
 ## Now
 - Waiting on the user for one thing: switching on GitHub Pages (see "For the user"). The repository is pushed; the site answers 404 until then.
-- A run is in progress (2026-11-16). All work is committed and pushed to GitHub (`main`).
+- The run of 2026-11-16 stopped at the usage gate (5-hour meter at 75%; it resets at 09:20 UTC, 12:20 local).
+  All work is committed and pushed to GitHub (`main`). No lock is left.
 - Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` 5 songs pass, browser check
   (real song and idle, desktop and 375 px): no errors. On GitHub the workflow's two checks pass; its deploy
   step fails until Pages is switched on.

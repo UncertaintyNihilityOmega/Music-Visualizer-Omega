@@ -58,7 +58,17 @@ other session can continue from. Runs are started by hand (a prompt from PROMPTS
 - It stops on its own when the queue has only user-blocked items.
 
 ## Measured costs
-None yet. After six runs, write here what one step typically costs on the meter and set the gate from it.
+Run of 2026-11-16 (Pro plan, one session, no agents), share of the 5-hour meter per step:
+
+| Step | 5-hour meter | Weekly meter |
+| --- | --- | --- |
+| Gates and browser check of ten modes, one fix, docs (plus rewriting the task prompt) | 35% | 4% |
+| Item 15, a small feature in one mode with browser checks at two widths | 13% | 2% |
+| Items 3 and 13: publish, four small fixes, browser checks | 23% | 3% |
+
+So a run fits about three steps, and a step that starts above 60% is likely to cross 75%. Browser checks cost
+most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over
+screenshots, and one screenshot per fault. Update this table after more runs.
 
 ## Usage log
 `.run/usage.log`, one line per step:
