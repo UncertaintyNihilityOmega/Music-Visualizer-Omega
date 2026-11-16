@@ -22,7 +22,7 @@ sound becomes a picture.
 | Microphone mode | working |
 | Sound engine: six bands, level, energy, beat, kick, snare, hi-hat, onset | working, tested on real songs |
 | Visual modes: Basic, String, Emoji, Rain, Fire, Ice, Aquatic, Nature, Piano, Clock | working; Basic rebuilt on the new engine, the rest queued |
-| Mini-games: Defense, Survivor, Cards, Sandbox | working; full play-test queued |
+| Games: Undarum (survivor), Artificium (tower defence), Dungeon of Echoes (cards), Solarium (pixel sandbox) | working; full play-test queued |
 | Theme codes (8) | working |
 | Install as an offline app | planned |
 | Whole-song analysis (tempo, sections, falling piano notes, bosses on the drops) | planned |
@@ -54,7 +54,7 @@ Requirements: any modern browser. For the tools: Node 18 or newer. For the real-
 | `index.html` | the app shell: canvas, mode buttons, player controls, page tabs |
 | `js/core/` | the engine: sound analysis (`analysis.js`), Web Audio wiring, settings, themes, canvas, mode registry |
 | `js/modes/` | one file per visual mode |
-| `js/games/`, `js/tools/` | the mini-games and the pixel-art Sandbox |
+| `js/games/`, `js/tools/` | the mini-games and the pixel-art sandbox (Solarium) |
 | `js/pages/` | one file per page: Music, Games, Settings, Guide |
 | `js/player/` | playlist, music folder, transport |
 | `css/styles.css` | all styling; colours come from theme variables |

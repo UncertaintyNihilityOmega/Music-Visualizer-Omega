@@ -459,7 +459,7 @@
   App.modes.register('sandbox', { draw: draw, paintBG: paintBG, reset: reset });
 
   App.cfg.registerDefaults('sandbox', { grantInterval: 60, gravity: false });
-  App.cfg.registerSchema({ id: 'sandbox', label: 'Sandbox', fields: [
+  App.cfg.registerSchema({ id: 'sandbox', label: 'Solarium', fields: [
     ['grantInterval', 'New swatch every (seconds)', 'range', 10, 180, 5],
     ['gravity', 'Gravity (off = sky, pixels stay put)', 'bool']
   ]});

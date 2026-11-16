@@ -695,7 +695,7 @@
   App.games.register('rpg', {
     state: RPG,
     items: RPG_ITEMS,
-    label: 'Survivor',
+    label: 'Undarum',
     unit: 'level',
     dmgStat: 'might',
     dmgStatCoef: 0.072,

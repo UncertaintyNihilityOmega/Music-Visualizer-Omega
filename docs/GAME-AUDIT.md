@@ -7,7 +7,7 @@ state to "confirmed <date>" or "fixed <date>".
 Files: TD = `js/games/game-tower-defense.js`, SV = `js/games/game-survivor.js`, CD = `js/games/game-cards.js`,
 SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/tool-sandbox.js`.
 
-## Defense
+## Artificium (was "Defense")
 | # | Requirement | State | Where |
 | --- | --- | --- | --- |
 | D1 | Explain what difficulty changes and by how much | **done 2026-11-16** | Games page table, built from `SH DIFFS` |
@@ -28,7 +28,7 @@ SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/t
 | D16 | Enemy HP per wave raised to balance | to judge in play | `SH hpGrowth` 0.085, setting "Enemy HP per wave/level" |
 | D17 | After everything is maxed: +1% damage per level, no more choice screen | in code | `SH rollCards` "LEVEL BREAK" |
 
-## Survivor
+## Undarum (was "Survivor")
 | # | Requirement | State | Where |
 | --- | --- | --- | --- |
 | S1 | Magic max level 30, evolution at 15, passives max 10 | in code | SV header, `RPG_EVOS` |
@@ -40,7 +40,7 @@ SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/t
 | S7 | Boomerang bigger, and its emoji must show | in code | SV uses 🥏; size `13 + lv * 0.7` |
 | S8 | After all maxed: +1% per level, no choice screen | in code | shared with D17 |
 
-## Cards
+## Dungeon of Echoes (was "Cards")
 | # | Requirement | State | Where |
 | --- | --- | --- | --- |
 | C1 | Branching endless dungeon, 3 branches visible, each splits in 2 | to check | CD |
@@ -51,7 +51,7 @@ SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/t
 | C6 | Counts "Dungeon level" | in code | HO save label "dungeon lvl" |
 | C7 | Art, background, enemies and cards look as good as possible | to judge | CD |
 
-## Sandbox
+## Solarium (was "Sandbox")
 | # | Requirement | State | Where |
 | --- | --- | --- | --- |
 | B1 | A square of colour every 30 to 60 s, setting, default 60 | in code | SB `grantInterval: 60` |

@@ -131,7 +131,7 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   swells; the four skins follow the theme code ("theme" is the default style).
 - Ideas left: tick exactly on the beat once a tempo is known (needs the song map, ROADMAP 6).
 
-## Mini-games (Defense, Survivor, Cards, Sandbox)
+## Games (Undarum, Artificium, Dungeon of Echoes, Solarium; once Survivor, Defense, Cards, Sandbox)
 - Listen to: `level` (enemy health and speed), the spectrum (background), `punch`.
 - Ideas: waves and bosses placed by the song map instead of a timer (the first step toward the v1.x game);
   `kick` gives every tower or spell a small damage pulse; Sandbox's square visualiser offered as a Basic layout.

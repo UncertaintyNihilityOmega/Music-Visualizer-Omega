@@ -10,12 +10,13 @@ App.pages.define('games', {
   html:
     '<div class="card" id="gamesIntro">' +
       '<div class="settings-head"><span>Mini-games</span></div>' +
-      '<p class="page-text">Four small games run on the visualiser canvas while your music plays. Your song makes them harder and faster as it gets louder.</p>' +
+      '<p class="page-text">Four games run on the visualiser canvas while your music plays. Your song makes them harder and faster as it gets louder.</p>' +
       '<div class="source-row">' +
-        '<button type="button" class="pill-btn" data-start="td">🏰 Defense</button>' +
-        '<button type="button" class="pill-btn" data-start="rpg">🧙 Survivor</button>' +
-        '<button type="button" class="pill-btn" data-start="cards">🃏 Cards</button>' +
-        '<button type="button" class="pill-btn" data-start="sandbox">🎨 Sandbox</button>' +
+        '<button type="button" class="pill-btn" data-start="rpg">🧙 Undarum</button>' +
+        '<button type="button" class="pill-btn" data-start="td">🏰 Artificium</button>' +
+        '<span class="mode-sep" aria-hidden="true"></span>' +
+        '<button type="button" class="pill-btn" data-start="cards">🃏 Dungeon of Echoes</button>' +
+        '<button type="button" class="pill-btn" data-start="sandbox">🎨 Solarium</button>' +
       '</div>' +
     '</div>' +
 
@@ -42,7 +43,7 @@ App.pages.define('games', {
       '</div>' +
       '<div id="gridInfo" class="grid-info"></div>' +
       '<div id="shopBody" class="shop-list"></div>' +
-      '<p class="game-help">Click the canvas to play. <b>Defense</b>: buy towers below (or press <b>1</b>–<b>9</b>), then tap a free cell to place them. Waves arrive on a timer and kills pay money. <b>Survivor</b>: WASD to move, spells cast themselves; pick upgrades by tapping a card or pressing <b>1 2 3</b>. <b>Cards</b>: tap a path on the dungeon map, then tap a card in your hand (or press number keys) to play it each turn. <b>P</b> pauses, hold <b>Shift</b> for 3x speed. Every item has its own level cap; once everything is maxed, each further level gives +1% damage instead of a hard wall.</p>' +
+      '<p class="game-help">Click the canvas to play. <b>Artificium</b> (tower defence): buy towers below (or press <b>1</b>–<b>9</b>), then tap a free cell to place them. Waves arrive on a timer and kills pay money. <b>Undarum</b> (survivor): WASD to move, spells cast themselves; pick upgrades by tapping a card or pressing <b>1 2 3</b>. <b>Dungeon of Echoes</b> (cards): tap a path on the dungeon map, then tap a card in your hand (or press number keys) to play it each turn. <b>P</b> pauses, hold <b>Shift</b> for 3x speed. Every item has its own level cap; once everything is maxed, each further level gives +1% damage instead of a hard wall.</p>' +
       '<div class="saves-title">Save slots</div>' +
       '<div id="savesBody"></div>' +
       '<div class="saves-actions">' +
@@ -69,8 +70,8 @@ App.pages.define('games', {
       ['dmg',   'Enemy damage',               function(v){ return '×' + v; }],
       ['qty',   'Enemies per wave',           function(v){ return '×' + v; }],
       ['spd',   'Enemy speed',                function(v){ return '×' + v; }],
-      ['lives', 'Starting lives (Defense)',   function(v){ return String(v); }],
-      ['money', 'Money per kill (Defense)',   function(v){ return '×' + v; }]
+      ['lives', 'Starting lives (Artificium)',   function(v){ return String(v); }],
+      ['money', 'Money per kill (Artificium)',   function(v){ return '×' + v; }]
     ];
     var ids = ['normal', 'hard', 'insane'];
     var html = '<tr><th></th>' + ids.map(function(id){ return '<th>' + G.DIFFS[id].label + '</th>'; }).join('') + '</tr>';
@@ -83,7 +84,7 @@ App.pages.define('games', {
     document.getElementById('diffSummary').textContent =
       'Read down the ' + x.label + ' column: compared with ' + n.label + ', each enemy has ' + pct(x.hp, n.hp) +
       ' more health, hits ' + pct(x.dmg, n.dmg) + ' harder, moves ' + pct(x.spd, n.spd) + ' faster and there are ' +
-      pct(x.qty, n.qty) + ' more of them. In Defense you also start with ' + x.lives + ' lives instead of ' + n.lives +
+      pct(x.qty, n.qty) + ' more of them. In Artificium you also start with ' + x.lives + ' lives instead of ' + n.lives +
       ' and earn ' + pct(x.money, n.money) + ' less money per kill. Because these multiply together, ' + x.label +
       ' is much more than twice as hard.';
 

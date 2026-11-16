@@ -818,7 +818,7 @@
   App.games.register('cards', {
     state: CARDS,
     items: CARD_ITEMS,
-    label: 'Cards',
+    label: 'Dungeon of Echoes',
     unit: 'dungeon',
     dmgStat: 'focus',
     dmgStatCoef: 0.02,

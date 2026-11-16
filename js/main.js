@@ -31,7 +31,7 @@
   document.addEventListener('webkitfullscreenchange', onFsChange);
 
   /* ---------- Keyboard shortcuts ---------- */
-  var MODE_ORDER = ['basic', 'strings', 'emoji', 'rain', 'fire', 'ice', 'aqua', 'nature', 'piano', 'clock', 'td', 'rpg', 'cards', 'sandbox'];
+  var MODE_ORDER = ['basic', 'strings', 'emoji', 'fire', 'rain', 'nature', 'clock', 'ice', 'aqua', 'piano', 'rpg', 'td', 'cards', 'sandbox'];
   document.addEventListener('keydown', function(e){
     var tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.metaKey || e.ctrlKey || e.altKey) return;

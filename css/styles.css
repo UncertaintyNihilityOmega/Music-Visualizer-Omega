@@ -60,12 +60,13 @@ canvas{ width:100%; height:clamp(200px, 34vw, 320px); display:block; border-radi
   content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
   width:min(220px,40%); height:1px; background:var(--line);
 }
-.mode-sep{ display:none; }
+.mode-sep{ display:inline-block; width:1px; height:22px; background:var(--line); margin:0 5px; }
+.mode-sep.fs-only{ display:none; }
 .viz-card:fullscreen .mode-row{ display:inline-flex; }
 .viz-card:fullscreen .modes-wrap{ display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:6px; }
 .viz-card:fullscreen .game-row{ margin-top:10px; padding-top:0; }
 .viz-card:fullscreen .game-row::before{ display:none; }
-.viz-card:fullscreen .mode-sep{ display:inline-block; width:1px; height:20px; background:var(--line); margin:0 8px; }
+.viz-card:fullscreen .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
 
 .mode-btn, .pill-btn, .tab-btn{
   border:1px solid var(--line); background:var(--field); color:var(--ink);

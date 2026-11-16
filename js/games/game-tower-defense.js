@@ -946,7 +946,7 @@
   App.games.register('td', {
     state: TD,
     items: TD_ITEMS,
-    label: 'Tower Defense',
+    label: 'Artificium',
     unit: 'wave',
     dmgStat: 'power',
     update: tdUpdate,

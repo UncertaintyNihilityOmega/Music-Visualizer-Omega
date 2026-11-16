@@ -35,24 +35,28 @@
     <button class="viz-fs" id="fsBtn" type="button" aria-label="Fullscreen visualiser" title="Fullscreen (F)">⛶</button>
     <canvas id="visualizer"></canvas>
     <div class="modes-wrap">
+    <!-- Left of the line: modes that change with the theme codes. Right of it: modes that do not. -->
     <div class="mode-row" role="tablist" aria-label="Visualiser style">
       <button class="mode-btn active" type="button" data-mode="basic" role="tab" aria-selected="true">Basic</button>
       <button class="mode-btn" type="button" data-mode="strings" role="tab" aria-selected="false">String</button>
       <button class="mode-btn" type="button" data-mode="emoji" role="tab" aria-selected="false">Emoji</button>
-      <button class="mode-btn" type="button" data-mode="rain" role="tab" aria-selected="false">Rain</button>
       <button class="mode-btn" type="button" data-mode="fire" role="tab" aria-selected="false">Fire</button>
+      <button class="mode-btn" type="button" data-mode="rain" role="tab" aria-selected="false">Rain</button>
+      <button class="mode-btn" type="button" data-mode="nature" role="tab" aria-selected="false">Nature</button>
+      <button class="mode-btn" type="button" data-mode="clock" role="tab" aria-selected="false">Clock</button>
+      <span class="mode-sep" aria-hidden="true"></span>
       <button class="mode-btn" type="button" data-mode="ice" role="tab" aria-selected="false">Ice</button>
       <button class="mode-btn" type="button" data-mode="aqua" role="tab" aria-selected="false">Aquatic</button>
-      <button class="mode-btn" type="button" data-mode="nature" role="tab" aria-selected="false">Nature</button>
       <button class="mode-btn" type="button" data-mode="piano" role="tab" aria-selected="false">Piano</button>
-      <button class="mode-btn" type="button" data-mode="clock" role="tab" aria-selected="false">Clock</button>
     </div>
-    <div class="mode-row game-row" role="tablist" aria-label="Mini-games">
+    <!-- Left of the line: the two games that will grow (v1.x, v2.x). Right of it: the mini-games. -->
+    <div class="mode-row game-row" role="tablist" aria-label="Games">
+      <span class="mode-sep fs-only" aria-hidden="true"></span>
+      <button class="mode-btn" type="button" data-mode="rpg" role="tab" aria-selected="false">Undarum</button>
+      <button class="mode-btn" type="button" data-mode="td" role="tab" aria-selected="false">Artificium</button>
       <span class="mode-sep" aria-hidden="true"></span>
-      <button class="mode-btn" type="button" data-mode="td" role="tab" aria-selected="false">Defense</button>
-      <button class="mode-btn" type="button" data-mode="rpg" role="tab" aria-selected="false">Survivor</button>
-      <button class="mode-btn" type="button" data-mode="cards" role="tab" aria-selected="false">Cards</button>
-      <button class="mode-btn" type="button" data-mode="sandbox" role="tab" aria-selected="false">Sandbox</button>
+      <button class="mode-btn" type="button" data-mode="cards" role="tab" aria-selected="false">Dungeon of Echoes</button>
+      <button class="mode-btn" type="button" data-mode="sandbox" role="tab" aria-selected="false">Solarium</button>
     </div>
     </div>
     <p class="now-playing" id="nowPlaying" aria-live="polite">Nothing loaded yet — add some music below</p>
