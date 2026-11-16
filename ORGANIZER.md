@@ -39,7 +39,11 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
   commit only that step's files, update ROADMAP.
 - A rule lives in one file; other files point to it. Numbers that shape the sound live in
   `js/core/analysis.js` `DEFAULT_CFG` and nowhere else.
-- Never type bulky assets by hand: icons come from `engine/icons.js`.
+- Never type bulky assets by hand: the app icon comes from `engine/icons.js`. The small button icons are short
+  line drawings in `js/core/icons.js`; a new mode, game, code or page needs one (`check.js` enforces it).
+- A new theme code needs a look for every mode left of the line (`look.fire`, `rain`, `nature`, `clock`,
+  `liquid` in `themes.js`); `check.js` enforces it. After any change to a file the app loads, run
+  `node engine/sw-build.js`.
 - Facts come from a source and go in FACTS.md with the date. Measured numbers go in `engine/README.md`.
 - A fault found by hand becomes a check in `engine/check.js`, `engine/test.js` or `engine/songtest.js`.
 - The app must work with no network: no web fonts, no CDN scripts (`check.js` enforces it).
@@ -69,6 +73,17 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
   like the page tabs; it is not a row in the mode's settings list.
 - 2026-11-16: A theme code must change more than a mode's colours. String is the model: "Strings look really
   good with all theme codes, but fire only changes color". Fire now has a form of its own per code.
+
+- 2026-11-16: The app must be installable ("download the app") and keep playing in the background on a phone.
+- 2026-11-16: Mode row: modes that follow the codes on the left, a small vertical line, the rest on the right.
+  Games row: Undarum (was Survivor) first, Artificium (was Defense) second, a line, then the mini-games
+  Dungeon of Echoes (was Cards) and Solarium (was Sandbox). v1.x grows Undarum, v2.x grows Artificium; the
+  other two stay mini-games. Ids in the code stay `rpg`, `td`, `cards`, `sandbox`.
+- 2026-11-16: Omega is the default theme, so the default look of Fire, Nature, Clock (and Rain) fits Omega.
+- 2026-11-16: The code "Tessa" is an electric theme; its button stands next to Omega's.
+- 2026-11-16: Buttons carry a small icon left of the text: modes, codes, layouts, and the four page tabs.
+- 2026-11-16: Unused files may be deleted (the icon options were); `node engine/unused.js` lists candidates.
+- 2026-11-16: For a mode built from an example video, look hardest at the moments the music booms.
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,

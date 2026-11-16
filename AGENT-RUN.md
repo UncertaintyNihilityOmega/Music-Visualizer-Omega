@@ -66,6 +66,15 @@ Run of 2026-11-16 (Pro plan, one session, no agents), share of the 5-hour meter 
 | Item 15, a small feature in one mode with browser checks at two widths | 13% | 2% |
 | Items 3 and 13: publish, four small fixes, browser checks | 23% | 3% |
 
+Run of 2026-11-16, second (the user joined it; one session, 5-hour meter from 3%):
+
+| Step | 5-hour meter | Weekly meter |
+| --- | --- | --- |
+| Item 4: service worker, install button, background play, offline test | 13% | 1% |
+| Buttons regrouped, games renamed; Rain, Nature, Clock looks for 8 themes | 23% | 3% |
+| Tessa code (two new mode forms) and the Liquid mode, with the boom rework | 23% | 3% |
+| Icons on buttons, unused report, roadmap | about 12% | 2% |
+
 So a run fits about three steps, and a step that starts above 60% is likely to cross 75%. Browser checks cost
 most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over
 screenshots, and one screenshot per fault. Update this table after more runs.

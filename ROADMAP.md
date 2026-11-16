@@ -4,12 +4,16 @@
 - The site is live: https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/ (GitHub Pages publishes
   the `main` branch on every push). Runs may push on their own (ORGANIZER.md).
 - All work is committed and pushed. No lock is left.
-- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` 5 songs pass (sound has
-  not changed since), browser check of the new work at desktop and 375 px: no errors.
-- Next steps that need no one: item 4 (offline install), item 6 (song map), item 7 (mapping selectors),
-  item 9 (game audit), item 10 (more themes).
+- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` not run (the analysis did
+  not change), browser check at desktop and 375 px with a real song: no errors.
+- Run of 2026-11-16 (the user joined it): install and offline (item 4), background play, mode and game
+  buttons regrouped, games renamed, Rain / Nature / Clock follow the codes, the Tessa code, the Liquid mode,
+  icons on buttons, unused files removed. Details under "Done".
+- Next steps that need no one: item 16 (design pass on the games), item 6 (song map), item 7 (mapping
+  selectors), item 9 (game audit), item 10 (more themes).
 - Item 8: P1 to P4 are built and checked. Left: the review after P4 (a session that did not write the modes;
-  two notes wait under "Review" in docs/MODES.md) and P5 (needs item 6).
+  two notes wait under "Review" in docs/MODES.md) and P5 (needs item 6). Liquid and the new theme looks are
+  for that review too.
 
 ## Rules
 - After each step: `node engine/test.js`, `node engine/check.js`, `node engine/songtest.js` if sound changed,
@@ -20,14 +24,6 @@
 - Version: the app says `0.1.0-dev` until item 12, which sets `0.1.0` and tags it.
 
 ## Queue
-2. **Icon: phone check.** Icon 12 is set and the PNG sizes (32, 180, 192, 512) are made and listed. Left: see it
-   as an installed phone icon, which needs the live site (item 3). Done when: the tab icon and an installed
-   phone icon both show the chosen design.
-3. **Publish: phone check.** The site is live and every push to `main` updates it. Left: the user's check on
-   a phone. Done when: the public URL loads and plays a local file on a phone.
-4. **Offline install.** A service worker that caches the app's own files under a versioned name, takes over on
-   the next visit after a new build, and is never registered on localhost. Done when: with the network off, a
-   second visit loads, plays a local song and shows visuals; and a new build replaces the old one after one reload.
 6. **Song map (whole-song analysis).** `js/core/song-map.js`, pure like `analysis.js`: decode a local file, find
    tempo, beat grid, strongest hits, sections and an energy curve (format in docs/GAME-PLAN.md). Runs in small
    slices so the page never freezes; also `node engine/songmap.js <file>` writes the JSON. Show the energy curve
@@ -41,14 +37,22 @@
    and is in docs/MODES.md.
 9. **Game audit.** Play-test every row of docs/GAME-AUDIT.md and fix what fails: P6 Defense; P7 Survivor;
    P8 Cards + Sandbox. Done when: every row says "confirmed" or "fixed" with the date.
-10. **More themes.** More code words, and theme looks for other modes (Clock's four skins, Emoji sets, game
-    arenas). Done when: each theme changes at least Basic, the page and one other mode.
+10. **More themes.** More code words, and theme looks for the modes that have none yet: Ice, Aquatic, Piano
+    (they sit right of the line in the mode row until they do), and the game arenas. Emoji's background does
+    not follow dark themes yet. Done when: every visual mode follows every code.
 11. **Phone pass.** Every page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways
     scroll, microphone over https, folder fallback where the folder API is missing. Done when: a Reader session
     finds nothing blocking.
 12. **Debug pass and release v0.1.0.** Full routine: self-test, check, songtest, every mode for 10 s with two
     songs and no console errors, every page at 375 px, external links. Then set version `0.1.0`, write the
     CHANGELOG entry, tag `v0.1.0`. Done when: the tag exists and the published site shows v0.1.0.
+
+16. **Design pass on the games** (asked by the user, 2026-11-16). Look at every game as a player would and make
+    it look better: Undarum, Artificium, Dungeon of Echoes, Solarium. The user's pictures of how things should
+    look are in `inspiration/` (`sandbox-example.jpg` for Solarium; read every file there first). Undarum
+    grows large in v1.x and Artificium in v2.x, so their pass sets the style; the other two stay mini-games.
+    One game per step, each with a before and after picture at desktop and 375 px. Done when: the user has
+    seen all four and says they look right.
 
 ## Done
 - 0a Project structure: ORGANIZER.md, this file, AGENT-RUN.md, PROMPTS.md, FACTS.md, CHANGELOG.md, `docs/`, `engine/` (2026-11-16).
@@ -77,10 +81,16 @@
 - 13 Small known faults, all four fixed and each guarded by a rule in `check.js`: (a) a web address that blocks reading was confirmed to "play" in silence over a black picture; it now plays on a second, plain player and the picture shows the idle preview, with a note; (b) an imported settings file says which settings version it holds, and outdated groups are skipped; (c) shuffle and repeat are drawn icons in the theme's colours; (d) the saved theme's colours are set by a small script in the page head before the first paint (2026-11-16).
 - 3 (second part) The user switched on GitHub Pages; the public URL loads the app, its scripts and icons. Pages publishes the `main` branch itself, so the workflow was cut down to the two checks; `.nojekyll` added (2026-11-16).
 - User requests of 2026-11-16: the settings icon on the picture removed (the S key still opens Settings); a layout bar at the top of the Settings page for the current mode's layouts (Basic, Emoji, Clock, Fire), drawn from a new `'layout'` setting type; Fire given eight styles, one per theme code (fireworks, cauldron, candles, sun, pixels, vortex, aurora, and the hearth), each also selectable by hand.
+- 2 and 3 Phone check, by the user (2026-11-16): the site loads and works on the phone, the installed icon and the microphone too.
+- 4 Offline install: `sw.js` keeps the app's 48 files under a name that holds a hash of their contents (`node engine/sw-build.js`; `check.js` fails when it is stale); not registered on localhost unless the address ends in `?sw=1`. Checked in the browser: loaded once, preview server stopped, reloaded: the app opened and drew. A new build takes over after one reload (skipWaiting, old caches deleted). "Install the app" button on the Music page (2026-11-16).
+- User requests of 2026-11-16, second list: (a) background play: lock-screen and headphone controls (Media Session), the sound engine is woken after an interruption, and on iPhone and iPad the song moves to the plain player while the page is hidden; (b) mode row: modes that follow the codes left of a line, the others right; games row: Undarum (was Survivor), Artificium (was Defense), a line, Dungeon of Echoes (was Cards), Solarium (was Sandbox); (c) Rain, Nature and Clock have a form of their own for every code (table in docs/MODES.md), with a "Follow theme" switch; Fire, Nature, Clock and Rain start in the Omega look; (d) the code "Tessa": an electric theme (Jacob's ladder for String, plasma globe for Fire, lightning tree, storm, sparks), its button next to Omega's; (e) Liquid mode after `inspiration/liquid-example.mp4`, with the boom measured on the video (drop swells about 1.4 times, two sharp horns, a bright copy behind, zoom and specks); (f) drawn icons on every mode, game, code, layout and page button (`js/core/icons.js`); (g) `engine/unused.js` reports unused files, CSS classes and ids; it found only the 20 icon options and their gallery, which were deleted (`node engine/icons.js` makes them again).
 
 ## For the user
-- **Look at the modes.** Run `node engine/serve.js`, open http://localhost:8123, Music > "Load the test-songs
-  folder", and try each mode in a quiet and a loud part of a song. Say what looks wrong. Try Fire with every
-  code, and the layout bar at the top of Settings.
-- **Phone check (items 2 and 3).** Open the site on a phone, play a song from the phone, then
-  add the site to the home screen and look at the icon. Say what you see.
+- **Update the phone.** Open the site on the phone once with the network on, then close and reopen it: the new
+  build with the install button arrives. Then Music > "Install the app". After that, switch the network off
+  and open the installed app: it should start and play a song from the phone.
+- **Background play.** Play a song, lock the phone or open another app, and say whether the music keeps
+  going and whether the lock screen shows the song with working buttons. Say which phone (Android or iPhone):
+  the iPhone path could not be tested here.
+- **Look at the new things.** Settings > Code > "Tessa". Then try String, Fire, Rain, Nature, Clock and Liquid
+  with each code. Say what looks wrong, above all Liquid in a loud part against the example video.
