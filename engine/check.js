@@ -136,6 +136,27 @@ if (logVer && appVer && logVer !== appVer.replace(/-dev$/, '') && logVer !== app
 const road = read('ROADMAP.md');
 ['## Now', '## Rules', '## Queue', '## Done', '## For the user'].forEach(h => { if (!road.includes(h)) err(`ROADMAP.md is missing the section "${h}"`); });
 
+/* 9. faults that were fixed once and must stay fixed (ROADMAP item 13) */
+{
+  const page = read('index.html');
+  // the transport's buttons are drawn icons: colour emoji ignore the theme's colours
+  for (const id of ['shuffleBtn', 'repeatBtn']){
+    const m = new RegExp('<button[^>]*id="' + id + '"[^>]*>([\\s\\S]*?)</button>').exec(page);
+    if (!m) err(`index.html: the button "${id}" is missing`);
+    else if (!/<svg/.test(m[1])) err(`index.html: "${id}" must hold an <svg> icon, not an emoji (emoji ignore the theme)`);
+  }
+  if (/textContent\s*=\s*[^;]*[\u{1F500}-\u{1F502}]/u.test(read('js/player/transport.js'))) err('transport.js: sets an emoji as a button label; toggle a class on the icon instead');
+  // the saved theme's colours are set before the first paint, from a copy themes.js keeps
+  const inlineAt = page.indexOf('viz.themeVars'), bodyAt = page.indexOf('<body');
+  if (inlineAt < 0 || inlineAt > bodyAt) err('index.html: the script in <head> that restores the saved theme colours (viz.themeVars) is missing');
+  if (!read('js/core/themes.js').includes('viz.themeVars')) err('themes.js: no longer saves viz.themeVars, so the page would flash the default colours on load');
+  // an exported settings file says which settings version it holds, and an import drops outdated groups
+  const st = read('js/core/settings.js');
+  if (!/cfgVersion:\s*CFG_VERSION/.test(st) || !/importCfg\(incoming,\s*parsed/.test(st)) err('settings.js: export must write cfgVersion and import must pass it to importCfg');
+  // a web address that blocks reading is played on the plain player, never through the analysis
+  if (!read('js/core/state.js').includes('S.plainAudio') || !read('js/player/playlist.js').includes('track.noRead')) err('the plain player for addresses that block reading (state.js, playlist.js) is missing');
+}
+
 notes.push(`${appJs.length} app scripts, ${buttons.length} modes, version ${appVer}`);
 if (errors.length){
   console.log(errors.map(e => 'ERROR  ' + e).join('\n'));

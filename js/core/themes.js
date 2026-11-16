@@ -181,9 +181,20 @@
       try { localStorage.setItem('viz.theme', id); } catch (e) {}
       remember(id);
     }
+    // a copy of this theme's colours for the small script at the top of
+    // index.html, which sets them before the first paint on the next visit
+    if (save !== false || id === saved()){
+      try {
+        var copy = {};
+        for (var vk in VAR_NAMES) if (th.vars[vk] !== undefined) copy[VAR_NAMES[vk]] = th.vars[vk];
+        localStorage.setItem('viz.themeVars', JSON.stringify(copy));
+      } catch (e) {}
+    }
     if (App.canvas && App.canvas.invalidateBG) App.canvas.invalidateBG();
     if (T.onChange) T.onChange(id);
   };
+
+  function saved(){ try { return localStorage.getItem('viz.theme') || 'omega'; } catch (e) { return 'omega'; } }
 
   // returns the theme id the code unlocked, or null
   T.enterCode = function(text){

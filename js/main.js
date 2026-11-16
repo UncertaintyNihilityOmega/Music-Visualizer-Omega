@@ -45,12 +45,12 @@
       case 'ArrowRight':
         e.preventDefault();
         if (e.shiftKey) App.player.goNext(false);
-        else if (S.audio.duration) S.audio.currentTime = Math.min(S.audio.duration, S.audio.currentTime + 5);
+        else if (S.player().duration) S.player().currentTime = Math.min(S.player().duration, S.player().currentTime + 5);
         break;
       case 'ArrowLeft':
         e.preventDefault();
         if (e.shiftKey) App.player.goPrev();
-        else if (S.audio.duration) S.audio.currentTime = Math.max(0, S.audio.currentTime - 5);
+        else if (S.player().duration) S.player().currentTime = Math.max(0, S.player().currentTime - 5);
         break;
       case 'ArrowUp':
         e.preventDefault();

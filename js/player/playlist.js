@@ -49,12 +49,27 @@
     start(track);
   }
   function start(track){
+    var plain = S.plainAudio;
+    // a source already found to block reading goes straight to the plain player
+    if (track.noRead){
+      audio.pause();
+      S.usingPlain = true;
+      plain.src = track.url;
+      var pp = plain.play();
+      if (pp && pp.catch) pp.catch(function(){});
+      S.corsNoteEl.textContent = P.NO_READ_NOTE;
+      return;
+    }
+    if (S.usingPlain){ plain.pause(); plain.removeAttribute('src'); plain.load(); S.usingPlain = false; }
     audio.crossOrigin = 'anonymous';
     audio.src = track.url;
     audio.load();
     var p = audio.play();
     if (p && p.catch) p.catch(function(){ /* ignore autoplay edge cases */ });
   }
+  P.start = start;
+  P.NO_READ_NOTE = '🔒 This address lets the music play but does not let the app read its sound, so the picture shows the idle preview. ' +
+                   'Download the file and add it to see the visuals follow it.';
   function playIndex(i){
     S.currentIndex = i;
     var pos = S.order.indexOf(i);
@@ -68,7 +83,7 @@
     S.orderPos++;
     if (S.orderPos >= S.order.length){
       if (S.repeatMode === 'all'){ S.orderPos = 0; }
-      else if (auto){ S.orderPos = S.order.length - 1; audio.pause(); return; }
+      else if (auto){ S.orderPos = S.order.length - 1; S.player().pause(); return; }
       else { S.orderPos = 0; }
     }
     S.currentIndex = S.order[S.orderPos];
@@ -77,7 +92,7 @@
   P.goNext = goNext;
   function goPrev(){
     if (!S.playlist.length) return;
-    if (audio.currentTime > 3){ audio.currentTime = 0; return; }
+    if (S.player().currentTime > 3){ S.player().currentTime = 0; return; }
     S.orderPos--;
     if (S.orderPos < 0) S.orderPos = S.order.length - 1;
     S.currentIndex = S.order[S.orderPos];
@@ -126,6 +141,9 @@
         S.currentIndex = -1;
         audio.pause();
         audio.removeAttribute('src');
+        S.plainAudio.pause();
+        S.plainAudio.removeAttribute('src');
+        S.usingPlain = false;
         S.nowPlayingEl.textContent = 'Nothing loaded yet — add some music below';
       }
     }

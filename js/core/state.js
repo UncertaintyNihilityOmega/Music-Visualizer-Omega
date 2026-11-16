@@ -11,6 +11,15 @@
 
   /* ---------- DOM refs ---------- */
   S.audio = document.getElementById('audio');
+  // A second player that is NOT wired into the sound analysis. A web address
+  // whose server does not allow its sound to be read can only be heard
+  // through a plain player like this one: sent through the analysis, the
+  // browser replaces its sound with silence. S.player() is whichever of the
+  // two is playing the current track.
+  S.plainAudio = new Audio();
+  S.plainAudio.preload = 'metadata';
+  S.usingPlain = false;
+  S.player = function(){ return S.usingPlain ? S.plainAudio : S.audio; };
   S.canvas = document.getElementById('visualizer');
   S.ctx = S.canvas.getContext('2d');
   S.nowPlayingEl = document.getElementById('nowPlaying');

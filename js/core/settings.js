@@ -42,6 +42,16 @@
   // now follows drive, and Clock's default style became "theme".
   var CFG_VERSION = 3;
   var DROP_BELOW = { 2: ['audio', 'basic'], 3: ['strings', 'fire', 'clock'] };
+  // Removes from a saved or imported set of settings every group whose
+  // numbers changed meaning after version `had`. Returns the names removed.
+  function dropOld(stored, had){
+    var gone = [];
+    for (var ver in DROP_BELOW){
+      if (had < Number(ver)) DROP_BELOW[ver].forEach(function(gid){ if (stored[gid]){ delete stored[gid]; gone.push(gid); } });
+    }
+    return gone;
+  }
+  C.CFG_VERSION = CFG_VERSION;
   C.saveCfg = function(){
     try {
       localStorage.setItem('viz.cfg', JSON.stringify(C.CFG));
@@ -65,12 +75,18 @@
     for (var g in fresh) C.CFG[g] = fresh[g];
     onSettingChanged('all', null);
   };
-  C.importCfg = function(incoming){
+  // had: the settings version the file was exported with (files from before
+  // versions were written have none and count as 1). Groups whose numbers
+  // mean something different now are left at their current values. Returns
+  // the names of the groups that were skipped for that reason.
+  C.importCfg = function(incoming, had){
+    var skipped = dropOld(incoming, had || 1);
     for (var g in C.CFG){
       if (!incoming[g]) continue;
       for (var k in C.CFG[g]) if (incoming[g][k] !== undefined) C.CFG[g][k] = incoming[g][k];
     }
     onSettingChanged('all', null);
+    return skipped;
   };
 
   // Builds CFG from every registered DEFAULTS group, merges in whatever the
@@ -84,9 +100,7 @@
       var stored = JSON.parse(localStorage.getItem('viz.cfg') || 'null');
       if (stored){
         var had = parseInt(localStorage.getItem('viz.cfg.v') || '1', 10) || 1;
-        for (var ver in DROP_BELOW){
-          if (had < Number(ver)) DROP_BELOW[ver].forEach(function(gid){ delete stored[gid]; });
-        }
+        dropOld(stored, had);
         for (var sg in built){
           if (!stored[sg]) continue;
           for (var sk in built[sg]) if (stored[sg][sk] !== undefined) built[sg][sk] = stored[sg][sk];
@@ -242,7 +256,7 @@
     var expCfg = document.getElementById('exportCfgBtn');
     if (expCfg) expCfg.addEventListener('click', function(){
       // 'kind' keeps its old value so settings files exported before the rename still import
-      var blob = new Blob([JSON.stringify({ kind: 'our-playlist-settings', v: 1, cfg: C.CFG }, null, 2)], { type: 'application/json' });
+      var blob = new Blob([JSON.stringify({ kind: 'our-playlist-settings', v: 1, cfgVersion: CFG_VERSION, cfg: C.CFG }, null, 2)], { type: 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'music-visualiser-omega-settings.json';
@@ -260,7 +274,8 @@
           try {
             var parsed = JSON.parse(fr.result);
             var incoming = parsed && parsed.cfg ? parsed.cfg : parsed;
-            C.importCfg(incoming);
+            // cfgVersion says which meaning the numbers have; a file without it is from before v0.1.0
+            C.importCfg(incoming, parsed && parsed.cfgVersion);
             buildPanel();
             openGroup(App.modes.current);
           } catch (e) {}

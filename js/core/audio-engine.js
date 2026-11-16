@@ -71,6 +71,7 @@
     var v = Aud.muted ? 0 : Aud.volume;
     if (volumeNode) volumeNode.gain.value = v * v;   // squared: equal slider steps sound like equal steps
     else S.audio.volume = v;                         // before the first play there is no graph yet
+    S.plainAudio.volume = v * v;                     // the plain player has no gain node: set it directly
   }
   Aud.setVolume = function(v){ Aud.volume = Math.max(0, Math.min(1, v)); applyVolume(); };
   Aud.setMuted = function(m){ Aud.muted = !!m; applyVolume(); };

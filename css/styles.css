@@ -182,6 +182,10 @@ select option{ color:#16121f; background:#fff; }
 .transport button:hover{ background:rgba(var(--accent-rgb),.18); transform:scale(1.06); }
 .transport .play-btn{ width:54px; height:54px; font-size:1.4rem; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:var(--on-accent); box-shadow:0 8px 16px rgba(var(--accent-rgb),.32); }
 .transport .play-btn:hover{ background:linear-gradient(135deg,var(--accent2),var(--accent)); transform:scale(1.08); }
+.transport .ico{ width:20px; height:20px; vertical-align:middle; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.transport .ico .one-mark{ display:none; font:700 8px/1 system-ui,sans-serif; fill:currentColor; stroke:none; }
+.transport .toggle.one .ico .one-mark{ display:block; }
+.transport .toggle.active{ color:var(--accent2); }
 .transport .toggle.active{ background:rgba(var(--accent-rgb),.3); box-shadow:inset 0 0 0 1px var(--accent); }
 
 .seek-row{ display:flex; align-items:center; gap:8px; font-size:.7rem; color:var(--muted); margin-bottom:10px; font-variant-numeric:tabular-nums; }

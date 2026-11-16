@@ -51,6 +51,13 @@ What someone using the app would notice. Newest first.
   chorus look different.
 - **Volume and mute no longer shrink the visuals.**
 - The app no longer needs the internet for its fonts.
+- **A web address that blocks reading now plays.** Some sites let a song play but do not let the app read its
+  sound. Such a song used to "play" in silence over a black picture. It is now heard, the picture shows the idle
+  preview, and a note says why.
+- Importing a settings file from an older version no longer brings back old sound numbers that would silence
+  the visuals: outdated groups are skipped.
+- Shuffle and repeat are drawn icons that take the theme's colours (they were colour emoji that ignored it).
+- A saved theme code no longer flashes the default purple for a moment when the page opens.
 
 ### Changed
 - Saved String, Fire and Clock settings are reset once (String was rebuilt; Fire's blue and Clock's style work

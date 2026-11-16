@@ -58,7 +58,10 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-16: v1.x game stays on HTML + JavaScript (no separate engine).
 - 2026-11-16: Old files deleted: `Music_Visualizer-Project.html`, `serve.ps1`.
 - 2026-11-16: Runs may use the preview server, and may do several steps: keep going until the 5-hour meter is
-  at 75% or the weekly one at 95% (AGENT-RUN.md). No agents.
+  at 75% or the weekly one at 95% (AGENT-RUN.md). No agents. The 95% weekly limit is confirmed.
+- 2026-11-16: The scheduled task stays switched off; the user starts runs by hand. Its plan stays as written.
+- 2026-11-16: Publishing approved for that day's run (ROADMAP items 3 and 2): the repository was pushed to
+  GitHub. Whether later runs may push on their own is still to be asked (ROADMAP "For the user").
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,
@@ -66,7 +69,12 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
   documents were rejected because music would stop on every page change.
 - 2026-11-15: Default theme is the dark purple "Omega" look taken from `inspiration/example-icon`.
 - 2026-11-16: Volume is applied after the analyser, so turning the music down does not shrink the visuals.
-- 2026-11-16: Commits are local only until the user approves publishing (ROADMAP "For the user").
+- 2026-11-16: Commits were local only until the user approved publishing; they did so the same day (see above).
+- 2026-11-16: GitHub Pages gets only the app's own files (index.html, css, js, icons, manifest, LICENSE,
+  README), not the tools or the project notes. The repository itself holds everything except the git-ignored
+  folders.
+- 2026-11-16: A web address whose server blocks reading is played on a second, plain player
+  (`S.plainAudio`), because the browser silences such a source once it is wired into the analysis.
 
 ## Environment (this machine)
 - Windows 10, PowerShell. Node 24. **No Python** (the `python` command is the Store stub): tools are Node only.
@@ -75,7 +83,14 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - `test-songs/` holds real copyrighted songs and two visualiser videos: git-ignored, never published.
   `inspiration/` is git-ignored too (third-party images).
 - A hidden browser pane throttles animation frames: measure frame rate only while the pane is visible.
-- Shell text eats quotes and backslashes: write scripts with the file tool, then run them.
+- Shell text eats quotes and backslashes (a doubled backslash arrives as one, even in a quoted heredoc): write
+  scripts with the file tool, then run them.
+- The preview server answers on `localhost` and `[::1]`, not on `127.0.0.1`. A page opened on `localhost:8123`
+  sees `http://[::1]:8123/...` as another site that blocks reading: a ready-made test for such addresses.
+- `git push` to GitHub works with the credentials stored on this machine. Without `gh`, read a workflow's
+  result from `https://api.github.com/repos/<owner>/<repo>/actions/runs` with `curl`.
+- The user may be using the preview's first tab during a run: test in a tab of your own (`tabs_create`). Both
+  tabs share saved settings, so do not save test values.
 
 ## Files
 | File | What |
