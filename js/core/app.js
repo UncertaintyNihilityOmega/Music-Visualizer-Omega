@@ -56,7 +56,7 @@
       b.id = 'tab-' + def.id;
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-controls', 'page-' + def.id);
-      b.textContent = def.label;
+      if (App.icons) b.innerHTML = App.icons.label('page-' + def.id, def.label); else b.textContent = def.label;
       b.addEventListener('click', function(){ P.show(def.id); });
       tabs.appendChild(b);
       def.tab = b;

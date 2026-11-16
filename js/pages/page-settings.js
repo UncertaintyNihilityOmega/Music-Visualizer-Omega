@@ -53,7 +53,7 @@ App.pages.define('settings', {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'pill-btn' + (T.current === id ? ' active' : '');
-        b.textContent = T.THEMES[id].name;
+        b.innerHTML = App.icons.label('theme-' + id, T.THEMES[id].name);
         b.addEventListener('click', function(){ T.apply(id); });
         chips.appendChild(b);
       });

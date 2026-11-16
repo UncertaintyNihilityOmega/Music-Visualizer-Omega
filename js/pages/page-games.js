@@ -12,11 +12,11 @@ App.pages.define('games', {
       '<div class="settings-head"><span>Mini-games</span></div>' +
       '<p class="page-text">Four games run on the visualiser canvas while your music plays. Your song makes them harder and faster as it gets louder.</p>' +
       '<div class="source-row">' +
-        '<button type="button" class="pill-btn" data-start="rpg">🧙 Undarum</button>' +
-        '<button type="button" class="pill-btn" data-start="td">🏰 Artificium</button>' +
+        '<button type="button" class="pill-btn" data-start="rpg">' + App.icons.label('rpg', 'Undarum') + '</button>' +
+        '<button type="button" class="pill-btn" data-start="td">' + App.icons.label('td', 'Artificium') + '</button>' +
         '<span class="mode-sep" aria-hidden="true"></span>' +
-        '<button type="button" class="pill-btn" data-start="cards">🃏 Dungeon of Echoes</button>' +
-        '<button type="button" class="pill-btn" data-start="sandbox">🎨 Solarium</button>' +
+        '<button type="button" class="pill-btn" data-start="cards">' + App.icons.label('cards', 'Dungeon of Echoes') + '</button>' +
+        '<button type="button" class="pill-btn" data-start="sandbox">' + App.icons.label('sandbox', 'Solarium') + '</button>' +
       '</div>' +
     '</div>' +
 

@@ -183,6 +183,18 @@ const road = read('ROADMAP.md');
   if (!read('js/core/state.js').includes('S.plainAudio') || !read('js/player/playlist.js').includes('track.noRead')) err('the plain player for addresses that block reading (state.js, playlist.js) is missing');
 }
 
+/* 11. every page, mode, game and code has a drawn icon (user, 2026-11-16) */
+try {
+  const IA = {};
+  vm.runInNewContext(read('js/core/icons.js'), { App: IA, document: { querySelectorAll: () => [] } });
+  for (const b of buttons) if (!IA.icons.has(b)) err(`icons.js: mode "${b}" has no icon`);
+  for (const m of read('js/core/themes.js').matchAll(/\n    ([a-z]+): \{\n      codes:/g)) if (!IA.icons.has('theme-' + m[1])) err(`icons.js: code "${m[1]}" has no icon (theme-${m[1]})`);
+  for (const f of pageFiles){ const id = /page-([a-z]+)\.js/.exec(f)[1]; if (!IA.icons.has('page-' + id)) err(`icons.js: page "${id}" has no icon`); }
+  for (const f of appJs) for (const m of read(f).matchAll(/'layout', \[([^\]]+)\]/g))
+    for (const o of m[1].replace(/['\s]/g, '').split(',')) if (/^[a-z]+$/.test(o) && !IA.icons.forOption(o)) err(`icons.js: layout option "${o}" (${f}) has no icon`);
+} catch (e){ err('icons.js could not be read: ' + e.message); }
+before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their icons when they are made');
+
 /* 10. offline install (ROADMAP item 4) */
 {
   try { new vm.Script(read('sw.js'), { filename: 'sw.js' }); } catch (e){ err('sw.js: does not parse: ' + e.message); }

@@ -5,6 +5,8 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **Icons on the buttons.** Every mode, game, code and layout button and the four page tabs (a disc for Music, a
+  gamepad for Games, a gear for Settings, a book for Guide) has a small drawn icon in the theme's colours.
 - **New mode: Liquid.** A drop of liquid in a whirlpool. Its edge is the sound (bass at the bottom, treble at
   the top); a kick swells it, a snare throws droplets that fall back in, a tap makes a splash. It changes with
   the codes: slime that drips (Halloween), mercury that moves in steps (Cyberpunk), a flickering edge (Tessa),

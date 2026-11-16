@@ -255,7 +255,7 @@
       b.className = 'tab-btn' + (on ? ' active' : '');
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', on ? 'true' : 'false');
-      b.textContent = opt;
+      if (App.icons) b.innerHTML = App.icons.label(App.icons.forOption(opt), opt); else b.textContent = opt;
       b.addEventListener('click', function(){
         C.CFG[gid][key] = opt;
         onSettingChanged(gid, key);
