@@ -16,10 +16,12 @@ App.pages.define('music', {
       '</div>' +
       '<p class="source-note" id="installNote" aria-live="polite"></p>' +
       '<p class="source-note" id="reconnectRow" hidden>' +
-        '<button type="button" class="pill-btn" id="reconnectBtn">↻ Reconnect folder</button>' +
-        '<button type="button" class="link-btn" id="forgetFolderBtn">forget it</button>' +
+        '<button type="button" class="pill-btn" id="reconnectBtn">↻ Reconnect</button>' +
+        '<button type="button" class="link-btn" id="forgetFolderBtn">forget them</button>' +
       '</p>' +
       '<p class="source-note" id="libraryNote">Nothing is uploaded or copied. Songs play straight from where they already are on this device.</p>' +
+      '<label class="check-row" id="keepRow"><input type="checkbox" id="keepCopies"> <span>Keep a copy of added songs inside the app</span></label>' +
+      '<p class="source-note" id="keepNote"></p>' +
       '<p class="source-note" id="micNote" aria-live="polite"></p>' +
       '<div class="drop-zone" id="dropZone">' +
         '<p>Drag &amp; drop songs or a whole folder here</p>' +
@@ -93,33 +95,78 @@ App.pages.define('music', {
     var note = document.getElementById('libraryNote');
     // a browser that can open neither kind of folder (an iPhone's) gets no folder button: "Add files" does the job
     if (!Lib.supported() && !('webkitdirectory' in document.getElementById('folder-input'))) openBtn.hidden = true;
-    document.getElementById('addFilesBtn').addEventListener('click', function(){
-      document.getElementById('file-input').click();
-    });
+    P.note = function(words){ note.textContent = words; };
+    document.getElementById('addFilesBtn').addEventListener('click', function(){ P.chooseFiles(); });
     openBtn.addEventListener('click', function(){
       if (!Lib.supported()){ document.getElementById('folder-input').click(); return; }
       Lib.pickFolder().then(function(res){
         if (res) note.textContent = res.count + ' songs from "' + res.name + '". The folder is remembered: next time, one tap brings it back.';
       }).catch(function(err){ note.textContent = err.message; });
     });
+
+    /* ----- what was remembered last time (js/player/library.js) ----- */
+    function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+    // "2 folders and 3 songs", from the things still waiting for permission
+    function waitingWords(list){
+      var f = 0, s = 0;
+      list.forEach(function(rec){ if (rec.kind === 'folder') f++; else s++; });
+      if (f === 1 && !s) return '"' + list[0].name + '"';
+      var parts = [];
+      if (f) parts.push(plural(f, 'folder', 'folders'));
+      if (s) parts.push(plural(s, 'song', 'songs'));
+      return parts.join(' and ');
+    }
+    function paintWaiting(){
+      var list = Lib.waiting();
+      reRow.hidden = !list.length;
+      if (list.length) reBtn.textContent = '↻ Reconnect ' + waitingWords(list);
+    }
     reBtn.addEventListener('click', function(){
       Lib.reconnect().then(function(res){
-        if (res){ reRow.hidden = true; note.textContent = res.count + ' songs from "' + res.name + '".'; }
+        paintWaiting();
+        note.textContent = plural(res.count, 'song is', 'songs are') + ' back.' +
+          (res.left ? ' The browser did not give permission for the rest: tap Reconnect again.' : '');
       }).catch(function(err){ note.textContent = err.message; });
     });
     document.getElementById('forgetFolderBtn').addEventListener('click', function(){
-      Lib.forget().then(function(){ reRow.hidden = true; });
+      Lib.forget(['folder', 'file']).then(paintWaiting);
     });
-    Lib.remembered().then(function(info){
-      if (!info) return;
-      if (info.granted){
-        // permission is still held from last time: just load it
-        Lib.reconnect().then(function(res){ if (res) note.textContent = res.count + ' songs from "' + res.name + '".'; }).catch(function(){});
-      } else {
-        reBtn.textContent = '↻ Reconnect "' + info.name + '"';
-        reRow.hidden = false;
-      }
+    Lib.restore().then(function(res){
+      paintWaiting();
+      if (res.loaded) note.textContent = plural(res.loaded, 'song', 'songs') + ' from last time.' +
+        (res.waiting.length ? ' Tap Reconnect for the rest: the browser asks for permission again after the app was closed.' : '');
+      else if (res.waiting.length) note.textContent = 'Tap Reconnect to bring back ' + waitingWords(res.waiting) +
+        ' from last time. The browser asks for permission again after the app was closed; copies kept inside the app need no question.';
     });
+
+    /* ----- keep a copy inside the app ----- */
+    var keepBox = document.getElementById('keepCopies'), keepNote = document.getElementById('keepNote');
+    function megabytes(b){ return b < 1048576 ? '0.' + Math.max(1, Math.round(b / 104858)) + ' MB' : Math.round(b / 1048576) + ' MB'; }
+    function paintKeep(){
+      keepBox.checked = Lib.keepCopies();
+      Lib.summary().then(function(s){
+        var words = keepBox.checked
+          ? 'On: every song you add from now on is also copied into the app, on this device only. It is there the next time with no question asked, and it takes space.'
+          : 'Off: songs play from where they are and nothing is copied. On an iPhone, or for songs added by drag and drop, this switch is the only way to have them back next time.';
+        keepNote.textContent = words + (s.copies ? ' Kept now: ' + plural(s.copies, 'song', 'songs') + ', ' + megabytes(s.bytes) + '. ' : '');
+        if (s.copies){
+          var del = document.createElement('button');
+          del.type = 'button'; del.className = 'link-btn'; del.textContent = 'delete the copies';
+          del.addEventListener('click', function(){
+            Lib.forget(['copy']).then(function(){
+              S.playlist.forEach(function(t){ if (t.blob) delete t.savedId; });
+              note.textContent = 'The copies are deleted. Songs already in the playlist play until the app is closed.';
+              paintKeep();
+            });
+          });
+          keepNote.appendChild(del);
+        }
+      });
+    }
+    if (!Lib.canKeep()) document.getElementById('keepRow').hidden = true;
+    keepBox.addEventListener('change', function(){ Lib.setKeepCopies(keepBox.checked); paintKeep(); });
+    P.onKept = paintKeep;
+    paintKeep();
 
     /* ----- dev only: the real songs in test-songs/ ----- */
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){

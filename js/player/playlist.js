@@ -78,19 +78,72 @@
     if (Aud.source === 'mic') Aud.stopMic();   // playing a song hands the visuals back to the music
     S.nowPlayingEl.textContent = track.name;
     renderPlaylist();
-    // A song from an opened folder is only read from the disk now, when it
-    // is first played; until then the playlist just holds its handle.
-    if (!track.url && track.handle){
-      track.handle.getFile().then(function(file){
-        track.url = URL.createObjectURL(file);
-        if (S.playlist[S.currentIndex] === track) start(track);
-      }, function(){
-        S.corsNoteEl.textContent = 'That file could not be read. If the folder was moved, open it again.';
-      });
-      return;
-    }
-    start(track);
+    if (track.url){ start(track); return; }
+    ready(track).then(function(){
+      if (S.playlist[S.currentIndex] === track) start(track);
+    }, function(){
+      S.corsNoteEl.textContent = 'That file could not be read. If it was moved or its folder was, add it again.';
+    });
   }
+  // A remembered song is only read now, when it is first played: from the
+  // disk through its handle, or from the app's own storage when it is a
+  // kept copy (js/player/library.js). Until then the playlist holds no sound.
+  function ready(track){
+    if (track.url) return Promise.resolve(track);
+    if (track.blob){ track.url = URL.createObjectURL(track.blob); return Promise.resolve(track); }
+    if (track.handle) return track.handle.getFile().then(function(file){ track.url = URL.createObjectURL(file); return track; });
+    return Promise.reject(new Error('nothing to play'));
+  }
+
+  /* ---------- Where the music stopped ----------
+     The song and the second it had reached are kept, so the next visit
+     opens on the same song at the same place, paused. Nothing starts
+     playing by itself. */
+  var lastSaved = 0;
+  function rememberSpot(force){
+    var tr = S.playlist[S.currentIndex], el = S.player();
+    if (!tr || !tr.path) return;
+    var now = Date.now();
+    if (!force && now - lastSaved < 5000) return;
+    lastSaved = now;
+    try { localStorage.setItem('viz.last', JSON.stringify({ path: tr.path, t: Math.floor(el.currentTime || 0) })); } catch (e) {}
+  }
+  [audio, S.plainAudio].forEach(function(el){
+    el.addEventListener('timeupdate', function(){ if (el === S.player() && !el.paused) rememberSpot(false); });
+    el.addEventListener('pause', function(){ if (el === S.player()) rememberSpot(true); });
+  });
+  window.addEventListener('pagehide', function(){ rememberSpot(true); });
+  // puts song i on the player at second t without starting it
+  function cue(i, t){
+    var track = S.playlist[i];
+    if (!track || track.noRead) return;
+    S.currentIndex = i;
+    S.orderPos = Math.max(0, S.order.indexOf(i));
+    S.nowPlayingEl.textContent = track.name;
+    renderPlaylist();
+    ready(track).then(function(){
+      if (S.playlist[S.currentIndex] !== track || !audio.paused || S.usingPlain) return;
+      audio.crossOrigin = 'anonymous';
+      audio.src = track.url;
+      audio.load();
+      if (t > 0){
+        var seek = function(){
+          audio.removeEventListener('loadedmetadata', seek);
+          if (audio.duration && t < audio.duration - 5) audio.currentTime = t;
+        };
+        audio.addEventListener('loadedmetadata', seek);
+      }
+    }, function(){});
+  }
+  P.cue = cue;
+  P.cueLast = function(){
+    if (S.currentIndex !== -1 || !S.playlist.length) return;
+    var last = null;
+    try { last = JSON.parse(localStorage.getItem('viz.last') || 'null'); } catch (e) {}
+    var at = -1;
+    if (last && last.path) for (var i = 0; i < S.playlist.length; i++) if (S.playlist[i].path === last.path){ at = i; break; }
+    cue(at < 0 ? 0 : at, at < 0 ? 0 : (Number(last.t) || 0));
+  };
   function start(track){
     var plain = S.plainAudio;
     // a source already found to block reading goes straight to the plain player
@@ -172,6 +225,7 @@
   function removeTrack(i){
     var wasCurrent = (i === S.currentIndex);
     if (S.playlist[i].isLocal && S.playlist[i].url) URL.revokeObjectURL(S.playlist[i].url);
+    if (App.library) App.library.forgetTrack(S.playlist[i]);
     S.playlist.splice(i, 1);
     if (S.currentIndex > i) S.currentIndex--;
     else if (wasCurrent){
@@ -196,7 +250,7 @@
   /* ---------- Adding files ---------- */
   // tracks: [{ name, url | handle, path?, isLocal }]. A track whose path is
   // already in the playlist is skipped, so reopening a folder adds nothing twice.
-  function addTracks(tracks){
+  function addTracks(tracks, opts){
     var have = {};
     S.playlist.forEach(function(t){ if (t.path) have[t.path] = 1; });
     var startIndex = S.playlist.length, added = 0;
@@ -210,7 +264,7 @@
     if (!added) return 0;
     rebuildOrder();
     renderPlaylist();
-    if (S.currentIndex === -1 && Aud.source !== 'mic') playIndex(startIndex);
+    if (S.currentIndex === -1 && Aud.source !== 'mic' && !(opts && opts.quiet)) playIndex(startIndex);
     return added;
   }
   P.addTracks = addTracks;
@@ -222,7 +276,33 @@
       return { name: U.stripExt(f.name), url: URL.createObjectURL(f), isLocal: true,
                path: (f.webkitRelativePath || f.name) + '|' + f.size };
     }));
+    var Lib = App.library;
+    if (!Lib || !Lib.keepCopies()) return;
+    Lib.keepFiles(audioFiles, function(done, total){
+      P.note('Keeping a copy inside the app: ' + done + ' of ' + total + '…');
+    }).then(function(res){
+      P.note(res.failed ? 'Kept ' + res.kept + ' copies, then stopped: ' + res.failed
+                        : (res.kept ? res.kept + (res.kept === 1 ? ' song is' : ' songs are') + ' now kept inside the app. They will be here next time.'
+                                    : 'These songs were already kept inside the app.'));
+      if (P.onKept) P.onKept();
+    });
   }
+  // words for the note under the buttons on the Music page (page-music.js sets the real one)
+  P.note = function(){};
+  // "Add files": the chooser that can remember what is picked, where the browser has one
+  P.chooseFiles = function(){
+    var Lib = App.library;
+    if (!Lib || !Lib.canPickFiles()){ fileInput.click(); return; }
+    Lib.pickFiles().then(function(res){
+      if (!res) return;
+      var n = res.count;
+      P.note(res.failed ? n + (n === 1 ? ' song' : ' songs') + ' added, but not remembered: ' + res.failed
+           : !n ? 'Those songs are already in the playlist.'
+           : Lib.keepCopies() ? n + (n === 1 ? ' song' : ' songs') + ' added and kept inside the app. They will be here next time.'
+           : n + (n === 1 ? ' song' : ' songs') + ' added and remembered: next time, one tap on "Reconnect" brings ' + (n === 1 ? 'it' : 'them') + ' back.');
+      if (P.onKept) P.onKept();
+    }, function(){ fileInput.click(); });      // the chooser failed: the plain file box still works
+  };
 
   /* ---------- File / folder pickers ---------- */
   var dropZone = document.getElementById('dropZone');
@@ -234,7 +314,7 @@
 
   dropZone.addEventListener('click', function(e){
     if (e.target === folderLink) return;
-    fileInput.click();
+    P.chooseFiles();
   });
   folderLink.addEventListener('click', function(e){
     e.stopPropagation();

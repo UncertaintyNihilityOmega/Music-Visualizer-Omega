@@ -238,6 +238,9 @@ input[type=range]::-moz-range-thumb{ width:14px; height:14px; border-radius:50%;
 .source-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
 .source-note{ font-size:.76rem; line-height:1.5; color:var(--muted); margin:0 0 10px; min-height:0; }
 .source-note:empty{ display:none; }
+.check-row{ display:flex; align-items:center; gap:8px; margin:0 0 4px; font-size:.8rem; color:var(--ink); cursor:pointer; }
+.check-row input{ width:18px; height:18px; accent-color:var(--accent); flex:none; }
+.check-row[hidden]{ display:none; }
 .drop-zone{ border:2px dashed var(--line); border-radius:16px; padding:18px 14px; text-align:center; cursor:pointer; background:rgba(var(--accent-rgb),.05); transition:background .2s, border-color .2s; }
 .drop-zone.hover{ background:rgba(var(--accent-rgb),.18); border-color:var(--accent); }
 .drop-zone p{ margin:0; font-size:.9rem; color:var(--ink); }
