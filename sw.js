@@ -8,7 +8,7 @@
    The list and version are written by  node engine/sw-build.js .
    ========================================================================= */
 /* BUILD:START (written by engine/sw-build.js; do not edit by hand) */
-var VERSION = '0.1.0-dev-475e7e57ac';
+var VERSION = '0.1.0-dev-8b0e61a253';
 var FILES = [
   'css/styles.css',
   'icons/icon-180.png',
@@ -41,6 +41,7 @@ var FILES = [
   'js/modes/mode-emoji.js',
   'js/modes/mode-fire.js',
   'js/modes/mode-ice.js',
+  'js/modes/mode-liquid.js',
   'js/modes/mode-nature.js',
   'js/modes/mode-piano.js',
   'js/modes/mode-rain.js',

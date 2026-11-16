@@ -131,6 +131,15 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   swells; the four skins follow the theme code ("theme" is the default style).
 - Ideas left: tick exactly on the beat once a tempo is known (needs the song map, ROADMAP 6).
 
+## Liquid (added 2026-11-16, asked by the user; model: `inspiration/liquid-example.mp4`)
+- Picture: a dark drop in the middle with an edge that wobbles like thick liquid, pale rings that follow the
+  edge a few frames late, a whirlpool of streaks behind, the theme's mark in the middle.
+- Listens to: 20 log bars 40 to 9000 Hz round the edge (bass bottom, treble top, mirrored); `drive` sets how far
+  the edge moves and how fast the whirlpool turns; `kick` swells the drop; `snareHit` throws droplets.
+- Calm against lively: a calm passage is a near circle that breathes; a loud one has long lobes.
+- Theme: `look.liquid` (kind ink / slime / mercury / plasma, colours, rainbow).
+- Ideas left: a second drop that merges and splits (metaballs); the song map's sections changing the liquid.
+
 ## Theme looks (2026-11-16)
 Every theme code gives these modes a form of their own, not only colours. The tables are in `js/core/themes.js`
 (`look.rain`, `look.nature`, `look.clock`, `look.fire`); the fields are listed at the top of each mode file, and

@@ -5,6 +5,10 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **New mode: Liquid.** A drop of liquid in a whirlpool. Its edge is the sound (bass at the bottom, treble at
+  the top); a kick swells it, a snare throws droplets that fall back in, a tap makes a splash. It changes with
+  the codes: slime that drips (Halloween), mercury that moves in steps (Cyberpunk), a flickering edge (Tessa),
+  rainbow rings (Ascensus Ad Incertum).
 - **New code: Tessa.** An electric theme. String becomes a Jacob's ladder (arcs of electricity climbing between
   two rods), Fire a plasma globe (touch it and the threads follow your finger), Nature a tree made of lightning,
   Rain a thunderstorm, Clock throws sparks, Basic is built from lightning marks. Its button stands next to Omega.

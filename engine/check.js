@@ -133,6 +133,12 @@ try {
       if (!['curve', 'straight', 'bolt'].includes(N.branch)) err(`theme "${id}": look.nature.branch must be curve, straight or bolt`);
       if (!['leaf', 'square', 'spark'].includes(N.leafShape)) err(`theme "${id}": look.nature.leafShape must be leaf, square or spark`);
     }
+    const Q = t.look && t.look.liquid;
+    if (!Q) err(`theme "${id}": look.liquid is missing`);
+    else {
+      for (const k of ['fill', 'rim', 'bg1', 'bg2']) if (!hex(Q[k])) err(`theme "${id}": look.liquid.${k} must be a #rrggbb colour`);
+      if (!['ink', 'slime', 'mercury', 'plasma'].includes(Q.kind)) err(`theme "${id}": look.liquid.kind must be ink, slime, mercury or plasma`);
+    }
     const clockSrc = read('js/modes/mode-clock.js');
     if (!t.look || !new RegExp('\\n    ' + t.look.clock + ': \\{').test(clockSrc)) err(`theme "${id}": look.clock "${t.look && t.look.clock}" is not a skin in mode-clock.js`);
     if (!t.look || !t.look.fire) err(`theme "${id}": look.fire is missing (every theme, the default too, gives Fire a form)`);
