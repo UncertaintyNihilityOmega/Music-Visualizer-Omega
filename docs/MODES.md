@@ -139,6 +139,7 @@ Every theme code gives these modes a form of their own, not only colours. The ta
 | Code | Rain | Nature | Clock | Fire |
 | --- | --- | --- | --- | --- |
 | Omega (default) | violet night rain | glowing violet tree at night | violet skin, Ω drifting | violet hearth |
+| Tessa | thunderstorm, forked bolts | lightning tree, sparks for leaves | electric skin, sparks from the rim | plasma globe |
 | New Year | snow | frosted tree, gold lights, snow | midnight and gold, snowflakes | fireworks |
 | Halloween | bats, leaves, spiders | dead tree, orange leaves | orange and purple, bats | cauldron |
 | Love | hearts | cherry tree shedding petals | cream and rose, hearts | candles |

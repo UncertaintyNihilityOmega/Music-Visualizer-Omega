@@ -38,9 +38,10 @@
     sun:       { place: 'sun' },
     pixels:    { glyphs: ['1', '0'], blocks: true },
     vortex:    { place: 'vortex', front: 'hole' },
-    aurora:    { glyphs: ['✧'], place: 'aurora' }
+    aurora:    { glyphs: ['✧'], place: 'aurora' },
+    plasma:    { place: 'plasma' }
   };
-  var STYLE_IDS = ['theme', 'hearth', 'fireworks', 'cauldron', 'candles', 'sun', 'pixels', 'vortex', 'aurora'];
+  var STYLE_IDS = ['theme', 'hearth', 'fireworks', 'cauldron', 'candles', 'sun', 'pixels', 'vortex', 'aurora', 'plasma'];
   function styleId(){
     var id = Cfg.CFG.fire.style;
     if (id === 'theme'){ var th = App.theme.look; id = (th && th.fire && th.fire.style) || 'hearth'; }
@@ -111,6 +112,107 @@
     var r = U.lerp(warm[0], cool[0], heat) * tone, g = U.lerp(warm[1], cool[1], heat) * tone, b = U.lerp(warm[2], cool[2], heat) * tone;
     return 'rgba(' + Math.min(255, Math.round(r)) + ',' + Math.min(255, Math.round(g)) + ',' + Math.min(255, Math.round(b)) + ',' + a + ')';
   }
+  /* Plasma globe (the Tessa code): a glass ball with a bright electrode in
+     the middle. Threads of light run from it to the glass, one per slice of
+     the sound: a thread is as bright and as restless as its slice is loud.
+     A kick makes every thread fatter; a tap pulls threads towards the finger. */
+  var plasmaAng = null, plasmaPull = { x: 0, y: 0, t: 0 }, plasmaVals = null, plasmaState = null;
+  function drawPlasma(w, h, k, dt, cfg){
+    var cx = w / 2, cy = h * 0.46, R = Math.min(w * 0.42, h * 0.4), n = Math.max(5, Math.round(cfg.tongues));
+    var i, j;
+    if (!plasmaAng || plasmaAng.length !== n){
+      plasmaAng = new Float32Array(n);
+      for (i = 0; i < n; i++) plasmaAng[i] = i / n * 6.283;
+      plasmaVals = new Float32Array(n); plasmaState = new Float32Array(n);
+    }
+    Aud.bars(plasmaVals, { lo: 45, hi: 9000, scale: 'log', blur: 0.2, state: plasmaState, attack: 40, release: 7 });
+    // the stand
+    ctx.fillStyle = 'rgba(16,22,40,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(cx - R * 0.42, cy + R * 0.9);
+    ctx.lineTo(cx + R * 0.42, cy + R * 0.9);
+    ctx.lineTo(cx + R * 0.6, h);
+    ctx.lineTo(cx - R * 0.6, h);
+    ctx.closePath();
+    ctx.fill();
+    // the glass: a soft glow inside that swells with the music
+    var glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+    glow.addColorStop(0, fireCol(2, 0.5, (0.3 + A.drive * 0.35).toFixed(3)));
+    glow.addColorStop(0.5, fireCol(1, 0, (0.1 + A.drive * 0.14).toFixed(3)));
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 6.283);
+    ctx.fill();
+
+    plasmaPull.t = Math.max(0, plasmaPull.t - dt);
+    var pullAng = Math.atan2(plasmaPull.y - cy, plasmaPull.x - cx);
+    var jt = Math.floor(A.t * 18), mo = Cfg.CFG.look.motion;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (i = 0; i < n; i++){
+      var v = plasmaVals[i];
+      // each thread wanders round the ball; a touch pulls the nearest ones over
+      plasmaAng[i] += (Math.sin(A.t * (0.31 + i * 0.07) + i * 2.1) * 0.5 + (i % 2 ? 0.12 : -0.12)) * dt * mo * (0.5 + A.drive * 1.6) * cfg.sway;
+      if (plasmaPull.t > 0){
+        var dA = Math.atan2(Math.sin(pullAng - plasmaAng[i]), Math.cos(pullAng - plasmaAng[i]));
+        if (Math.abs(dA) < 1.3) plasmaAng[i] += dA * Math.min(1, dt * 5);
+      }
+      var a = plasmaAng[i], px = -Math.sin(a), py = Math.cos(a);
+      var bend = Math.sin(A.t * 0.8 + i * 1.7) * 0.35;
+      var wig = R * 0.05 * cfg.turb * (0.4 + v * 1.6 + A.drive);
+      var width = (0.9 + v * 2.2 + A.kick * 1.8) * k * cfg.size;
+      for (var pass = 0; pass < 2; pass++){
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        for (j = 1; j <= 14; j++){
+          var u = j / 14, env = Math.sin(u * Math.PI);
+          var rr = R * 0.985 * u;
+          var hx = Math.sin(i * 12.9898 + j * 78.233 + jt * 37.719) * 43758.5453;
+          var off = (bend * R * 0.3 + ((hx - Math.floor(hx)) - 0.5) * 2 * wig) * env;
+          ctx.lineTo(cx + Math.cos(a) * rr + px * off, cy + Math.sin(a) * rr + py * off);
+        }
+        if (pass === 0){
+          ctx.strokeStyle = fireCol(1, heatShown, (0.14 + v * 0.3).toFixed(3));
+          ctx.lineWidth = width * 5;
+        } else {
+          ctx.strokeStyle = fireCol(2, 0.55 + heatShown * 0.45, (0.5 + v * 0.5).toFixed(3));
+          ctx.lineWidth = width;
+        }
+        ctx.stroke();
+      }
+      // the bright spot where the thread meets the glass
+      var ex = cx + Math.cos(a) * R * 0.985, ey = cy + Math.sin(a) * R * 0.985, er = (5 + v * 12 + A.kick * 6) * k;
+      var sp = ctx.createRadialGradient(ex, ey, 0, ex, ey, er);
+      sp.addColorStop(0, fireCol(2, 0.7, (0.5 + v * 0.4).toFixed(3)));
+      sp.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = sp;
+      ctx.fillRect(ex - er, ey - er, er * 2, er * 2);
+    }
+    // the electrode
+    var er0 = R * (0.09 + A.kick * 0.03);
+    var el = ctx.createRadialGradient(cx, cy, 0, cx, cy, er0 * 2.2);
+    el.addColorStop(0, 'rgba(255,255,255,0.95)');
+    el.addColorStop(0.35, fireCol(2, 0.6, 0.8));
+    el.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = el;
+    ctx.fillRect(cx - er0 * 2.2, cy - er0 * 2.2, er0 * 4.4, er0 * 4.4);
+    ctx.restore();
+    // the glass edge and its highlight
+    ctx.strokeStyle = 'rgba(190,220,255,0.3)';
+    ctx.lineWidth = 1.5 * k;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 6.283);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 3 * k;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 0.9, -2.5, -1.9);
+    ctx.stroke();
+  }
+
   function drawFire(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.fire;
     var mo = Cfg.CFG.look.motion;
@@ -130,6 +232,7 @@
     var heat = U.clamp01((hard - cfg.blueAt) / cfg.blueRange);
     heatShown = U.env(heatShown, heat, 3, 1.2, dt);
     var coreHeat = heatShown;
+    if (styleId() === 'plasma'){ drawPlasma(w, h, k, dt, cfg); return; }
     // The flames themselves only lean toward the hot colour. Halfway between
     // orange and blue is grey, and added light turns grey into white, so the
     // blue is shown by the core at the base and the tongues stay fire-coloured.
@@ -518,6 +621,7 @@
   }
 
   function onTap(x, y){
+    if (styleId() === 'plasma'){ plasmaPull.x = x; plasmaPull.y = y; plasmaPull.t = 2.5; App.taps.spawnRing(x, y, '#9FE4FF'); return; }
     var k = Can.dpr(), cfg = Cfg.CFG.fire;
     palette();
     App.taps.spawnRing(x, y, P.themed ? 'rgb(' + P.warm.join(',') + ')' : '#FFC46B');

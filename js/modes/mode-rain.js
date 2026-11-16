@@ -184,8 +184,10 @@
     // for a crack of light), a few seconds apart at most, and the thunder
     // shakes the picture.
     boltCd -= dt;
-    if (cfg.lightning && A.snareHit > cfg.boltAt && A.drive > 0.5 && boltCd <= 0){
-      boltCd = 1.6 + Math.random() * 2.4;
+    // a storm look (Tessa) strikes on softer hits, in quieter passages and far more often
+    var storm = !!L.storm;
+    if (cfg.lightning && A.snareHit > cfg.boltAt * (storm ? 0.55 : 1) && A.drive > (storm ? 0.22 : 0.5) && boltCd <= 0){
+      boltCd = storm ? 0.35 + Math.random() * 0.6 : 1.6 + Math.random() * 2.4;
       App.fx.jolt(0.5 + A.snareHit * 0.6);
       boltFlash = 1;
       bolt = [];
@@ -209,6 +211,13 @@
         ctx.beginPath();
         ctx.moveTo(bolt[0], bolt[1]);
         for (var bi = 2; bi < bolt.length; bi += 2) ctx.lineTo(bolt[bi], bolt[bi + 1]);
+        if (L.storm && bolt.length >= 8){
+          // a fork leaves the bolt half way down
+          var fk = (bolt.length >> 2) * 2;
+          ctx.moveTo(bolt[fk], bolt[fk + 1]);
+          ctx.lineTo(bolt[fk] + w * 0.07, bolt[fk + 1] + h * 0.09);
+          ctx.lineTo(bolt[fk] + w * 0.09, bolt[fk + 1] + h * 0.2);
+        }
         ctx.stroke();
         ctx.shadowBlur = 0;
       }

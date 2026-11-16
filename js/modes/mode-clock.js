@@ -82,6 +82,13 @@
       bezelOuter: '#BD9257', bezelInner: '#E6C99A', bezelHighlight: '#FFF6E2', bezelStud: '#C2626F',
       bg1: '#FFF8F3', bg2: '#F1D8D5'
     }},
+    tessa: { decor: { glyphs: ['ϟ', '✦'], move: 'rise', arcs: true }, pal: {
+      accent: '#9FE4FF', faceCenter: '#12264F', faceMid: '#0A1733', faceEdge: '#030814', rim: '#4FC3FF',
+      numeral: '#E6F6FF', numeralShadow: 'rgba(79,195,255,0.55)', tick: 'rgba(138,123,255,0.7)',
+      hourHand: '#E6F6FF', minuteHand: '#9FE4FF', secondHand: '#B9A8FF',
+      bezelOuter: '#0C1C40', bezelInner: '#2E5FB8', bezelHighlight: '#D6F3FF', bezelStud: '#8A7BFF',
+      bg1: '#081226', bg2: '#01030A'
+    }},
     nihilum: { decor: { glyphs: ['●', '·'], move: 'inward' }, pal: {
       accent: '#FF9A4A', faceCenter: '#000000', faceMid: '#030204', faceEdge: '#0B0810', rim: '#FF9A4A',
       numeral: '#D9D4E2', numeralShadow: 'rgba(255,154,74,0.4)', tick: 'rgba(142,124,168,0.6)',
@@ -124,6 +131,30 @@
       ctx.stroke();
     }
     ctx.restore();
+
+    // electric skin: sparks jump from the rim outward, more of them and longer when the music is big
+    if (dec.arcs){
+      var nArc = 1 + Math.round(A.drive * 5) + (A.kick > 0.5 ? 2 : 0), step = Math.floor(A.t * 14);
+      ctx.save();
+      ctx.strokeStyle = pal.accent;
+      ctx.shadowColor = pal.rim;
+      ctx.shadowBlur = 10 * k * cfg.glow;
+      ctx.lineWidth = 1.4 * k;
+      ctx.lineJoin = 'round';
+      for (var ai = 0; ai < nArc; ai++){
+        var sd = step * 7.13 + ai * 31.7;
+        var aa = (Math.sin(sd * 12.9898) * 43758.5453 % 1) * 6.283, len = R * (0.25 + 0.7 * A.drive) * (0.6 + 0.4 * Math.abs(Math.sin(sd * 3.1)));
+        ctx.globalAlpha = 0.45 + 0.5 * Math.abs(Math.sin(sd * 1.7));
+        ctx.beginPath();
+        for (var sg = 0; sg <= 5; sg++){
+          var rr = R * 1.14 + len * sg / 5, off = sg === 0 ? 0 : Math.sin(sd * (sg + 1) * 5.3) * 0.11;
+          var ax = cx + Math.cos(aa + off) * rr, ay = cy + Math.sin(aa + off) * rr;
+          if (sg === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
     // the theme's characters: few when calm, many when the music is big; a hi-hat adds one
     var max = Math.round((8 + A.drive * 34) * cfg.density);

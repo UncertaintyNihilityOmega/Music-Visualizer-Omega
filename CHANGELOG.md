@@ -5,6 +5,9 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **New code: Tessa.** An electric theme. String becomes a Jacob's ladder (arcs of electricity climbing between
+  two rods), Fire a plasma globe (touch it and the threads follow your finger), Nature a tree made of lightning,
+  Rain a thunderstorm, Clock throws sparks, Basic is built from lightning marks. Its button stands next to Omega.
 - **Rain, Nature and Clock follow the theme codes.** Rain: violet night rain (Omega), snow (New Year), bats and
   leaves (Halloween), falling hearts (Love), a sun shower (Solarpunk), falling 1s and 0s (Cyberpunk), rain that
   rises (Decensus Ad Nihilum), rainbow rain (Ascensus Ad Incertum). Nature: a glowing violet tree (Omega), a

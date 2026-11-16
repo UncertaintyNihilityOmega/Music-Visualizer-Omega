@@ -11,6 +11,8 @@
      digital  (Cyberpunk)     the strings move in square steps
      ring     (Nihilum)       the strings close into circles round a dark disc
      rainbow  (Incertum)      each string takes its own hue
+     electric (Tessa)         a Jacob's ladder: two rods that lean apart, and
+                              one arc per string climbing between them
    ========================================================================= */
 (function(){
   'use strict';
@@ -77,6 +79,78 @@
     return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
   }
 
+  /* Jacob's ladder: two metal rods, close at the bottom and wide at the top.
+     An arc of electricity forms at the bottom, climbs, stretches and breaks
+     at the top, then starts again. One arc per string: its shape is that
+     string's slice of the sound wave, its speed and brightness how loud the
+     slice is. A kick thickens every arc; a snare (a pluck) makes one flare. */
+  var arcPos = new Float32Array(MAX_STRINGS), arcInit = false;
+  function drawLadder(w, h, k, n, m, lk, big, glowAmt, dt){
+    var cx = w / 2, yB = h * 0.93, yT = h * 0.07;
+    var gapB = Math.min(w * 0.035, 22 * k), gapT = Math.min(w * 0.42, h * 0.5);
+    var c1 = U.hexRGB(lk.c1), c2 = U.hexRGB(lk.c2), i, j;
+    if (!arcInit){ for (i = 0; i < MAX_STRINGS; i++) arcPos[i] = i / MAX_STRINGS; arcInit = true; }
+    // the stand and the rods
+    ctx.lineCap = 'round';
+    ctx.fillStyle = 'rgba(20,30,52,0.9)';
+    ctx.fillRect(cx - gapB - 26 * k, yB, (gapB + 26 * k) * 2, h - yB);
+    for (var side = -1; side <= 1; side += 2){
+      var rg = ctx.createLinearGradient(cx + side * gapB, yB, cx + side * gapT, yT);
+      rg.addColorStop(0, 'rgba(120,140,170,0.95)');
+      rg.addColorStop(1, 'rgba(210,225,245,0.95)');
+      ctx.strokeStyle = rg;
+      ctx.lineWidth = 3.2 * k;
+      ctx.beginPath();
+      ctx.moveTo(cx + side * gapB, yB);
+      ctx.lineTo(cx + side * gapT, yT);
+      ctx.stroke();
+    }
+    var jt = Math.floor(A.t * 24);
+    ctx.lineJoin = 'round';
+    for (i = 0; i < n; i++){
+      var v = vals[i], b = bands[i];
+      // climb: slow when this slice is quiet, fast when it is loud
+      arcPos[i] += (0.07 + big * 0.22 + v * 0.5) * dt * Cfg.CFG.look.motion;
+      if (arcPos[i] > 1) arcPos[i] -= 1;
+      var p = arcPos[i], y = yB + (yT - yB) * p, half = gapB + (gapT - gapB) * p;
+      var span = Math.max(96, m >> Math.round((n === 1 ? 0.5 : i / (n - 1)) * 3)), pts = 26;
+      var pk = 0;
+      for (j = 0; j < plucks.length; j++) if (plucks[j].li === i) pk = Math.max(pk, plucks[j].amp * (1 - plucks[j].age / 1.1));
+      var amp = h * 0.05 * Cfg.CFG.strings.amp * (0.25 + v * 1.5) * big + pk * h * 0.05;
+      // an arc fades in as it forms and thins out just before it breaks
+      var alive = Math.min(1, p * 9) * Math.min(1, (1 - p) * 5);
+      for (j = 0; j <= pts; j++){
+        var u = j / pts, env = Math.sin(u * Math.PI);
+        var wv = b[Math.min(m - 1, Math.floor(u * (span - 1)))] || 0;
+        var jit = (hash(i, j, jt) - 0.5) * (0.35 + v * 1.2);
+        // hot air lifts the middle of the arc
+        ys[j] = y - env * half * 0.22 + (wv * 2.2 + jit) * amp * env;
+      }
+      var core = (1.2 + v * 1.6 + A.kick * 1.6 + pk * 2.5) * k;
+      for (var pass = 0; pass < 2; pass++){
+        ctx.beginPath();
+        for (j = 0; j <= pts; j++){
+          var x = cx - half + 2 * half * j / pts;
+          if (j === 0) ctx.moveTo(x, ys[j]); else ctx.lineTo(x, ys[j]);
+        }
+        if (pass === 0){
+          ctx.strokeStyle = U.rgba(c1, (alive * (0.22 + v * 0.4) * (0.5 + glowAmt)).toFixed(3));
+          ctx.lineWidth = core * 4.5;
+        } else {
+          ctx.strokeStyle = U.rgba(c2, (alive * (0.55 + v * 0.45)).toFixed(3));
+          ctx.lineWidth = core;
+        }
+        ctx.stroke();
+      }
+      // where the arc touches the rods
+      ctx.fillStyle = U.rgba(c2, (alive * 0.9).toFixed(3));
+      ctx.beginPath();
+      ctx.arc(cx - half, y, core * 1.6, 0, 6.283);
+      ctx.arc(cx + half, y, core * 1.6, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
   function drawString(){
     var w = canvas.width, h = canvas.height, cy = h / 2, cx = w / 2, k = Can.dpr(), cfg = Cfg.CFG.strings;
     var CFGlook = Cfg.CFG.look, dt = A.dt;
@@ -111,6 +185,8 @@
       plucks[pq].age += dt;
       if (plucks[pq].age > 1.1) plucks.splice(pq, 1);
     }
+
+    if (lk && lk.electric){ drawLadder(w, h, k, n, m, lk, big, glowAmt, dt); return; }
 
     if (ring && lk.inward){
       // the dark disc the rings circle (same idea as Basic's black hole)

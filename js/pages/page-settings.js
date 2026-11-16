@@ -44,7 +44,10 @@ App.pages.define('settings', {
     // themes found so far, as one-tap buttons (the default is always there)
     function paintChips(){
       chips.innerHTML = '';
-      var ids = ['omega'].concat(T.unlocked());
+      var found = T.unlocked();
+      // Tessa stands right next to Omega once it is found
+      var ids = ['omega'].concat(found.filter(function(id){ return id === 'tessa'; }),
+                                 found.filter(function(id){ return id !== 'tessa'; }));
       if (ids.length < 2) return;
       ids.forEach(function(id){
         var b = document.createElement('button');

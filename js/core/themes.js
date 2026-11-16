@@ -21,6 +21,7 @@
                 inward      ring layout only: bars point into a dark disc
               and how the other modes follow the theme:
                 digital     String: the strings move in square steps
+                electric    String: a Jacob's ladder (arcs climbing between two rods) instead of strings
                 emoji       Emoji: the set to use, quiet to loud (null = the user's own)
                 clock       Clock: which of its skins to wear (the table at the top of mode-clock.js)
                 rain        Rain: what falls and its colours (fields listed at the top of mode-rain.js)
@@ -48,6 +49,20 @@
               nature: { trunk: '#7D62C9', leaf: '#C77DFF', bloom: '#FF5FD2', bloomChance: 0.35, glow: true, dark: true, branch: 'curve', leafShape: 'leaf',
                         hill: '#3A2A78', fly: '255,150,235', flowerHues: [270, 300, 320, 250], bg1: '#171033', bg2: '#06040E' },
               fire: { style: 'hearth', warm: '#B24BFF', cool: '#FF5FD2', bg1: '#171033', bg2: '#06040E' } }
+    },
+    tessa: {
+      codes: ['tessa'],
+      name: 'Tessa', title: 'Music Visualiser', mark: 'ϟ', docTitle: 'Music Visualiser ϟ Tessa',
+      vars: { bg1: '#04070F', bg2: '#0A1530', glow1: '80,170,255', glow2: '150,110,255',
+              card: 'rgba(10,18,40,.9)', field: 'rgba(120,200,255,.08)', ink: '#E6F6FF', muted: 'rgba(230,246,255,.62)',
+              accent: '#4FC3FF', accent2: '#8A7BFF', accentRgb: '79,195,255', line: 'rgba(79,195,255,.32)',
+              onAccent: '#02101C', shadow: '0 0 0 1px rgba(79,195,255,.14), 0 16px 34px rgba(0,0,0,.6)' },
+      look: { c1: '#3D6BFF', c2: '#B8F4FF', bg1: '#081226', bg2: '#01030A', dark: true, layout: 'edges', glyphs: ['ϟ'],
+              electric: true, emoji: ['✨', '🔋', '💡', '⚡', '🌩️'], clock: 'tessa',
+              rain: { shape: 'streak', color: '#9FE4FF', bolt: '#E8FBFF', storm: true, bg1: '#0A1430', bg2: '#01030A' },
+              nature: { trunk: '#BFEFFF', leaf: '#4FC3FF', bloom: '#C9B8FF', bloomChance: 0.25, glow: true, dark: true, branch: 'bolt', leafShape: 'spark',
+                        hill: '#12305E', fly: '170,230,255', flowerHues: [200, 225, 260], bg1: '#081226', bg2: '#01030A' },
+              fire: { style: 'plasma', warm: '#8A5CFF', cool: '#5FD0FF', bg1: '#081226', bg2: '#01030A' } }
     },
     newyear: {
       codes: ['new year', 'newyear', 'happy new year'],
