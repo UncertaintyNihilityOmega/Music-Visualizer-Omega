@@ -25,7 +25,7 @@ Music Visualiser Omega: Organizer session. Read ORGANIZER.md and ROADMAP.md, the
 
 ## Mode package (Writer)
 ```
-Music Visualiser Omega: Writer session for ROADMAP item 8, package <Pn>. Read ORGANIZER.md, docs/MODES.md, and
+Music Visualiser Omega: Writer session for ROADMAP item 17 or 20, mode <name>. Read ORGANIZER.md, docs/MODES.md, and
 the gold unit js/modes/mode-basic.js in full. Rebuild the two modes of the package to that standard using the
 ideas listed for them. Touch only those two mode files and docs/MODES.md. Run every gate in ORGANIZER.md, then
 update ROADMAP.md.

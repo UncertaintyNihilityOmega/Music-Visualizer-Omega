@@ -75,6 +75,13 @@ Run of 2026-11-16, second (the user joined it; one session, 5-hour meter from 3%
 | Tessa code (two new mode forms) and the Liquid mode, with the boom rework | 23% | 3% |
 | Icons on buttons, unused report, roadmap | about 12% | 2% |
 
+Run of 2026-11-16, third (the user joined it; 5-hour meter from 3%, weekly from 78%):
+
+| Step | 5-hour meter | Weekly meter |
+| --- | --- | --- |
+| Reading, web research (6 searches), loop fix, iPhone preparation, browser check | 20% | 5% |
+| Piano video measured, Piano flames, README, research notes, roadmap | see `.run/usage.log` | |
+
 So a run fits about three steps, and a step that starts above 60% is likely to cross 75%. Browser checks cost
 most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over
 screenshots, and one screenshot per fault. Update this table after more runs.

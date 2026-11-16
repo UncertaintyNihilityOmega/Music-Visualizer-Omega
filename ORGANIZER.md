@@ -23,7 +23,7 @@ A Writer never reviews its own package.
 | Area | Folder | A unit is | Gold unit |
 | --- | --- | --- | --- |
 | Core | `js/core/` | one engine feature | the analysis engine (`analysis.js`) |
-| Modes | `js/modes/` | one visual mode | **Basic** (`mode-basic.js`) |
+| Modes | `js/modes/` | one visual mode (custom or special, see "User decisions") | **Basic** (`mode-basic.js`) |
 | Games | `js/games/`, `js/tools/` | one game | Defense, after its audit |
 | App | `js/pages/`, `js/player/`, `css/` | one page | Music page |
 
@@ -84,6 +84,19 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-16: Buttons carry a small icon left of the text: modes, codes, layouts, and the four page tabs.
 - 2026-11-16: Unused files may be deleted (the icon options were); `node engine/unused.js` lists candidates.
 - 2026-11-16: For a mode built from an example video, look hardest at the moments the music booms.
+- 2026-11-16: **Four kinds of mode.** Custom modes change with the codes (Basic, String, Emoji, Fire, Rain,
+  Nature, Clock, Liquid). Special modes keep an art style of their own and never follow the codes (Ice,
+  Aquatic, Piano). Complex games are improved deeply in v1.x and v2.x (Undarum, Artificium). Mini-games stay
+  small (Dungeon of Echoes, Solarium). So there is no "more themes" item: queue item 10 was withdrawn.
+- 2026-11-16: **Versions.** v0.1.0: all custom modes improved, phone adaptations, engine updates, and Google
+  Search Console as the very last step. v0.2.0: all special modes improved, remembering folders and songs,
+  folders inside the app. v0.3.0: all mini-games improved.
+- 2026-11-16: The README lists every code word and does not say what any of them does.
+- 2026-11-16: An example video shows how a visualiser behaves; it is not a palette. Piano keeps its colours.
+- 2026-11-16: Checked by the user on their phone: the app installs, works online and offline, plays in the
+  background, and repeat and shuffle work. The Tessa looks are approved ("especially ... the nature section").
+- 2026-11-16: The app is prepared for iPhone and Safari too; the check on a real iPhone waits under "For the
+  user" until the user can do it.
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,
@@ -105,6 +118,12 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
   unless the address ends in `?sw=1`. To test offline: load with `?sw=1`, stop the preview server, reload.
 - 2026-11-16: On iPhone and iPad a song moves to the plain player while the page is hidden
   (`js/player/background.js`), because Safari silences analysed sound in the background. Not tested on a device.
+- 2026-11-16: "Repeat one" (and "repeat all" with one song) is the player's own loop (`el.loop`), not a restart
+  from script when the song ends: with the screen off a phone may refuse or delay that restart. Every start of
+  sound goes through `P.safePlay`; a start refused while the page is hidden is made up for when it is seen again.
+- 2026-11-16: iPhone: the sound session is set to "playback" (the silent switch no longer mutes the music); the
+  fullscreen button fills the window where a page element cannot go fullscreen; text boxes use 16 px letters
+  there so tapping one does not zoom the page. `check.js` guards all three. Not tested on a device.
 
 ## Environment (this machine)
 - Windows 10, PowerShell. Node 24. **No Python** (the `python` command is the Store stub): tools are Node only.

@@ -183,4 +183,4 @@ Every theme code gives these modes a form of their own, not only colours. The ta
   passage holds nearly still.
 - [ ] Basic, song 2: quiet reads 5.13 against 8.95 loud. Check by eye whether that verse looks calm enough.
 
-The review after P4 (ROADMAP item 8) is still to do, by a session that did not write the modes.
+The review after P4 (ROADMAP item 17) is still to do, by a session that did not write the modes.
