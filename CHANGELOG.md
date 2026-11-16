@@ -29,6 +29,10 @@ What someone using the app would notice. Newest first.
 - **String** was rebuilt: each string is its own slice of the sound, low to high. It follows the theme codes
   (square steps for Cyberpunk, rings round a dark disc for Decensus Ad Nihilum).
 - **Emoji** and **Clock** follow the theme codes too (each code has its own emoji set and clock skin).
+- **Fire** follows the theme codes: gold for New Year, witch-green for Halloween, rose for Love, cyan with a
+  magenta heart for Cyberpunk, violet for Decensus Ad Nihilum, a rainbow for Ascensus ad Incertum. Settings >
+  Fire > "Follow theme" turns it off.
+- Fire no longer burns out to a white block in loud passages.
 - **Basic**: a "dots" layout on a curved line, peak caps that leave a trail, bars that brighten when loud, and
   the theme's mark in the middle of the ring.
 - **Piano**: notes coloured by octave, a "melody only" switch, and the chord name in the corner.

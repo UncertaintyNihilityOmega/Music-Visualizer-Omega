@@ -1,12 +1,18 @@
-/* ---------- Fire: sway follows bass by default, blue is rare ---------- */
+/* ---------- Fire: sway follows bass by default, blue is rare ----------
+   When "Follow theme" is on and the active theme code has a fire of its own
+   (look.fire in themes.js), the flames, the hot core and the hearth take
+   its colours; a theme with rainbow: true gives every flame its own hue.
+   The default theme has none, so it burns in the user's own colours. */
 (function(){
   'use strict';
   var Can = App.canvas, Aud = App.audio, Cfg = App.cfg, U = App.util;
   var canvas = Can.canvas, ctx = Can.ctx;
   var A = Aud.A;
 
-  var fireParts = [], fireSparks = [], warmSprite = null, coldSprite = null;
+  var fireParts = [], fireSparks = [], warmSprites = [], coldSprite = null;
   var spriteKey = '', fireSway = 0, heatShown = 0, flameVals = null, flameState = null;
+  var P = null;              // the colours in use this frame (see palette)
+  var RAINBOW = 6;           // how many ember colours a rainbow fire has
   var FLAME_LEAN = 0.22;     // how far the tongues and embers lean to the hot colour at full heat
 
   function makeGlowSprite(rgb){
@@ -25,8 +31,28 @@
     c.fillRect(0, 0, 64, 64);
     return s;
   }
-  function fireCol(idx, heat, a){
-    var warm = U.hexRGB(Cfg.CFG.fire.warm), cool = U.hexRGB(Cfg.CFG.fire.cool);
+  // The colours in use: the theme code's fire when "Follow theme" is on and
+  // the theme has one, otherwise the user's own. Parsed once per change.
+  function palette(){
+    var cfg = Cfg.CFG.fire, th = App.theme.look;
+    var f = cfg.followTheme && th && th.fire ? th.fire : null;
+    var key = f ? 'theme|' + App.theme.current : 'own|' + cfg.warm + cfg.cool;
+    if (P && P.key === key) return P;
+    P = { key: key, themed: !!f, rainbow: !!(f && f.rainbow),
+          warm: U.hexRGB(f ? f.warm : cfg.warm), cool: U.hexRGB(f ? f.cool : cfg.cool),
+          bg1: f ? f.bg1 : null, bg2: f ? f.bg2 : null };
+    return P;
+  }
+  // a full-strength colour for a place on the colour wheel (0 to 360)
+  function hueRGB(hue){
+    var hh = ((hue % 360) + 360) % 360 / 60, x = 1 - Math.abs(hh % 2 - 1);
+    var c = hh < 1 ? [1, x, 0] : hh < 2 ? [x, 1, 0] : hh < 3 ? [0, 1, x] : hh < 4 ? [0, x, 1] : hh < 5 ? [x, 0, 1] : [1, 0, x];
+    return [Math.round(16 + c[0] * 239), Math.round(16 + c[1] * 239), Math.round(16 + c[2] * 239)];
+  }
+  // idx 0 = the dim tip, 1 = the body, 2 = the bright base. base: this
+  // flame's own colour (rainbow fire), left out = the palette's warm colour
+  function fireCol(idx, heat, a, base){
+    var warm = base || P.warm, cool = P.cool;
     var tone = [0.62, 1, 1.5][idx];
     var r = U.lerp(warm[0], cool[0], heat) * tone, g = U.lerp(warm[1], cool[1], heat) * tone, b = U.lerp(warm[2], cool[2], heat) * tone;
     return 'rgba(' + Math.min(255, Math.round(r)) + ',' + Math.min(255, Math.round(g)) + ',' + Math.min(255, Math.round(b)) + ',' + a + ')';
@@ -34,11 +60,13 @@
   function drawFire(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.fire;
     var mo = Cfg.CFG.look.motion;
-    var key = cfg.warm + cfg.cool;
-    if (!warmSprite || spriteKey !== key){
-      warmSprite = makeGlowSprite(U.hexRGB(cfg.warm));
-      coldSprite = makeGlowSprite(U.hexRGB(cfg.cool));
-      spriteKey = key;
+    palette();
+    if (spriteKey !== P.key){
+      warmSprites = [];
+      if (P.rainbow) for (var si = 0; si < RAINBOW; si++) warmSprites.push(makeGlowSprite(hueRGB(si * 360 / RAINBOW)));
+      else warmSprites.push(makeGlowSprite(P.warm));
+      coldSprite = makeGlowSprite(P.cool);
+      spriteKey = P.key;
     }
     Can.backdrop(cfg.trail);
 
@@ -56,6 +84,9 @@
     // (1 - trail) of the last frame, so brightness builds up to 1 / trail of
     // what one frame draws. Scale what is drawn so a busy fire stays under white.
     var expo = Math.min(1, (0.25 + cfg.trail) / 0.55);
+    // red, green and blue flames side by side add up to white where they
+    // overlap, so a rainbow fire is drawn a little dimmer
+    if (P.rainbow) expo *= 0.6;
 
     fireSway = U.env(fireSway, (Math.sin(A.t * 1.1 * mo) * 0.4 + (Aud.sourceValue(cfg.source) - 0.3) * 1.8), 6, 6, dt);
     var swayPx = fireSway * w * 0.035 * cfg.sway * (0.4 + A.intensity);
@@ -82,10 +113,12 @@
       var halfW = w * (0.032 + band * 0.028) * (0.7 + A.level * 0.6);
       var tipX = centre + wave, tipY = baseY - hgt;
 
+      // a rainbow fire: the colour wheel runs across the flames and turns slowly
+      var own = P.rainbow ? hueRGB(f * 300 + A.t * 24 * mo) : null;
       var g = ctx.createLinearGradient(0, baseY, 0, tipY);
-      g.addColorStop(0, fireCol(2, heat, ((0.2 + A.level * 0.1) * expo).toFixed(3)));
-      g.addColorStop(0.32, fireCol(1, heat, (0.17 * expo).toFixed(3)));
-      g.addColorStop(1, fireCol(0, heat, 0));
+      g.addColorStop(0, fireCol(2, heat, ((0.2 + A.level * 0.1) * expo).toFixed(3), own));
+      g.addColorStop(0.32, fireCol(1, heat, (0.17 * expo).toFixed(3), own));
+      g.addColorStop(1, fireCol(0, heat, 0, own));
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(centre - halfW, baseY);
@@ -115,11 +148,17 @@
         decay: (0.6 + Math.random() * 0.8) / cfg.life,
         size: (7 + Math.random() * 11 + A.level * 15) * k * cfg.size,
         spin: Math.random() * 6.283,
-        heat: heat
+        heat: heat,
+        hi: Math.floor(Math.random() * RAINBOW)
       });
     }
     // many overlapping embers add up, so each one is fainter in a crowd
-    var crowd = expo / (1 + fireParts.length / 110);
+    // "A crowd" is how much of the picture the embers would cover laid side
+    // by side, not how many there are: on a phone the canvas is small and
+    // the same 300 embers sit four times as thick as on a desktop.
+    var emberR = (12.5 + A.level * 15) * k * cfg.size * 0.8;
+    var cover = fireParts.length * Math.PI * emberR * emberR / (w * h);
+    var crowd = expo / (1 + cover * 3.4);
     for (var i = fireParts.length - 1; i >= 0; i--){
       var p = fireParts[i];
       p.vx += Math.sin(p.y * 0.011 / k + A.t * 3.1 + p.spin) * (70 + A.high * 300) * k * cfg.turb * dt;
@@ -135,7 +174,7 @@
       var a = p.life * p.life * 0.85 * crowd;
       if (p.heat < 0.98){
         ctx.globalAlpha = a * (1 - p.heat);
-        ctx.drawImage(warmSprite, p.x - r, p.y - r, r * 2, r * 2);
+        ctx.drawImage(warmSprites[(p.hi || 0) % warmSprites.length], p.x - r, p.y - r, r * 2, r * 2);
       }
       if (p.heat > 0.02){
         ctx.globalAlpha = a * p.heat;
@@ -195,7 +234,7 @@
       var coreH = flameH * (0.36 + A.kick * 0.1), coreW = w * (0.15 + A.level * 0.07);
       var ccx = w * 0.5 + swayPx;
       var core = ctx.createRadialGradient(ccx, baseY, 0, ccx, baseY, coreH);
-      var coolRGB = U.hexRGB(cfg.cool);
+      var coolRGB = P.cool;
       var coreTop = [Math.round(U.lerp(coolRGB[0], 255, 0.45)), Math.round(U.lerp(coolRGB[1], 255, 0.45)), Math.round(U.lerp(coolRGB[2], 255, 0.45))];
       core.addColorStop(0, U.rgba(coreTop, (coreHeat * 0.3).toFixed(3)));
       core.addColorStop(0.45, U.rgba(coolRGB, (coreHeat * 0.2).toFixed(3)));
@@ -212,21 +251,32 @@
     }
   }
 
+  // a share of the flame colour, for the hearth: tint(0.47, 0.42) is a dim glow of it
+  function tint(strength, alpha, towardWhite){
+    var m = P.warm, t = towardWhite || 0;
+    return 'rgba(' + Math.round(U.lerp(m[0], 255, t) * strength) + ',' + Math.round(U.lerp(m[1], 255, t) * strength) + ',' +
+           Math.round(U.lerp(m[2], 255, t) * strength) + ',' + alpha + ')';
+  }
+  function bgColors(){
+    palette();
+    return P.themed ? { bg1: P.bg1, bg2: P.bg2 } : null;
+  }
   function paintBG(c, w, h, k){
+    palette();
     // a hearth rather than a black rectangle: cave walls, back wall glow,
-    // a stone arch and scattered cooling embers
+    // a stone arch and scattered cooling embers, all lit in the flame's colour
     var wall = c.createRadialGradient(w / 2, h * 1.05, 0, w / 2, h * 1.05, w * 0.75);
-    wall.addColorStop(0, 'rgba(120,46,20,0.42)');
-    wall.addColorStop(0.45, 'rgba(58,22,16,0.3)');
+    wall.addColorStop(0, tint(0.47, 0.42));
+    wall.addColorStop(0.45, tint(0.23, 0.3));
     wall.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = wall;
     c.fillRect(0, 0, w, h);
     for (var br = 0; br < 34; br++){        // brickwork on the back wall
       var bx = (br * 137) % w, by = h * 0.12 + ((br * 71) % Math.round(h * 0.6));
-      c.fillStyle = 'rgba(255,190,140,0.028)';
+      c.fillStyle = tint(1, 0.028, 0.5);
       c.fillRect(bx, by, w * 0.075, h * 0.05);
     }
-    c.strokeStyle = 'rgba(255,170,110,0.07)';
+    c.strokeStyle = tint(1, 0.07, 0.4);
     c.lineWidth = 2 * k;
     c.beginPath();                          // arch over the fire
     c.moveTo(w * 0.1, h);
@@ -234,7 +284,7 @@
     c.stroke();
     for (var em = 0; em < 60; em++){        // cooling embers on the floor
       var ex = (em * 211) % w, ey = h - ((em * 53) % Math.round(h * 0.16)) - 2 * k;
-      c.fillStyle = 'rgba(255,' + (90 + (em % 6) * 22) + ',40,' + (0.06 + (em % 5) * 0.03).toFixed(3) + ')';
+      c.fillStyle = tint(0.8 + (em % 6) * 0.04, (0.06 + (em % 5) * 0.03).toFixed(3), (em % 6) * 0.06);
       c.beginPath();
       c.arc(ex, ey, (0.8 + (em % 4) * 0.7) * k, 0, Math.PI * 2);
       c.fill();
@@ -244,7 +294,7 @@
       c.beginPath();
       c.ellipse(w * (0.03 + st * 0.095), h - 1 * k, w * 0.052, 8 * k, 0, 0, Math.PI * 2);
       c.fill();
-      c.strokeStyle = 'rgba(255,150,90,0.12)';
+      c.strokeStyle = tint(1, 0.12, 0.3);
       c.lineWidth = 1 * k;
       c.stroke();
     }
@@ -257,7 +307,8 @@
 
   function onTap(x, y){
     var k = Can.dpr(), cfg = Cfg.CFG.fire;
-    App.taps.spawnRing(x, y, '#FFC46B');
+    palette();
+    App.taps.spawnRing(x, y, P.themed ? 'rgb(' + P.warm.join(',') + ')' : '#FFC46B');
     for (var i = 0; i < 26; i++){
       if (fireSparks.length >= 240) break;
       var a = Math.random() * 6.283, sp = (60 + Math.random() * 260) * k;
@@ -269,20 +320,22 @@
       fireParts.push({ x: x + (Math.random() - 0.5) * 30 * k, y: y, vx: (Math.random() - 0.5) * 60 * k,
                        vy: -(40 + Math.random() * 120) * k, life: 1, decay: 0.9 + Math.random(),
                        size: (6 + Math.random() * 12) * k * cfg.size, spin: Math.random() * 6.283,
+                       hi: Math.floor(Math.random() * RAINBOW),
                        heat: U.clamp01((A.intensity - cfg.blueAt) / cfg.blueRange) });
     }
   }
 
   function reset(){ fireParts = []; fireSparks = []; heatShown = 0; flameState = null; flameVals = null; }
 
-  App.modes.register('fire', { draw: drawFire, paintBG: paintBG, onTap: onTap, reset: reset });
+  App.modes.register('fire', { draw: drawFire, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset });
 
   App.cfg.registerDefaults('fire', {
-    tongues: 9, height: 1, spawn: 1, life: 1, size: 1, sparks: true, hatEmbers: true, sparkAmt: 1,
+    followTheme: true, tongues: 9, height: 1, spawn: 1, life: 1, size: 1, sparks: true, hatEmbers: true, sparkAmt: 1,
     blueAt: 0.72, blueRange: 0.2, warm: '#FF7E14', cool: '#3E9CFF',
     sway: 1, turb: 1, trail: 0.3, source: 'bass', bg1: '#170B10', bg2: '#05030A'
   });
   App.cfg.registerSchema({ id: 'fire', label: 'Fire', fields: [
+    ['followTheme', 'Follow theme (flame colours and hearth)', 'bool'],
     ['tongues', 'Flame tongues', 'range', 3, 15, 1],
     ['height', 'Flame height', 'range', 0.3, 2.5, 0.05],
     ['spawn', 'Ember amount', 'range', 0.2, 3, 0.05],
@@ -296,10 +349,10 @@
     ['sparkAmt', 'Spark amount', 'range', 0.2, 3, 0.05],
     ['blueAt', 'Blue core starts at (how loud the passage is)', 'range', 0.3, 1, 0.01],
     ['blueRange', 'Blue transition width', 'range', 0.03, 0.6, 0.01],
-    ['warm', 'Warm flame colour', 'color'],
-    ['cool', 'Hot (blue) colour', 'color'],
+    ['warm', 'Warm flame colour - when not following a theme', 'color'],
+    ['cool', 'Hot core colour - when not following a theme', 'color'],
     ['trail', 'Trail fade', 'range', 0.05, 1, 0.02],
-    ['bg1', 'Background top', 'color'],
-    ['bg2', 'Background bottom', 'color']
+    ['bg1', 'Background top - when not following a theme', 'color'],
+    ['bg2', 'Background bottom - when not following a theme', 'color']
   ]});
 })();

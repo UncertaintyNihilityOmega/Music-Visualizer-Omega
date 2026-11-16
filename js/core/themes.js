@@ -23,6 +23,9 @@
                 digital     String: the strings move in square steps
                 emoji       Emoji: the set to use, quiet to loud (null = the user's own)
                 clock       Clock: which of its four skins to wear
+                fire        Fire: { warm, cool, bg1, bg2 } = flame colour, hot core colour and
+                            the hearth (always dark: the flames are added light), plus
+                            rainbow: true for a different hue per flame. null = the user's own
    ========================================================================= */
 (function(){
   'use strict';
@@ -37,7 +40,8 @@
               accent: '#B06BFF', accent2: '#FF5FD2', accentRgb: '176,107,255', line: 'rgba(176,107,255,.28)',
               onAccent: '#FFFFFF', shadow: '0 16px 34px rgba(0,0,0,.42)' },
       look: { c1: '#6A5CFF', c2: '#FF5FD2', bg1: '#171033', bg2: '#06040E', dark: true, layout: 'mirror', glyphs: null,
-              emoji: null, clock: 'golden' }
+              emoji: null, clock: 'golden',
+              fire: null }
     },
     newyear: {
       codes: ['new year', 'newyear', 'happy new year'],
@@ -47,7 +51,8 @@
               accent: '#F2C55C', accent2: '#8FB8FF', accentRgb: '242,197,92', line: 'rgba(242,197,92,.3)',
               onAccent: '#1A1403', shadow: '0 16px 34px rgba(0,0,0,.45)' },
       look: { c1: '#8FB8FF', c2: '#F2C55C', bg1: '#0D1638', bg2: '#03050F', dark: true, layout: 'rise', glyphs: ['✦', '❄', '✧'],
-              emoji: ['✨', '❄️', '🥂', '🎉', '🎆'], clock: 'golden' }
+              emoji: ['✨', '❄️', '🥂', '🎉', '🎆'], clock: 'golden',
+              fire: { warm: '#E08A14', cool: '#8FB8FF', bg1: '#0D1638', bg2: '#03050F' } }
     },
     halloween: {
       codes: ['halloween', 'spooky'],
@@ -57,7 +62,8 @@
               accent: '#FF7A1A', accent2: '#9B5DE5', accentRgb: '255,122,26', line: 'rgba(255,122,26,.3)',
               onAccent: '#1B0D02', shadow: '0 16px 34px rgba(0,0,0,.5)' },
       look: { c1: '#9B5DE5', c2: '#FF7A1A', bg1: '#1C0F24', bg2: '#050308', dark: true, layout: 'mirror', glyphs: ['🎃', '👻', '🦇'],
-              emoji: ['🕸️', '🦇', '👻', '🎃', '💀'], clock: 'golden' }
+              emoji: ['🕸️', '🦇', '👻', '🎃', '💀'], clock: 'golden',
+              fire: { warm: '#58D82C', cool: '#9B5DE5', bg1: '#1C0F24', bg2: '#050308' } }
     },
     love: {
       codes: ['love', 'our playlist'],
@@ -67,7 +73,8 @@
               accent: '#6E1E2E', accent2: '#C2626F', accentRgb: '194,98,111', line: 'rgba(189,146,87,.35)',
               onAccent: '#FDF6F0', shadow: '0 16px 34px rgba(110,30,46,.16)' },
       look: { c1: '#BD9257', c2: '#C2626F', bg1: '#FFF8F3', bg2: '#F1D8D5', dark: false, layout: 'mirror', glyphs: ['♥'],
-              emoji: ['✨', '💕', '❤️', '💖', '🌟'], clock: 'golden' }
+              emoji: ['✨', '💕', '❤️', '💖', '🌟'], clock: 'golden',
+              fire: { warm: '#FF3D6E', cool: '#FFB36B', bg1: '#2A0E16', bg2: '#0C0407' } }
     },
     solarpunk: {
       codes: ['solarpunk'],
@@ -77,7 +84,8 @@
               accent: '#2F7D4A', accent2: '#E0A82E', accentRgb: '47,125,74', line: 'rgba(47,125,74,.28)',
               onAccent: '#FBFAEC', shadow: '0 16px 34px rgba(47,90,50,.16)' },
       look: { c1: '#2F7D4A', c2: '#E0A82E', bg1: '#FFFBE6', bg2: '#DDEFC6', dark: false, layout: 'rise', glyphs: ['🌱', '🌿', '🌻'],
-              emoji: ['🌱', '🍃', '🌿', '🌻', '☀️'], clock: 'solarpunk' }
+              emoji: ['🌱', '🍃', '🌿', '🌻', '☀️'], clock: 'solarpunk',
+              fire: { warm: '#E8B01E', cool: '#4FCB62', bg1: '#12260F', bg2: '#040A04' } }
     },
     cyberpunk: {
       codes: ['cyberpunk'],
@@ -88,7 +96,8 @@
               onAccent: '#001417', shadow: '0 0 0 1px rgba(0,240,255,.12), 0 16px 34px rgba(0,0,0,.6)',
               font: '"Cascadia Mono","Consolas","SF Mono","Menlo",monospace' },
       look: { c1: '#00F0FF', c2: '#F6FF4D', bg1: '#070C14', bg2: '#010203', dark: true, layout: 'rise', glyphs: ['1', '0'],
-              digital: true, emoji: ['💾', '🔌', '👾', '🤖', '⚡'], clock: 'cyberpunk' }
+              digital: true, emoji: ['💾', '🔌', '👾', '🤖', '⚡'], clock: 'cyberpunk',
+              fire: { warm: '#00C8F0', cool: '#FF00AA', bg1: '#070C14', bg2: '#010203' } }
     },
     nihilum: {
       codes: ['decensus ad nihilum', 'descensus ad nihilum'],
@@ -98,7 +107,8 @@
               accent: '#8E7CA8', accent2: '#FF9A4A', accentRgb: '142,124,168', line: 'rgba(142,124,168,.26)',
               onAccent: '#08060B', shadow: '0 16px 40px rgba(0,0,0,.8)' },
       look: { c1: '#FF9A4A', c2: '#FFF1D6', bg1: '#06040A', bg2: '#000000', dark: true, layout: 'ring', inward: true, glyphs: null,
-              emoji: ['🌑', '🕳️', '☄️', '💫', '⭐'], clock: 'golden' }
+              emoji: ['🌑', '🕳️', '☄️', '💫', '⭐'], clock: 'golden',
+              fire: { warm: '#6A3CC4', cool: '#FF9A4A', bg1: '#06040A', bg2: '#000000' } }
     },
     incertum: {
       codes: ['ascensus ad incertum'],
@@ -108,7 +118,8 @@
               accent: '#5B6CFF', accent2: '#FF6FB5', accentRgb: '91,108,255', line: 'rgba(91,108,255,.22)',
               onAccent: '#FFFFFF', shadow: '0 16px 34px rgba(80,100,200,.14)' },
       look: { c1: '#5B6CFF', c2: '#FF6FB5', bg1: '#FFFFFF', bg2: '#EEF2FF', dark: false, layout: 'rise', rainbow: true, glyphs: null,
-              emoji: ['☁️', '🕊️', '💫', '✨', '🌈'], clock: 'heaven' }
+              emoji: ['☁️', '🕊️', '💫', '✨', '🌈'], clock: 'heaven',
+              fire: { warm: '#FF8AD0', cool: '#9FD0FF', bg1: '#151A2E', bg2: '#05060C', rainbow: true } }
     }
   };
 

@@ -82,7 +82,7 @@ there). Speed is milliseconds per frame, never a frame rate.
 
 Measured 2026-11-16 (song 1, loud passage, canvas 944 x 320): every mode draws a frame in 0.6 to 3.0 ms on
 average, 5.8 ms at worst (a frame at 60 a second has 16.7 ms). Fire burnt out to white over 36% of the picture
-before its fix; after it 6% on average and 12% at worst. The loud and quiet motion numbers for every mode are
+before its fix; after it 3% at worst (10% or less in every theme code, at desktop width and at 375 px). The loud and quiet motion numbers for every mode are
 in docs/MODES.md.
 
 ## Timing

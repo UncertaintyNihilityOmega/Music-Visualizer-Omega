@@ -71,8 +71,15 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   loud; a blue core at the base in a loud passage; hi-hat embers; the flames wobble on a kick.
 - Fixed 2026-11-16: in a loud passage the fire burnt out to a white block (36% of the picture pure white). The
   light is added up frame on frame, the glow had a white centre and the flames turned grey-blue. Now the flames
-  stay fire-coloured, the blue is painted last at the base, and embers are fainter in a crowd: 6% white on
-  average, 12% at worst, in the same passage.
+  stay fire-coloured, the blue is painted last at the base, and embers are fainter the more of the picture they
+  cover (a phone's small canvas packs them four times as thick): now 3% white at worst in the same passage.
+- Follows the theme codes (2026-11-16): each code has its own flame colour, hot core and dark hearth
+  (`look.fire` in `themes.js`): New Year gold with an ice-blue core, Halloween witch-green with purple, Love
+  rose with amber, Solarpunk sun-gold with green, Cyberpunk cyan with magenta, Decensus Ad Nihilum violet with
+  orange, Ascensus ad Incertum a rainbow (one hue per flame, turning slowly). The default theme uses the
+  colours in Settings > Fire. "Follow theme" switches it off. White at worst in a loud passage, desktop /
+  375 px: 3 / 3% default, 5 / 6 New Year, 8 / 6 Halloween, 10 / 8 Love, 1 / 3 Solarpunk, 2 / 2 Cyberpunk,
+  7 / 5 Nihilum, 10 / 9 Incertum (`Probe.white('fire', 50, 3)`, limit 15).
 - Ideas left: none.
 
 ## Ice

@@ -103,6 +103,19 @@ try {
     for (const k of VARS) if (!t.vars || t.vars[k] === undefined) err(`theme "${id}": missing colour "${k}"`);
     for (const k of ['c1', 'c2', 'bg1', 'bg2']) if (!t.look || !/^#[0-9a-f]{6}$/i.test(t.look[k] || '')) err(`theme "${id}": look.${k} must be a #rrggbb colour`);
     if (!t.look || !LAYOUTS.includes(t.look.layout)) err(`theme "${id}": look.layout must be one of ${LAYOUTS.join(', ')}`);
+    // Fire's look: null (the user's own colours) or four colours; the hearth must be dark, because
+    // the flames are added light and vanish on a pale background
+    if (t.look && t.look.fire !== null){
+      const f = t.look.fire;
+      if (!f) err(`theme "${id}": look.fire must be null or { warm, cool, bg1, bg2 }`);
+      else for (const k of ['warm', 'cool', 'bg1', 'bg2']){
+        if (!/^#[0-9a-f]{6}$/i.test(f[k] || '')) err(`theme "${id}": look.fire.${k} must be a #rrggbb colour`);
+        else if (k[0] === 'b'){
+          const n = parseInt(f[k].slice(1), 16), lum = ((n >> 16) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11);
+          if (lum > 60) err(`theme "${id}": look.fire.${k} is too pale for a fire (brightness ${lum.toFixed(0)} of 255, limit 60)`);
+        }
+      }
+    }
     if (!t.codes || !t.codes.length) err(`theme "${id}": has no code word`);
     for (const c of t.codes || []){
       if (seen[norm(c)]) err(`themes "${seen[norm(c)]}" and "${id}" share the code "${c}"`);

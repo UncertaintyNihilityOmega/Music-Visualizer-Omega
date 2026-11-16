@@ -4,8 +4,8 @@
 - A run is in progress (2026-11-16). All work is committed; nothing is pushed.
 - Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` 5 songs pass, browser check
   of every mode (real song and idle, desktop and 375 px, all eight theme codes): no errors.
-- Next steps that need no one: item 15 (Fire follows the theme codes), item 13 (small faults), item 4 (offline
-  install), item 6 (song map), item 7 (mapping selectors). Item 3 waits for the user's word on pushing.
+- Next steps that need no one: item 13 (small faults), item 4 (offline install), item 6 (song map), item 7
+  (mapping selectors). Item 3 waits for the user's word on pushing.
 - Item 8: P1 to P4 are built and checked. Left: the review after P4 (a session that did not write the modes;
   two notes wait under "Review" in docs/MODES.md) and P5 (needs item 6).
 
@@ -54,11 +54,6 @@
     (c) Shuffle and repeat are colour emoji that ignore the theme: draw them as icons. (d) Theme colours flash
     for one frame on load: set the saved theme's variables in a tiny inline script. Done when: each is fixed or
     shown not to happen.
-15. **Fire follows the theme codes** (user, 2026-11-16). Like String, Emoji and Clock: each code gives Fire its
-    own flame colours and hearth, with a "Follow theme" switch (on by default; the user's own colours when it is
-    off). Done when: all eight codes change Fire, it is in docs/MODES.md, and the white share in a loud passage
-    stays under 15% in every theme (`Probe.white`).
-
 ## Done
 - 0a Project structure: ORGANIZER.md, this file, AGENT-RUN.md, PROMPTS.md, FACTS.md, CHANGELOG.md, `docs/`, `engine/` (2026-11-16).
 - 0b Research: the science, Specterr, Vizzy, and both test videos measured frame by frame; written in docs/RESEARCH.md; beginner explainer in docs/HOW-IT-WORKS.md and on the Guide page (2026-11-16).
@@ -81,6 +76,7 @@
 - 0o `engine/probe.js`: browser probes that work while the pane is hidden (2026-11-16).
 - 0p Runs: several steps per run, usage gate 75% / 95%, lock with session id; the scheduled task's prompt rewritten to match AGENT-RUN.md (2026-11-16).
 - 14 v1.x game engine decided by the user: stay on HTML + JavaScript; no prototypes needed (2026-11-16).
+- 15 Fire follows the theme codes (asked by the user): `look.fire` in `themes.js` gives each code a flame colour, a hot core and a dark hearth; the rainbow theme gives each flame its own hue; the default theme keeps the user's own colours; "Follow theme" switch; `check.js` checks every theme's fire and that its hearth is dark. White share in a loud passage 10% or less in every theme, at desktop and 375 px (2026-11-16).
 
 ## For the user
 - **Say whether runs may push (item 3).** The last session noted that you said to commit to GitHub, but
