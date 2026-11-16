@@ -1,12 +1,11 @@
 # ROADMAP: build queue and current state
 
 ## Now
-- Waiting on the user for one thing: switching on GitHub Pages (see "For the user"). The repository is pushed; the site answers 404 until then.
-- The run of 2026-11-16 stopped at the usage gate (5-hour meter at 75%; it resets at 09:20 UTC, 12:20 local).
-  All work is committed and pushed to GitHub (`main`). No lock is left.
-- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` 5 songs pass, browser check
-  (real song and idle, desktop and 375 px): no errors. On GitHub the workflow's two checks pass; its deploy
-  step fails until Pages is switched on.
+- The site is live: https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/ (GitHub Pages publishes
+  the `main` branch on every push). Runs may push on their own (ORGANIZER.md).
+- All work is committed and pushed. No lock is left.
+- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` 5 songs pass (sound has
+  not changed since), browser check of the new work at desktop and 375 px: no errors.
 - Next steps that need no one: item 4 (offline install), item 6 (song map), item 7 (mapping selectors),
   item 9 (game audit), item 10 (more themes).
 - Item 8: P1 to P4 are built and checked. Left: the review after P4 (a session that did not write the modes;
@@ -24,10 +23,8 @@
 2. **Icon: phone check.** Icon 12 is set and the PNG sizes (32, 180, 192, 512) are made and listed. Left: see it
    as an installed phone icon, which needs the live site (item 3). Done when: the tab icon and an installed
    phone icon both show the chosen design.
-3. **Publish: last part.** The repository is on GitHub and `.github/workflows/pages.yml` runs the self-test and
-   the check, then deploys the app's files. Left: the user switches on GitHub Pages; then confirm that the
-   workflow goes green and the public URL loads, and take the "goes live" note out of README.md. Done when: the
-   public URL loads and plays a local file on a phone.
+3. **Publish: phone check.** The site is live and every push to `main` updates it. Left: the user's check on
+   a phone. Done when: the public URL loads and plays a local file on a phone.
 4. **Offline install.** A service worker that caches the app's own files under a versioned name, takes over on
    the next visit after a new build, and is never registered on localhost. Done when: with the network off, a
    second visit loads, plays a local song and shows visuals; and a new build replaces the old one after one reload.
@@ -78,16 +75,12 @@
 - 15 Fire follows the theme codes (asked by the user): `look.fire` in `themes.js` gives each code a flame colour, a hot core and a dark hearth; the rainbow theme gives each flame its own hue; the default theme keeps the user's own colours; "Follow theme" switch; `check.js` checks every theme's fire and that its hearth is dark. White share in a loud passage 10% or less in every theme, at desktop and 375 px (2026-11-16).
 - 3 (first part) Published to GitHub with the user's approval: remote added, the repository's first commit joined (no force-push), `main` pushed; `.github/workflows/pages.yml` runs `test.js` and `check.js`, then deploys only the app's files. Both checks pass on GitHub (2026-11-16).
 - 13 Small known faults, all four fixed and each guarded by a rule in `check.js`: (a) a web address that blocks reading was confirmed to "play" in silence over a black picture; it now plays on a second, plain player and the picture shows the idle preview, with a note; (b) an imported settings file says which settings version it holds, and outdated groups are skipped; (c) shuffle and repeat are drawn icons in the theme's colours; (d) the saved theme's colours are set by a small script in the page head before the first paint (2026-11-16).
+- 3 (second part) The user switched on GitHub Pages; the public URL loads the app, its scripts and icons. Pages publishes the `main` branch itself, so the workflow was cut down to the two checks; `.nojekyll` added (2026-11-16).
+- User requests of 2026-11-16: the settings icon on the picture removed (the S key still opens Settings); a layout bar at the top of the Settings page for the current mode's layouts (Basic, Emoji, Clock, Fire), drawn from a new `'layout'` setting type; Fire given eight styles, one per theme code (fireworks, cauldron, candles, sun, pixels, vortex, aurora, and the hearth), each also selectable by hand.
 
 ## For the user
-- **Switch on GitHub Pages (item 3).** On github.com open the repository > Settings > Pages > "Build and
-  deployment" > Source: choose **GitHub Actions**. Then open the Actions tab, pick the failed "Publish" run and
-  press "Re-run all jobs" (or wait: the next push deploys). The site will be at
-  https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/
-- **Say whether later runs may push on their own.** This run pushed because you said so. ORGANIZER.md records
-  no standing approval, so the next run will commit but not push unless you say "runs may push".
 - **Look at the modes.** Run `node engine/serve.js`, open http://localhost:8123, Music > "Load the test-songs
-  folder", and try each mode in a quiet and a loud part of a song. Say what looks wrong. Fire was changed most
-  (it burnt out to white when loud).
-- **Phone check (items 2 and 3).** When the site is live: open it on a phone, play a song from the phone, then
+  folder", and try each mode in a quiet and a loud part of a song. Say what looks wrong. Try Fire with every
+  code, and the layout bar at the top of Settings.
+- **Phone check (items 2 and 3).** Open the site on a phone, play a song from the phone, then
   add the site to the home screen and look at the icon. Say what you see.

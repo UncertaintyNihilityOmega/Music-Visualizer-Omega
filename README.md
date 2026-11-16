@@ -5,7 +5,7 @@ is uploaded or copied), can listen to your microphone instead, and needs no inte
 mini-games that react to the music, secret code words that restyle everything, and a page that explains how
 sound becomes a picture.
 
-**Open it:** https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/ (goes live when GitHub Pages is switched on)
+**Open it:** https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/
 
 **Offline:** download the repository and open `index.html`. There is nothing to install and nothing to build.
 

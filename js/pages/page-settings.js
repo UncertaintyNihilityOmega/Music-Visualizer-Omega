@@ -1,11 +1,17 @@
 /* =========================================================================
    PAGE: Settings
-   The code box (secret theme words) and the settings panel that
+   The layout bar (the current mode's layouts, see settings.js), the code
+   box (secret theme words) and the settings panel that
    js/core/settings.js fills in from every mode's and game's own schema.
    ========================================================================= */
 App.pages.define('settings', {
   label: 'Settings',
   html:
+    '<div class="card layout-card" id="layoutCard" hidden>' +
+      '<div class="settings-head"><span id="layoutTitle">Layout</span></div>' +
+      '<div class="tabs layout-tabs" id="layoutBar" role="tablist"></div>' +
+      '<p class="url-hint" id="layoutHint"></p>' +
+    '</div>' +
     '<div class="card">' +
       '<div class="settings-head"><span>Code</span></div>' +
       '<form class="url-row" id="codeForm" autocomplete="off">' +

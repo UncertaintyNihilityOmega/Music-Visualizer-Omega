@@ -709,7 +709,7 @@
 
   App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true });
   App.cfg.registerSchema({ id: 'clock', label: 'Clock', fields: [
-    ['style', 'Style ("theme" follows the theme code)', 'select', ['theme', 'golden', 'solarpunk', 'cyberpunk', 'heaven']],
+    ['style', 'Style', 'layout', ['theme', 'golden', 'solarpunk', 'cyberpunk', 'heaven']],
     ['kickTick', 'Second hand jumps on the kick', 'bool'],
     ['chimes', 'Rings of light when the music swells', 'bool'],
     ['density', 'Decoration density', 'range', 0.3, 2, 0.05],

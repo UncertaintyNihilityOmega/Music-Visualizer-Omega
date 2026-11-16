@@ -2,7 +2,20 @@
    When "Follow theme" is on and the active theme code has a fire of its own
    (look.fire in themes.js), the flames, the hot core and the hearth take
    its colours; a theme with rainbow: true gives every flame its own hue.
-   The default theme has none, so it burns in the user's own colours. */
+   The default theme has none, so it burns in the user's own colours.
+
+   The fire also has a STYLE: where the flames stand and which way they
+   point, what the embers are, and what else is drawn. "theme" takes the
+   style the active code names (look.fire.style); the rest can be picked by
+   hand in the layout bar of the Settings page.
+     hearth     a row of flames on the floor (the default)
+     fireworks  a low fire; every kick drum bursts a firework in the sky
+     cauldron   a narrow fire under a hanging cauldron that glows with the music
+     candles    one small flame on each of a row of candles
+     sun        a sun rising from the floor, the flames its rays
+     pixels     flames built of square blocks, embers of 1s and 0s
+     vortex     a ring of flames pointing inward, falling into a dark disc
+     aurora     curtains of flame hanging from the top of the picture */
 (function(){
   'use strict';
   var Can = App.canvas, Aud = App.audio, Cfg = App.cfg, U = App.util;
@@ -13,6 +26,47 @@
   var spriteKey = '', fireSway = 0, heatShown = 0, flameVals = null, flameState = null;
   var P = null;              // the colours in use this frame (see palette)
   var RAINBOW = 6;           // how many ember colours a rainbow fire has
+  var burstCd = 0;
+
+  // place: where the flames stand (left out = a row on the floor)
+  // glyphs: embers are these characters instead of glowing dots
+  var STYLES = {
+    hearth:    {},
+    fireworks: { glyphs: ['✦', '✧'], bursts: true, low: 0.62 },
+    cauldron:  { glyphs: ['👻', '✦'], narrow: 0.5, front: 'cauldron' },
+    candles:   { glyphs: ['♥'], place: 'candles' },
+    sun:       { place: 'sun' },
+    pixels:    { glyphs: ['1', '0'], blocks: true },
+    vortex:    { place: 'vortex', front: 'hole' },
+    aurora:    { glyphs: ['✧'], place: 'aurora' }
+  };
+  var STYLE_IDS = ['theme', 'hearth', 'fireworks', 'cauldron', 'candles', 'sun', 'pixels', 'vortex', 'aurora'];
+  function styleId(){
+    var id = Cfg.CFG.fire.style;
+    if (id === 'theme'){ var th = App.theme.look; id = (th && th.fire && th.fire.style) || 'hearth'; }
+    return STYLES[id] ? id : 'hearth';
+  }
+  // the circle the sun's rays and the vortex's flames stand on
+  function ringOf(st, w, h){
+    return st.place === 'sun' ? { x: w / 2, y: h * 1.02, r: Math.min(w * 0.2, h * 0.46) }
+                              : { x: w / 2, y: h / 2, r: Math.min(w, h) * 0.47 };
+  }
+  // Where flame number ti of n stands: x, y = its foot, ang = which way it
+  // points (0 = up), s and ws = how tall and wide it is against a hearth flame.
+  function placeFlame(st, f, w, h, baseY, swayPx){
+    var th, rg;
+    if (st.place === 'candles') return { x: w * (0.1 + 0.8 * f), y: h * 0.64, ang: 0, s: 0.4, ws: 0.5 };
+    if (st.place === 'aurora') return { x: w * (0.05 + 0.9 * f) + swayPx * 2, y: 0, ang: Math.PI, s: 0.95, ws: 1.7 };
+    if (st.place === 'sun'){
+      rg = ringOf(st, w, h); th = Math.PI * (1.08 + 0.84 * f);
+      return { x: rg.x + Math.cos(th) * rg.r, y: rg.y + Math.sin(th) * rg.r, ang: th + Math.PI / 2, s: 0.62, ws: 0.8 };
+    }
+    if (st.place === 'vortex'){
+      rg = ringOf(st, w, h); th = f * 6.283 + A.t * 0.25;
+      return { x: rg.x + Math.cos(th) * rg.r, y: rg.y + Math.sin(th) * rg.r, ang: th - Math.PI / 2, s: 0.5, ws: 0.7 };
+    }
+    return { x: w * 0.5 + (f - 0.5) * w * (0.34 + A.intensity * 0.2) * (st.narrow || 1) + swayPx, y: baseY, ang: 0, s: st.low || 1, ws: st.narrow ? 0.8 : 1 };
+  }
   var FLAME_LEAN = 0.22;     // how far the tongues and embers lean to the hot colour at full heat
 
   function makeGlowSprite(rgb){
@@ -99,47 +153,97 @@
     // The line of flames is a spectrum of the bass (30 to 800 Hz, the range
     // the studied videos show): the lowest notes burn in the middle, higher
     // ones toward the sides, so a kick drum throws up the centre flames.
-    var tongues = Math.round(cfg.tongues), halfT = Math.ceil(tongues / 2);
+    var st = STYLES[styleId()];
+    var ring = st.place === 'sun' || st.place === 'vortex';
+    var tongues = Math.round(cfg.tongues) * (ring ? 2 : 1), halfT = Math.ceil(tongues / 2);
     if (!flameVals || flameVals.length !== halfT){ flameVals = new Float32Array(halfT); flameState = new Float32Array(halfT); }
     Aud.bars(flameVals, { lo: 30, hi: 800, scale: 'lin', blur: 0.4, state: flameState, attack: 55, release: 8 });
     // each kick makes the air shimmer: the flames wobble sideways for a moment
     var haze = 1 + A.kick * 1.8 * (0.3 + 0.7 * A.drive);
+
+    if (st.place === 'sun'){
+      // the sun itself: a glowing half disc the rays stand on
+      var sr = ringOf(st, w, h);
+      var sg = ctx.createRadialGradient(sr.x, sr.y, sr.r * 0.2, sr.x, sr.y, sr.r * (1.05 + A.kick * 0.06));
+      sg.addColorStop(0, fireCol(2, 0, (0.3 * expo).toFixed(3)));
+      sg.addColorStop(0.8, fireCol(1, 0, (0.24 * expo).toFixed(3)));
+      sg.addColorStop(1, fireCol(0, 0, 0));
+      ctx.fillStyle = sg;
+      ctx.beginPath();
+      ctx.arc(sr.x, sr.y, sr.r * 1.12, 0, 6.283);
+      ctx.fill();
+    }
+
     for (var ti = 0; ti < tongues; ti++){
-      var f = tongues === 1 ? 0.5 : ti / (tongues - 1);
+      var f = tongues === 1 ? 0.5 : (st.place === 'vortex' ? ti / tongues : ti / (tongues - 1));
       var band = flameVals[Math.min(halfT - 1, Math.round(Math.abs(f - 0.5) * 2 * (halfT - 1)))];
-      var centre = w * 0.5 + (f - 0.5) * w * (0.34 + A.intensity * 0.2) + swayPx;
-      var wave = Math.sin(A.t * (2.1 + ti * 0.41) * mo + ti * 1.7) * w * 0.022 * (0.35 + A.intensity * 1.6) * haze;
-      var hgt = flameH * (0.3 + band * 1.05) * (0.8 + Math.sin(f * Math.PI) * 0.36);
-      var halfW = w * (0.032 + band * 0.028) * (0.7 + A.level * 0.6);
-      var tipX = centre + wave, tipY = baseY - hgt;
+      var pl = placeFlame(st, f, w, h, baseY, swayPx);
+      var wave = Math.sin(A.t * (2.1 + ti * 0.41) * mo + ti * 1.7) * w * 0.022 * (0.35 + A.intensity * 1.6) * haze * pl.s;
+      var hgt = flameH * (0.3 + band * 1.05) * (ring ? 1 : 0.8 + Math.sin(f * Math.PI) * 0.36) * pl.s;
+      var halfW = w * (0.032 + band * 0.028) * (0.7 + A.level * 0.6) * pl.ws;
 
       // a rainbow fire: the colour wheel runs across the flames and turns slowly
       var own = P.rainbow ? hueRGB(f * 300 + A.t * 24 * mo) : null;
-      var g = ctx.createLinearGradient(0, baseY, 0, tipY);
+      // each flame is drawn standing at 0,0 and pointing up, then turned into place
+      ctx.save();
+      ctx.translate(pl.x, pl.y);
+      ctx.rotate(pl.ang);
+      var g = ctx.createLinearGradient(0, 0, 0, -hgt);
       g.addColorStop(0, fireCol(2, heat, ((0.2 + A.level * 0.1) * expo).toFixed(3), own));
       g.addColorStop(0.32, fireCol(1, heat, (0.17 * expo).toFixed(3), own));
       g.addColorStop(1, fireCol(0, heat, 0, own));
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(centre - halfW, baseY);
-      ctx.bezierCurveTo(centre - halfW * 0.95, baseY - hgt * 0.45, tipX - halfW * 0.38, baseY - hgt * 0.78, tipX, tipY);
-      ctx.bezierCurveTo(tipX + halfW * 0.38, baseY - hgt * 0.78, centre + halfW * 0.95, baseY - hgt * 0.45, centre + halfW, baseY);
-      ctx.closePath();
-      ctx.fill();
+      if (st.blocks){
+        // square blocks: three wide at the foot, one at the tip, a few missing so it flickers
+        var cell = Math.max(5 * k, halfW * 0.72), rows = Math.max(2, Math.round(hgt / cell));
+        for (var rw = 0; rw < rows; rw++){
+          var fr = rw / rows, across = fr < 0.35 ? 3 : (fr < 0.7 ? 2 : 1);
+          for (var cl = 0; cl < across; cl++){
+            if (Math.sin(A.t * 11 + ti * 7.3 + rw * 3.1 + cl * 5.7) > 0.72 + (1 - fr) * 0.2) continue;
+            ctx.fillRect((cl - across / 2) * cell + Math.round(wave * fr / cell) * cell + 1, -(rw + 1) * cell + 1, cell - 2, cell - 2);
+          }
+        }
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(-halfW, 0);
+        ctx.bezierCurveTo(-halfW * 0.95, -hgt * 0.45, wave - halfW * 0.38, -hgt * 0.78, wave, -hgt);
+        ctx.bezierCurveTo(wave + halfW * 0.38, -hgt * 0.78, halfW * 0.95, -hgt * 0.45, halfW, 0);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
     }
 
-    var bedH = (14 + A.level * 38) * k;
-    var bed = ctx.createLinearGradient(0, baseY - bedH, 0, baseY + 2 * k);
-    bed.addColorStop(0, fireCol(1, heat, 0));
-    bed.addColorStop(1, fireCol(2, heat, ((0.14 + A.level * 0.14) * expo).toFixed(3)));
-    ctx.fillStyle = bed;
-    ctx.fillRect(w * 0.08, baseY - bedH, w * 0.84, bedH + 2 * k);
+    if (!st.place){
+      var bedH = (14 + A.level * 38) * k, bedW = 0.84 * (st.narrow || 1);
+      var bed = ctx.createLinearGradient(0, baseY - bedH, 0, baseY + 2 * k);
+      bed.addColorStop(0, fireCol(1, heat, 0));
+      bed.addColorStop(1, fireCol(2, heat, ((0.14 + A.level * 0.14) * expo).toFixed(3)));
+      ctx.fillStyle = bed;
+      ctx.fillRect(w * (0.5 - bedW / 2), baseY - bedH, w * bedW, bedH + 2 * k);
+    }
+
+    // Fireworks: a kick drum bursts one in the sky, a ring of sparks in one of three colours
+    burstCd -= dt;
+    if (st.bursts && A.kickHit > 0.3 && A.drive > 0.2 && burstCd <= 0){
+      burstCd = 0.28;
+      var bx0 = w * (0.12 + Math.random() * 0.76), by0 = h * (0.1 + Math.random() * 0.4);
+      var bn = Math.round(16 + A.kickHit * 22), bsp = (90 + A.kickHit * 170 + A.drive * 80) * k * mo;
+      var bcol = [P.warm, P.cool, [255, 244, 214]][Math.floor(Math.random() * 3)];
+      for (var bq = 0; bq < bn && fireSparks.length < 320; bq++){
+        var ba = bq / bn * 6.283, bv = bsp * (0.75 + Math.random() * 0.35);
+        fireSparks.push({ x: bx0, y: by0, vx: Math.cos(ba) * bv, vy: Math.sin(ba) * bv, life: 1,
+                          decay: (0.8 + Math.random() * 0.5) / cfg.life, heat: 0, light: true, rgb: bcol, big: 1.5 });
+      }
+    }
 
     var cap = Math.round(300 * cfg.spawn);
     var spawn = Math.round((A.level * 4 + A.drive * 5 + A.punch * 16 * (0.3 + 0.7 * A.drive)) * cfg.spawn);
+    // characters are counted one by one by the eye, so far fewer of them are needed
+    if (st.glyphs) spawn = Math.random() < spawn * 0.16 ? 1 + (A.punch > 0.5 ? 1 : 0) : 0;
     for (var s = 0; s < spawn && fireParts.length < cap; s++){
-      var spread = w * (0.12 + A.level * 0.2);
-      fireParts.push({
+      var spread = w * (0.12 + A.level * 0.2) * (st.narrow || 1);
+      var np = {
         x: w * 0.5 + (Math.random() - 0.5) * 2 * spread + swayPx,
         y: h - Math.random() * 8 * k,
         vx: (Math.random() - 0.5) * 26 * k,
@@ -149,8 +253,25 @@
         size: (7 + Math.random() * 11 + A.level * 15) * k * cfg.size,
         spin: Math.random() * 6.283,
         heat: heat,
-        hi: Math.floor(Math.random() * RAINBOW)
-      });
+        hi: Math.floor(Math.random() * RAINBOW),
+        g: st.glyphs ? st.glyphs[Math.floor(Math.random() * st.glyphs.length)] : null
+      };
+      if (st.place === 'candles'){
+        np.x = w * (0.1 + 0.8 * Math.floor(Math.random() * tongues) / Math.max(1, tongues - 1));
+        np.y = h * 0.6; np.vy *= 0.45;
+      } else if (st.place === 'aurora'){
+        // embers drift down out of the curtains like slow snow
+        np.x = w * Math.random(); np.y = h * 0.1 * Math.random(); np.vy = (26 + Math.random() * 40 + A.level * 60) * k * mo; np.free = true;
+        np.decay *= 0.6;
+      } else if (st.place){
+        // off the ring: outward from the sun, inward and round for the vortex
+        var rg2 = ringOf(st, w, h), ea = st.place === 'sun' ? Math.PI * (1.05 + 0.9 * Math.random()) : Math.random() * 6.283;
+        var ev = (50 + Math.random() * 70 + A.level * 160 + A.punch * 120) * k * mo;
+        np.x = rg2.x + Math.cos(ea) * rg2.r; np.y = rg2.y + Math.sin(ea) * rg2.r; np.free = true;
+        if (st.place === 'sun'){ np.vx = Math.cos(ea) * ev; np.vy = Math.sin(ea) * ev; }
+        else { np.vx = -Math.cos(ea) * ev - Math.sin(ea) * ev * 0.7; np.vy = -Math.sin(ea) * ev + Math.cos(ea) * ev * 0.7; np.decay *= 0.8; }
+      }
+      fireParts.push(np);
     }
     // many overlapping embers add up, so each one is fainter in a crowd
     // "A crowd" is how much of the picture the embers would cover laid side
@@ -161,16 +282,29 @@
     var crowd = expo / (1 + cover * 3.4);
     for (var i = fireParts.length - 1; i >= 0; i--){
       var p = fireParts[i];
-      p.vx += Math.sin(p.y * 0.011 / k + A.t * 3.1 + p.spin) * (70 + A.high * 300) * k * cfg.turb * dt;
-      p.vx += fireSway * 26 * k * cfg.sway * dt;
-      p.vy -= (12 + A.level * 55) * k * dt;
-      p.vx *= Math.pow(0.28, dt);
+      p.vx += Math.sin(p.y * 0.011 / k + A.t * 3.1 + p.spin) * (70 + A.high * 300) * k * cfg.turb * dt * (p.free ? 0.3 : 1);
+      if (!p.free){
+        p.vx += fireSway * 26 * k * cfg.sway * dt;
+        p.vy -= (12 + A.level * 55) * k * dt;      // hot air rises
+        p.vx *= Math.pow(0.28, dt);
+      }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.life -= p.decay * dt * (1 + A.high * 0.6);
-      if (p.life <= 0 || p.y < -20 * k){ fireParts.splice(i, 1); continue; }
+      if (p.life <= 0 || p.y < -20 * k || p.y > h + 20 * k){ fireParts.splice(i, 1); continue; }
 
       var r = p.size * (0.35 + p.life * 0.95);
+      if (p.g){
+        // a character ember: painted, not added light, so a dark emoji shows too
+        var gc = P.rainbow ? hueRGB(p.hi * 360 / RAINBOW) : P.warm;
+        var gs = Can.glyphSprite(p.g, 'rgb(' + Math.round(U.lerp(gc[0], 255, 0.35)) + ',' + Math.round(U.lerp(gc[1], 255, 0.35)) + ',' + Math.round(U.lerp(gc[2], 255, 0.35)) + ')');
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = Math.min(1, p.life * 1.6) * Math.min(1, (1 - p.life) * 6 + 0.25) * 0.9;
+        var gr = p.size * 0.62 * (0.8 + A.punch * 0.25);
+        ctx.drawImage(gs, p.x - gr, p.y - gr, gr * 2, gr * 2);
+        ctx.globalCompositeOperation = 'lighter';
+        continue;
+      }
       var a = p.life * p.life * 0.85 * crowd;
       if (p.heat < 0.98){
         ctx.globalAlpha = a * (1 - p.heat);
@@ -183,11 +317,11 @@
     }
     ctx.globalAlpha = 1;
 
-    if (cfg.sparks && A.beat && A.beatStrength > 0.18){
+    if (cfg.sparks && !st.place && A.beat && A.beatStrength > 0.18){
       var n = Math.round((3 + A.beatStrength * 20) * cfg.sparkAmt);
       for (var q = 0; q < n && fireSparks.length < 220; q++){
         fireSparks.push({
-          x: w * 0.5 + (Math.random() - 0.5) * w * 0.3 + swayPx,
+          x: w * 0.5 + (Math.random() - 0.5) * w * 0.3 * (st.narrow || 1) + swayPx,
           y: h - 6 * k,
           vx: (Math.random() - 0.5) * 220 * k * mo,
           vy: -(200 + Math.random() * 420 + A.beatStrength * 400) * k * mo,
@@ -198,11 +332,11 @@
       }
     }
     // Hi-hat: a few light embers flicked up off the top of the flames
-    if (cfg.hatEmbers && A.hatHit > 0.25 && A.drive > 0.08){
+    if (cfg.hatEmbers && !st.place && A.hatHit > 0.25 && A.drive > 0.08){
       var hn = Math.round((1 + A.hatHit * 5) * cfg.sparkAmt);
       for (var hq = 0; hq < hn && fireSparks.length < 240; hq++){
         fireSparks.push({
-          x: w * 0.5 + (Math.random() - 0.5) * w * 0.5 + swayPx,
+          x: w * 0.5 + (Math.random() - 0.5) * w * 0.5 * (st.narrow || 1) + swayPx,
           y: baseY - flameH * (0.35 + Math.random() * 0.5),
           vx: (Math.random() - 0.5) * 120 * k * mo,
           vy: -(90 + Math.random() * 190) * k * mo,
@@ -219,9 +353,9 @@
       sk.life -= sk.decay * dt;
       if (sk.life <= 0 || sk.y > h + 10 * k){ fireSparks.splice(j, 1); continue; }
       var flick = 0.55 + 0.45 * Math.sin(A.t * 40 + j);
-      ctx.fillStyle = fireCol(2, sk.heat, (sk.life * flick).toFixed(3));
+      ctx.fillStyle = sk.rgb ? U.rgba(sk.rgb, (sk.life * flick).toFixed(3)) : fireCol(2, sk.heat, (sk.life * flick).toFixed(3));
       ctx.beginPath();
-      ctx.arc(sk.x, sk.y, (0.9 + sk.life * 1.5) * k, 0, Math.PI * 2);
+      ctx.arc(sk.x, sk.y, (0.9 + sk.life * 1.5) * k * (sk.big || 1), 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -230,7 +364,7 @@
     // The blue core: a hot heart at the base that only shows in a loud
     // passage. Painted last and as paint, not added light: added to a base
     // that is already bright it would only make white.
-    if (coreHeat > 0.02){
+    if (coreHeat > 0.02 && !st.place){
       var coreH = flameH * (0.36 + A.kick * 0.1), coreW = w * (0.15 + A.level * 0.07);
       var ccx = w * 0.5 + swayPx;
       var core = ctx.createRadialGradient(ccx, baseY, 0, ccx, baseY, coreH);
@@ -248,6 +382,49 @@
       ctx.arc(ccx, baseY, coreH, Math.PI, 0);
       ctx.fill();
       ctx.restore();
+    }
+
+    if (st.front === 'cauldron'){
+      // a cauldron hanging over the fire; what is in it glows with the music
+      var cx0 = w / 2, cy0 = h * 0.46, crx = Math.min(w * 0.13, h * 0.36), cry = crx * 0.74;
+      ctx.strokeStyle = 'rgba(8,5,10,0.95)';
+      ctx.lineWidth = 2 * k;
+      ctx.beginPath();
+      ctx.moveTo(cx0 - crx * 0.9, cy0 - cry * 0.5); ctx.lineTo(cx0 - crx * 0.35, 0);
+      ctx.moveTo(cx0 + crx * 0.9, cy0 - cry * 0.5); ctx.lineTo(cx0 + crx * 0.35, 0);
+      ctx.stroke();
+      ctx.fillStyle = 'rgb(9,6,12)';
+      ctx.beginPath();
+      ctx.ellipse(cx0, cy0, crx, cry, 0, 0, 6.283);
+      ctx.fill();
+      ctx.fillRect(cx0 - crx * 1.06, cy0 - cry * 0.62, crx * 2.12, cry * 0.2);
+      ctx.strokeStyle = tint(1, 0.35, 0.2);
+      ctx.lineWidth = 1.2 * k;
+      ctx.beginPath();
+      ctx.ellipse(cx0, cy0, crx, cry, 0, 0.25, Math.PI - 0.25);
+      ctx.stroke();
+      var brew = ctx.createRadialGradient(cx0, cy0 - cry * 0.56, 0, cx0, cy0 - cry * 0.56, crx);
+      brew.addColorStop(0, U.rgba(P.cool, (0.45 + A.level * 0.5).toFixed(3)));
+      brew.addColorStop(1, U.rgba(P.cool, 0.05));
+      ctx.fillStyle = brew;
+      ctx.beginPath();
+      ctx.ellipse(cx0, cy0 - cry * 0.56, crx * 0.93, cry * (0.16 + A.kick * 0.05), 0, 0, 6.283);
+      ctx.fill();
+    } else if (st.front === 'hole'){
+      // the dark disc the flames fall into, with a thin bright edge that jumps with the kick
+      var hr = ringOf(st, w, h), hrad = hr.r * (0.4 + A.kick * 0.03);
+      var hole = ctx.createRadialGradient(hr.x, hr.y, hrad * 0.75, hr.x, hr.y, hrad * 1.25);
+      hole.addColorStop(0, 'rgba(0,0,0,1)');
+      hole.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = hole;
+      ctx.beginPath();
+      ctx.arc(hr.x, hr.y, hrad * 1.25, 0, 6.283);
+      ctx.fill();
+      ctx.strokeStyle = U.rgba(P.cool, (0.3 + A.kick * 0.5 + A.drive * 0.2).toFixed(3));
+      ctx.lineWidth = (1 + A.kick * 2) * k;
+      ctx.beginPath();
+      ctx.arc(hr.x, hr.y, hrad * 0.98, 0, 6.283);
+      ctx.stroke();
     }
   }
 
@@ -271,6 +448,41 @@
     wall.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = wall;
     c.fillRect(0, 0, w, h);
+    var st = STYLES[styleId()];
+    if (st.place === 'candles'){
+      // a row of candles, one under each flame, on a dark shelf
+      var nc = Math.round(Cfg.CFG.fire.tongues), cw = Math.max(5 * k, w * 0.026);
+      c.fillStyle = 'rgba(0,0,0,0.5)';
+      c.fillRect(0, h * 0.93, w, h * 0.07);
+      for (var ci = 0; ci < nc; ci++){
+        var cxx = w * (0.1 + 0.8 * (nc === 1 ? 0.5 : ci / (nc - 1))), top = h * (0.66 + ((ci * 37) % 5) * 0.012);
+        var wax = c.createLinearGradient(cxx - cw / 2, 0, cxx + cw / 2, 0);
+        wax.addColorStop(0, tint(0.5, 0.9, 0.75));
+        wax.addColorStop(0.5, tint(0.86, 0.95, 0.85));
+        wax.addColorStop(1, tint(0.4, 0.9, 0.7));
+        c.fillStyle = wax;
+        c.fillRect(cxx - cw / 2, top, cw, h * 0.93 - top);
+        c.fillStyle = 'rgba(20,12,10,0.9)';
+        c.fillRect(cxx - 0.6 * k, top - 5 * k, 1.2 * k, 5 * k);      // the wick
+      }
+    }
+    if (st.place === 'aurora' || st.place === 'vortex' || st.place === 'sun'){
+      // open sky instead of a hearth: stars, and for the aurora a line of dark hills
+      for (var sx = 0; sx < 70; sx++){
+        c.fillStyle = 'rgba(255,255,255,' + (0.12 + (sx % 5) * 0.07).toFixed(2) + ')';
+        c.fillRect((sx * 197.3) % w, (sx * 89.7) % (h * (st.place === 'sun' ? 0.6 : 1)), (1 + (sx % 3) * 0.5) * k, (1 + (sx % 3) * 0.5) * k);
+      }
+      if (st.place === 'aurora'){
+        c.fillStyle = 'rgba(4,6,12,0.92)';
+        c.beginPath();
+        c.moveTo(0, h);
+        for (var hx = 0; hx <= 24; hx++) c.lineTo(w * hx / 24, h * (0.86 - 0.07 * Math.abs(Math.sin(hx * 1.7)) - 0.04 * Math.sin(hx * 0.6)));
+        c.lineTo(w, h);
+        c.closePath();
+        c.fill();
+      }
+    }
+    if (st.place) return;                   // the rest is the hearth itself
     for (var br = 0; br < 34; br++){        // brickwork on the back wall
       var bx = (br * 137) % w, by = h * 0.12 + ((br * 71) % Math.round(h * 0.6));
       c.fillStyle = tint(1, 0.028, 0.5);
@@ -325,17 +537,18 @@
     }
   }
 
-  function reset(){ fireParts = []; fireSparks = []; heatShown = 0; flameState = null; flameVals = null; }
+  function reset(){ fireParts = []; fireSparks = []; heatShown = 0; flameState = null; flameVals = null; burstCd = 0; }
 
   App.modes.register('fire', { draw: drawFire, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset });
 
   App.cfg.registerDefaults('fire', {
-    followTheme: true, tongues: 9, height: 1, spawn: 1, life: 1, size: 1, sparks: true, hatEmbers: true, sparkAmt: 1,
+    followTheme: true, style: 'theme', tongues: 9, height: 1, spawn: 1, life: 1, size: 1, sparks: true, hatEmbers: true, sparkAmt: 1,
     blueAt: 0.72, blueRange: 0.2, warm: '#FF7E14', cool: '#3E9CFF',
     sway: 1, turb: 1, trail: 0.3, source: 'bass', bg1: '#170B10', bg2: '#05030A'
   });
   App.cfg.registerSchema({ id: 'fire', label: 'Fire', fields: [
-    ['followTheme', 'Follow theme (flame colours and hearth)', 'bool'],
+    ['style', 'Style', 'layout', STYLE_IDS],
+    ['followTheme', 'Follow theme (flame colours and background)', 'bool'],
     ['tongues', 'Flame tongues', 'range', 3, 15, 1],
     ['height', 'Flame height', 'range', 0.3, 2.5, 0.05],
     ['spawn', 'Ember amount', 'range', 0.2, 3, 0.05],

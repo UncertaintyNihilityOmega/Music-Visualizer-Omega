@@ -115,6 +115,7 @@
   var panel = null, panelBody = null;
   function labelFor(g, f){ return f[1]; }
   function buildPanel(){
+    paintLayoutBar();
     if (!panelBody) return;
     panelBody.innerHTML = '';
     C.SCHEMA.forEach(function(group){
@@ -129,6 +130,7 @@
       group.fields.forEach(function(f){
         var key = f[0], type = f[2];
         if (type !== 'photo' && type !== 'button' && C.CFG[group.id][key] === undefined) return;
+        if (type === 'layout') return;       // shown in the layout bar at the top of the Settings page
         var row = document.createElement('div');
         row.className = 'set-row';
         var lab = document.createElement('label');
@@ -221,7 +223,53 @@
       panelBody.appendChild(det);
     });
   }
+  /* ---------- Layout bar ----------
+     The first setting of type 'layout' in the current mode's schema is its
+     choice of layouts: ['layout', 'Layout', 'layout', ['mirror', 'rise', ...]].
+     It is drawn as a bar of buttons at the top of the Settings page, like
+     the page tabs, and repainted whenever the mode or the setting changes.
+     A mode with no such setting hides the bar. */
+  function layoutField(){
+    var gid = App.modes.current, found = null;
+    if (App.games.isGameMode(gid)) return null;
+    C.SCHEMA.forEach(function(group){
+      if (group.id !== gid || found) return;
+      group.fields.forEach(function(f){ if (!found && f[2] === 'layout') found = { group: group, field: f }; });
+    });
+    return found;
+  }
+  function paintLayoutBar(){
+    var card = document.getElementById('layoutCard'), bar = document.getElementById('layoutBar');
+    if (!card || !bar) return;
+    var lf = layoutField();
+    card.hidden = !lf;
+    if (!lf) return;
+    var gid = lf.group.id, key = lf.field[0], opts = lf.field[3];
+    document.getElementById('layoutTitle').textContent = lf.group.label + ': ' + lf.field[1].toLowerCase();
+    bar.setAttribute('aria-label', lf.group.label + ' ' + lf.field[1].toLowerCase());
+    bar.innerHTML = '';
+    opts.forEach(function(opt){
+      var b = document.createElement('button');
+      var on = C.CFG[gid][key] === opt;
+      b.type = 'button';
+      b.className = 'tab-btn' + (on ? ' active' : '');
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.textContent = opt;
+      b.addEventListener('click', function(){
+        C.CFG[gid][key] = opt;
+        onSettingChanged(gid, key);
+        paintLayoutBar();
+      });
+      bar.appendChild(b);
+    });
+    var hint = document.getElementById('layoutHint');
+    if (hint) hint.textContent = opts.indexOf('theme') !== -1 ? '"Theme" lets the active code choose.' : '';
+  }
+  C.paintLayoutBar = paintLayoutBar;
+
   function openGroup(id){
+    paintLayoutBar();
     if (!panelBody) return;
     var groups = panelBody.querySelectorAll('.set-group');
     for (var i = 0; i < groups.length; i++){
@@ -241,18 +289,16 @@
     panelBody = document.getElementById('settingsBody');
     buildPanel();
 
-    var setBtn = document.getElementById('setBtn');
-    if (setBtn && panel){
-      // the gear on the canvas jumps to the Settings page, opened at the
-      // current mode's own group
-      setBtn.addEventListener('click', function(){
-        App.pages.show('settings');
-        openGroup(App.games.isGameMode(App.modes.current) ? 'games' : App.modes.current);
-        var fs = document.fullscreenElement || document.webkitFullscreenElement;
-        if (fs) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
+    // the S key jumps to the Settings page, opened at the current mode's own group
+    C.openSettings = function(){
+      if (!panel) return;
+      App.pages.show('settings');
+      openGroup(App.games.isGameMode(App.modes.current) ? 'games' : App.modes.current);
+      var fs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fs) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    paintLayoutBar();
     var expCfg = document.getElementById('exportCfgBtn');
     if (expCfg) expCfg.addEventListener('click', function(){
       // 'kind' keeps its old value so settings files exported before the rename still import

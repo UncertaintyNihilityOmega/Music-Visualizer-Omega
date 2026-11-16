@@ -107,7 +107,9 @@ try {
     // the flames are added light and vanish on a pale background
     if (t.look && t.look.fire !== null){
       const f = t.look.fire;
-      if (!f) err(`theme "${id}": look.fire must be null or { warm, cool, bg1, bg2 }`);
+      const styles = (/var STYLE_IDS = \[([^\]]*)\]/.exec(read('js/modes/mode-fire.js')) || [, ''])[1].replace(/['\s]/g, '').split(',');
+      if (f && f.style && !styles.includes(f.style)) err(`theme "${id}": look.fire.style "${f.style}" is not a style mode-fire.js knows (${styles.join(', ')})`);
+      if (!f) err(`theme "${id}": look.fire must be null or { style, warm, cool, bg1, bg2 }`);
       else for (const k of ['warm', 'cool', 'bg1', 'bg2']){
         if (!/^#[0-9a-f]{6}$/i.test(f[k] || '')) err(`theme "${id}": look.fire.${k} must be a #rrggbb colour`);
         else if (k[0] === 'b'){

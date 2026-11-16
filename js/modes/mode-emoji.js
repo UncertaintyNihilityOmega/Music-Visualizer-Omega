@@ -262,7 +262,7 @@
     ['set', 'Your emojis (comma separated, quiet to loud)', 'text'],
     ['kickRing', 'Kick drum throws a ring of emoji', 'bool'],
     ['hatSparks', 'Hi-hat sparkles', 'bool'],
-    ['shape', 'Layout', 'select', ['line', 'circle', 'heart', 'bubbles', 'fade']],
+    ['shape', 'Layout', 'layout', ['line', 'circle', 'heart', 'bubbles', 'fade']],
     ['size', 'Size', 'range', 0.4, 2.5, 0.05],
     ['cols', 'Density', 'range', 0.4, 2, 0.05],
     ['pop', 'Beat pop', 'range', 0, 1.2, 0.05],

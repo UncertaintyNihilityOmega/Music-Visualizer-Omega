@@ -80,6 +80,19 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   colours in Settings > Fire. "Follow theme" switches it off. White at worst in a loud passage, desktop /
   375 px: 3 / 3% default, 5 / 6 New Year, 8 / 6 Halloween, 10 / 8 Love, 1 / 3 Solarpunk, 2 / 2 Cyberpunk,
   7 / 5 Nihilum, 10 / 9 Incertum (`Probe.white('fire', 50, 3)`, limit 15).
+- Styles (2026-11-16, asked by the user: a code must change more than the colour). Each code names a style
+  (`look.fire.style`); any style can also be picked by hand in the layout bar of the Settings page:
+  - **hearth**: the row of flames on the floor (the default theme).
+  - **fireworks** (New Year): a low gold fire, star embers, and every kick drum bursts a firework in the sky.
+  - **cauldron** (Halloween): a narrow witch-green fire under a hanging cauldron whose brew glows with the
+    music; ghosts rise as embers.
+  - **candles** (Love): one small flame on each of a row of candles; hearts rise.
+  - **sun** (Solarpunk): a sun rising from the floor, the flames its rays.
+  - **pixels** (Cyberpunk): flames built of square blocks, embers of 1s and 0s.
+  - **vortex** (Decensus Ad Nihilum): a ring of flames pointing inward, falling into a dark disc whose edge
+    jumps with the kick.
+  - **aurora** (Ascensus ad Incertum): rainbow curtains hanging from the top over dark hills; sparkles drift down.
+  White share in a loud passage is 8% or less in every style (`Probe.white`); 0.5 to 1.3 ms a frame.
 - Ideas left: none.
 
 ## Ice

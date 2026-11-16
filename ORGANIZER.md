@@ -60,8 +60,15 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-16: Runs may use the preview server, and may do several steps: keep going until the 5-hour meter is
   at 75% or the weekly one at 95% (AGENT-RUN.md). No agents. The 95% weekly limit is confirmed.
 - 2026-11-16: The scheduled task stays switched off; the user starts runs by hand. Its plan stays as written.
-- 2026-11-16: Publishing approved for that day's run (ROADMAP items 3 and 2): the repository was pushed to
-  GitHub. Whether later runs may push on their own is still to be asked (ROADMAP "For the user").
+- 2026-11-16: Publishing approved (ROADMAP items 3 and 2): the repository was pushed to GitHub and the user
+  switched on GitHub Pages.
+- 2026-11-16: **Runs may push to GitHub on their own** (standing approval). Push after each step's commit;
+  never force-push. A push to `main` publishes the site.
+- 2026-11-16: No settings icon on the picture: the Settings tab is enough (the S key still opens it).
+- 2026-11-16: A mode's layout is chosen in a bar at the top of the Settings page, above the codes, that looks
+  like the page tabs; it is not a row in the mode's settings list.
+- 2026-11-16: A theme code must change more than a mode's colours. String is the model: "Strings look really
+  good with all theme codes, but fire only changes color". Fire now has a form of its own per code.
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,
@@ -70,9 +77,11 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-15: Default theme is the dark purple "Omega" look taken from `inspiration/example-icon`.
 - 2026-11-16: Volume is applied after the analyser, so turning the music down does not shrink the visuals.
 - 2026-11-16: Commits were local only until the user approved publishing; they did so the same day (see above).
-- 2026-11-16: GitHub Pages gets only the app's own files (index.html, css, js, icons, manifest, LICENSE,
-  README), not the tools or the project notes. The repository itself holds everything except the git-ignored
-  folders.
+- 2026-11-16: GitHub Pages publishes the `main` branch as it is (the user's setting: "Deploy from a branch"),
+  so the tools and project notes are public too. `.github/workflows/pages.yml` only runs the two checks; it
+  does not deploy, because two deployers raced each other. `.nojekyll` keeps GitHub from rewriting the files.
+- 2026-11-16: A setting of type `'layout'` in a mode's schema is that mode's layout choice: `settings.js`
+  draws it in the layout bar and leaves it out of the mode's list. One per mode.
 - 2026-11-16: A web address whose server blocks reading is played on a second, plain player
   (`S.plainAudio`), because the browser silences such a source once it is wired into the analysis.
 

@@ -1,9 +1,10 @@
-# Publishes the app to GitHub Pages on every push to main.
-# The two checks that need no songs run first; a failure stops the deploy.
+# Runs the two checks that need no songs on every push to main.
 # (engine/songtest.js needs test-songs/, which is never published, so it only runs locally.)
 #
-# One-time setup in the repository: Settings > Pages > Build and deployment > Source: "GitHub Actions".
-name: Publish
+# The site itself is published by GitHub Pages straight from the main branch
+# (repository Settings > Pages > Source: "Deploy from a branch", main, / root),
+# so this workflow does not deploy: two deployers would race each other.
+name: Checks
 
 on:
   push:
@@ -12,12 +13,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
   check:
@@ -31,24 +26,3 @@ jobs:
         run: node engine/test.js
       - name: Project check
         run: node engine/check.js
-
-  deploy:
-    needs: check
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Collect the app's own files
-        # only what the app needs to run: no tools, no project notes
-        run: |
-          mkdir _site
-          cp -r index.html manifest.webmanifest css js icons LICENSE README.md _site/
-          touch _site/.nojekyll
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@v4

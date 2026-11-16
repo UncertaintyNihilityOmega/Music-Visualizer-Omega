@@ -400,7 +400,7 @@
   });
   App.cfg.registerSchema({ id: 'basic', label: 'Basic', fields: [
     ['followTheme', 'Follow theme (colours, shape of bars)', 'bool'],
-    ['layout', 'Layout', 'select', ['theme', 'mirror', 'rise', 'edges', 'dots', 'ring']],
+    ['layout', 'Layout', 'layout', ['theme', 'mirror', 'rise', 'edges', 'dots', 'ring']],
     ['range', 'Frequencies shown', 'select', ['full', 'bass', 'voice']],
     ['bars', 'Bar density', 'range', 0.4, 2, 0.05],
     ['gamma', 'Bar contrast', 'range', 0.5, 2.5, 0.05],

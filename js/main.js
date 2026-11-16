@@ -69,7 +69,7 @@
         toggleFullscreen();
         break;
       case 's': case 'S':
-        document.getElementById('setBtn').click();
+        App.cfg.openSettings();
         break;
       case 'v': case 'V':
         M.setMode(MODE_ORDER[(MODE_ORDER.indexOf(M.current) + 1) % MODE_ORDER.length]);
