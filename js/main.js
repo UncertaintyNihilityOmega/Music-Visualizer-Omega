@@ -19,6 +19,17 @@
   function isFull(){
     return !!(document.fullscreenElement || document.webkitFullscreenElement) || vizCard.classList.contains('viz-fill');
   }
+  // On a phone held upright, fullscreen turns the picture sideways, the way
+  // a video does: every mode is drawn for a wide picture. The phone lets a
+  // page do that only while it is in real fullscreen, and gives the screen
+  // back to the user's own setting on leaving. ("Performance & feel" has the
+  // switch; an iPhone cannot be turned by a page at all.)
+  function turnSideways(){
+    var o = screen.orientation;
+    var touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+    if (!o || !o.lock || !touch || !App.cfg.CFG.look.fsTurn) return;
+    try { var p = o.lock('landscape'); if (p && p.catch) p.catch(function(){}); } catch (e) {}
+  }
   function toggleFullscreen(){
     if (!canFs){
       var on = vizCard.classList.toggle('viz-fill');
@@ -31,14 +42,35 @@
       (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     } else {
       var req = vizCard.requestFullscreen || vizCard.webkitRequestFullscreen;
-      if (req) req.call(vizCard);
+      if (!req) return;
+      var p = req.call(vizCard);
+      if (p && p.then) p.then(turnSideways, function(){}); else setTimeout(turnSideways, 200);
     }
   }
   App.toggleFullscreen = toggleFullscreen;
   fsBtn.addEventListener('click', toggleFullscreen);
+
+  // In fullscreen the buttons lie over the picture and fade out after a few
+  // seconds without a touch, a mouse move or a key (styles.css "is-full").
+  var idleTimer = 0, IDLE_MS = 3500;
+  function wakeBar(){
+    if (!isFull()) return;
+    vizCard.classList.remove('fs-idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function(){ if (isFull()) vizCard.classList.add('fs-idle'); }, IDLE_MS);
+  }
+  ['pointerdown', 'pointermove', 'touchstart'].forEach(function(ev){ vizCard.addEventListener(ev, wakeBar, { passive: true }); });
+  document.addEventListener('keydown', wakeBar);
   function onFsChange(){
-    fsBtn.textContent = isFull() ? '✕' : '⛶';
+    var full = isFull();
+    vizCard.classList.toggle('is-full', full);
+    vizCard.classList.remove('fs-idle');
+    clearTimeout(idleTimer);
+    if (full) wakeBar();
+    fsBtn.textContent = full ? '✕' : '⛶';
+    Can.resizeCanvas();
     setTimeout(Can.resizeCanvas, 60);
+    setTimeout(Can.resizeCanvas, 400);     // a phone finishes turning the screen a moment later
   }
   document.addEventListener('fullscreenchange', onFsChange);
   document.addEventListener('webkitfullscreenchange', onFsChange);

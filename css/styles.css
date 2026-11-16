@@ -62,16 +62,6 @@ canvas{ width:100%; height:clamp(200px, 34vw, 320px); display:block; border-radi
 }
 .mode-sep{ display:inline-block; width:1px; height:22px; background:var(--line); margin:0 5px; }
 .mode-sep.fs-only{ display:none; }
-.viz-card:fullscreen .mode-row{ display:inline-flex; }
-.viz-card.viz-fill .mode-row{ display:inline-flex; }
-.viz-card:fullscreen .modes-wrap{ display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:6px; }
-.viz-card.viz-fill .modes-wrap{ display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:6px; }
-.viz-card:fullscreen .game-row{ margin-top:10px; padding-top:0; }
-.viz-card.viz-fill .game-row{ margin-top:10px; padding-top:0; }
-.viz-card:fullscreen .game-row::before{ display:none; }
-.viz-card.viz-fill .game-row::before{ display:none; }
-.viz-card:fullscreen .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
-.viz-card.viz-fill .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
 
 .mode-btn, .pill-btn, .tab-btn{
   border:1px solid var(--line); background:var(--field); color:var(--ink);
@@ -110,27 +100,35 @@ canvas{ width:100%; height:clamp(200px, 34vw, 320px); display:block; border-radi
 }
 .viz-fs:hover{ background:rgba(0,0,0,.55); transform:scale(1.06); }
 
-.viz-card:fullscreen{
-  background:#07050d; display:flex; flex-direction:column; justify-content:center;
-  position:static; left:0; right:0; width:100%; height:100%; margin:0; padding:0 0 14px;
+/* Fullscreen (main.js sets "is-full": real fullscreen, or the fill-the-window stand-in on an iPhone, which has
+   none for a page element). The picture takes the whole screen. The mode buttons and the song name lie over
+   its lower edge and fade out after a few seconds without a touch ("fs-idle"), like the bar of a video player.
+   Before 2026-11-16 the buttons stood under the picture: on a phone they took a quarter of the screen and the
+   picture overflowed it (the user: "most look bad when made full-screen in the phone"). */
+.viz-card.is-full{
+  position:fixed; top:0; left:0; right:0; bottom:0; z-index:60; width:auto; height:auto; max-width:none;
+  margin:0; padding:0; border:none; border-radius:0; background:#000; overflow:hidden;
 }
-.viz-card:fullscreen canvas{ height:calc(100vh - 96px); border-radius:0; }
-.viz-card:fullscreen .now-playing{ color:#f2ecff; }
-.viz-card:fullscreen .mode-btn{ background:rgba(255,255,255,.12); color:#f2ecff; }
-.viz-card:fullscreen .mode-btn.active{ background:linear-gradient(135deg,var(--accent2),var(--accent)); color:var(--on-accent); }
-.viz-card:fullscreen .viz-fs{ top:12px; right:12px; }
-.viz-card:-webkit-full-screen{ background:#07050d; position:static; left:0; right:0; width:100%; height:100%; margin:0; }
-.viz-card:-webkit-full-screen canvas{ height:calc(100vh - 96px); border-radius:0; }
-/* the same, for a browser with no fullscreen for an element (iPhone): the card fills the window (main.js) */
-.viz-card.viz-fill{
-  position:fixed; top:0; left:0; right:0; bottom:0; z-index:60; width:auto; height:auto; margin:0; border-radius:0;
-  background:#07050d; display:flex; flex-direction:column; justify-content:center; padding:0 0 14px;
+.viz-card.is-full canvas{ position:absolute; top:0; left:0; width:100%; height:100%; border-radius:0; }
+.viz-card.is-full .fs-bar{
+  position:absolute; left:0; right:0; bottom:0; z-index:2; max-height:70%; overflow-y:auto;
+  padding:34px 10px 12px; background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.8));
+  transition:opacity .4s;
 }
-.viz-card.viz-fill canvas{ height:calc(100vh - 96px); height:calc(100dvh - 96px); border-radius:0; }
-.viz-card.viz-fill .now-playing{ color:#f2ecff; }
-.viz-card.viz-fill .mode-btn{ background:rgba(255,255,255,.12); color:#f2ecff; }
-.viz-card.viz-fill .mode-btn.active{ background:linear-gradient(135deg,var(--accent2),var(--accent)); color:var(--on-accent); }
-.viz-card.viz-fill .viz-fs{ top:12px; right:12px; }
+.viz-card.is-full .viz-fs{ top:12px; right:12px; transition:opacity .4s, background .15s, transform .15s; }
+.viz-card.is-full.fs-idle .fs-bar, .viz-card.is-full.fs-idle .viz-fs{ opacity:0; pointer-events:none; }
+.viz-card.is-full.fs-idle{ cursor:none; }
+.viz-card.is-full .now-playing{ color:#f2ecff; margin-top:8px; }
+.viz-card.is-full .mode-btn{ background:rgba(24,18,40,.72); color:#f2ecff; }
+.viz-card.is-full .mode-btn.active{ background:linear-gradient(135deg,var(--accent2),var(--accent)); color:var(--on-accent); }
+.viz-card.is-full .mode-btn{ flex:none; white-space:nowrap; }
+/* one line of buttons that slides sideways when it is longer than the screen (a phone), centred when it fits */
+.viz-card.is-full .modes-wrap{ display:flex; flex-wrap:nowrap; align-items:center; gap:6px; width:max-content; max-width:100%; margin:0 auto; overflow-x:auto; scrollbar-width:none; padding:2px 0; }
+.viz-card.is-full .modes-wrap::-webkit-scrollbar{ display:none; }
+.viz-card.is-full .mode-row{ display:inline-flex; flex-wrap:nowrap; flex:none; margin-top:0; }
+.viz-card.is-full .game-row{ margin-top:0; padding-top:0; }
+.viz-card.is-full .game-row::before{ display:none; }
+.viz-card.is-full .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
 html.viz-fill-on, html.viz-fill-on body{ overflow:hidden; }
 /* iPhone zooms the page when a text box with small letters is tapped; 16px stops that */
 @supports (-webkit-touch-callout:none){

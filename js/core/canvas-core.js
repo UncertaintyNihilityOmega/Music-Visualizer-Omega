@@ -127,13 +127,14 @@
     return cv;
   };
 
-  App.cfg.registerDefaults('look', { dprCap: 1.5, fps: 60, motion: 1, glow: 0.5, fx: 1 });
+  App.cfg.registerDefaults('look', { dprCap: 1.5, fps: 60, motion: 1, glow: 0.5, fx: 1, fsTurn: true });
   App.cfg.registerSchema({ id: 'look', label: 'Performance & feel', fields: [
     ['dprCap', 'Render resolution', 'range', 1, 2, 0.25],
     ['fps', 'Frame rate cap', 'select', [30, 45, 60]],
     ['motion', 'Motion speed', 'range', 0.2, 2, 0.05],
     ['glow', 'Glow amount', 'range', 0, 1, 0.05],
-    ['fx', 'Picture punch (zoom, shake and flash on hits; 0 = off)', 'range', 0, 2, 0.05]
+    ['fx', 'Picture punch (zoom, shake and flash on hits; 0 = off)', 'range', 0, 2, 0.05],
+    ['fsTurn', 'Fullscreen on a phone turns the picture sideways', 'bool']
   ]}, 1);
   App.cfg.onGroupChange('look', function(key){
     if (key === 'dprCap' || key === null) resizeCanvas();

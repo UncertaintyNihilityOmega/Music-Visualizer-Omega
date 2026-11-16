@@ -39,6 +39,8 @@
   <div class="card viz-card" id="vizCard">
     <button class="viz-fs" id="fsBtn" type="button" aria-label="Fullscreen visualiser" title="Fullscreen (F)">⛶</button>
     <canvas id="visualizer"></canvas>
+    <!-- In fullscreen this bar lies over the lower edge of the picture and fades out when nothing is touched -->
+    <div class="fs-bar" id="fsBar">
     <div class="modes-wrap">
     <!-- Left of the line: modes that change with the theme codes. Right of it: modes that do not. -->
     <div class="mode-row" role="tablist" aria-label="Visualiser style">
@@ -67,6 +69,7 @@
     </div>
     <p class="now-playing" id="nowPlaying" aria-live="polite">Nothing loaded yet — add some music below</p>
     <p class="cors-note" id="corsNote"></p>
+    </div>
   </div>
 
   <div class="card transport-card">

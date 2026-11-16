@@ -233,7 +233,7 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   // iPhone and iPad
   if (!read('js/core/audio-engine.js').includes("sessionType('playback')")) err('audio-engine.js: the iPhone sound session must be set to "playback", or the silent switch mutes the music');
   if (!/apple-touch-icon/.test(read('index.html')) || !/apple-mobile-web-app-capable/.test(read('index.html'))) err('index.html: the iPhone Home Screen tags (apple-touch-icon, apple-mobile-web-app-capable) are missing');
-  if (!read('js/main.js').includes('viz-fill') || !read('css/styles.css').includes('.viz-card.viz-fill')) err('the fill-the-window stand-in for fullscreen on iPhone (main.js, styles.css) is missing');
+  if (!read('js/main.js').includes('viz-fill') || !read('css/styles.css').includes('.viz-card.is-full')) err('the fill-the-window stand-in for fullscreen on iPhone (main.js, styles.css) is missing');
 }
 
 /* 8b. late sound (Piano's falling notes): only while a mode asks for it, and a paused song's held sound is
