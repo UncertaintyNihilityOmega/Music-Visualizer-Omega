@@ -137,6 +137,10 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
 - Listens to: 20 log bars 40 to 9000 Hz round the edge (bass bottom, treble top, mirrored); `drive` sets how far
   the edge moves and how fast the whirlpool turns; `kick` swells the drop; `snareHit` throws droplets.
 - Calm against lively: a calm passage is a near circle that breathes; a loud one has long lobes.
+- The boom, measured on the example video (bass hits at 49.8 s and 129.8 s, found with ffmpeg `astats` on the
+  sound below 140 Hz): within two frames the drop is about 1.4 times its size with two sharp horns on its upper
+  left and right; a bright copy flashes behind it; the background jumps towards the viewer and specks fly out;
+  back to rest in about 0.3 s. The mode does all four ("Boom" setting; the bass sits on the two shoulders).
 - Theme: `look.liquid` (kind ink / slime / mercury / plasma, colours, rainbow).
 - Ideas left: a second drop that merges and splits (metaballs); the song map's sections changing the liquid.
 

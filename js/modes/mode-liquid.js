@@ -3,9 +3,13 @@
    bass at the bottom, treble at the top, the same on both sides. The edge
    moves like something thick (it rises fast and sinks slowly), and rings
    of lighter liquid follow it a moment later, each one wider than the last.
-     calm passage   a round drop that breathes; the whirlpool barely turns
+     calm passage   a small round drop that breathes; the whirlpool barely turns
      loud passage   long lobes, a fast whirlpool
-     kick           the whole drop swells
+     kick ("boom")  measured on the example video (inspiration/liquid-example.mp4, the hits at
+                    49.8 s and 129.8 s): within two frames the drop grows to about 1.4 times its
+                    size and throws up two sharp horns on its upper left and right; a bright copy
+                    of its shape flashes behind it; the whirlpool jumps towards the viewer and
+                    specks fly outward. It is back to rest in about 0.3 s.
      snare          the drop throws droplets, which fall back in
      tap            a splash where the finger lands
 
@@ -27,7 +31,8 @@
   var hist = [], histAt = 0;                  // the edge a few frames ago, for the rings that follow
   for (var hi = 0; hi < HIST; hi++) hist.push(new Float32Array(N));
   var poke = new Float32Array(N);             // extra push from a tap, dies away
-  var drops = [], spin = 0, swell = 0;
+  var drops = [], spin = 0, swell = 0, specks = null;
+  var HORN = 0.72;                            // where the two horns stand, in radians from the top
 
   var OWN = { kind: 'ink' };
   function look(){
@@ -60,22 +65,25 @@
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.liquid;
     var mo = Cfg.CFG.look.motion, L = look();
     var cx = w / 2, cy = h / 2, minDim = Math.min(w, h);
-    var R = minDim * 0.17 * cfg.size;
+    var R = minDim * 0.15 * cfg.size;
     var rim = U.hexRGB(L.rim), i;
     Can.backdrop(1);
 
     /* --- the whirlpool: streaks of lighter water circling the drop --- */
+    swell = U.env(swell, A.kick * cfg.boom, 34, 5, dt);
+    var bgRGB = U.hexRGB(L.bg1), darkBG = bgRGB[0] + bgRGB[1] + bgRGB[2] < 380;
+    var zoom = 1 + swell * 0.17;              // the water jumps towards the viewer on a boom
     if (cfg.swirl){
-      spin += dt * mo * (0.12 + A.drive * 0.9 + A.kick * 0.5);
+      spin += dt * mo * (0.12 + A.drive * 0.9 + swell * 1.4);
       ctx.lineCap = 'round';
       var far = Math.sqrt(w * w + h * h) / 2;
       for (i = 0; i < 46; i++){
-        var f = (i * 0.618034) % 1, rr = R * 1.5 + (far - R * 1.5) * f;
+        var f = (i * 0.618034) % 1, rr = (R * 1.5 + (far - R * 1.5) * f) * zoom;
         // inner water turns faster than outer water
         var a0 = i * 2.39996 + spin * (2.4 - f * 1.7), len = 0.35 + ((i * 0.37) % 1) * 0.9;
         ctx.strokeStyle = L.rainbow ? 'hsla(' + Math.round(f * 300 + A.t * 25) % 360 + ',80%,62%,' + (0.1 + (1 - f) * 0.16).toFixed(3) + ')'
                                     : U.rgba(rim, (0.05 + (1 - f) * 0.13 + A.drive * 0.05).toFixed(3));
-        ctx.lineWidth = (1.5 + ((i * 0.71) % 1) * 5) * k * (0.6 + f);
+        ctx.lineWidth = (1.5 + ((i * 0.71) % 1) * 5) * k * (0.6 + f) * (1 + swell * 0.6);
         ctx.beginPath();
         // an oval, slightly squashed, so it reads as water seen from above at an angle
         ctx.ellipse(cx, cy, rr, rr * 0.9, 0, a0, a0 + len);
@@ -83,20 +91,59 @@
       }
     }
 
+    /* --- specks in the water: they drift outward, and streak away on a boom --- */
+    if (cfg.specks){
+      if (!specks){
+        specks = [];
+        for (i = 0; i < 70; i++) specks.push({ a: i * 2.39996, r: (i * 0.618034) % 1, s: (i * 0.37) % 1 });
+      }
+      var farS = Math.sqrt(w * w + h * h) / 2;
+      ctx.strokeStyle = darkBG ? 'rgba(255,255,255,0.8)' : U.rgba(rim, 0.8);
+      ctx.lineCap = 'round';
+      for (i = 0; i < specks.length; i++){
+        var sk = specks[i], r0 = sk.r;
+        sk.r += dt * mo * (0.012 + A.drive * 0.05 + swell * 0.95) * (0.3 + sk.r);
+        if (sk.r > 1.05){ sk.r = 0.12 + Math.random() * 0.1; r0 = sk.r; sk.a = Math.random() * 6.283; }
+        var ca = Math.cos(sk.a + spin * 0.15), sa = Math.sin(sk.a + spin * 0.15);
+        ctx.globalAlpha = (0.15 + 0.5 * sk.r) * (0.5 + sk.s * 0.5);
+        ctx.lineWidth = (0.8 + sk.s * 1.6) * k * (1 + swell * 0.8);
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * farS * r0, cy + sa * farS * r0);
+        ctx.lineTo(cx + ca * farS * sk.r + 0.01, cy + sa * farS * sk.r);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    /* --- the pale eye of the whirlpool, behind the drop: it brightens and widens on a boom --- */
+    var eyeR = R * (2.5 + swell * 0.8) * zoom;
+    var eye = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, eyeR);
+    eye.addColorStop(0, U.rgba(rim, (0.3 + swell * 0.3).toFixed(3)));
+    eye.addColorStop(0.55, U.rgba(rim, (0.12 + swell * 0.12).toFixed(3)));
+    eye.addColorStop(1, U.rgba(rim, 0));
+    ctx.fillStyle = eye;
+    ctx.fillRect(cx - eyeR, cy - eyeR, eyeR * 2, eyeR * 2);
+
     /* --- the edge of the drop --- */
     Aud.bars(vals, { lo: 40, hi: 9000, scale: 'log', blur: 0.35, state: valState, attack: 30, release: 5 });
-    swell = U.env(swell, A.kick, 30, 4, dt);
     var big = 0.25 + 0.75 * A.drive, t = A.t * mo;
     for (i = 0; i < N; i++){
       // u: 0 at the bottom (bass), 1 at the top (treble); both sides alike
-      var ang = i / N * 6.283, u = 0.5 - 0.5 * Math.cos(ang);
-      u = 1 - u;                                             // i = 0 is the top
+      var ang = i / N * 6.283;
+      var phi = ang > Math.PI ? 6.283 - ang : ang;           // 0 at the top, pi at the bottom, both sides alike
+      // The bass stands on the two "shoulders" (HORN from the top). From there the sound runs
+      // down to the treble at the bottom; the lowest few bars fold back over the top.
+      var u = phi >= HORN ? (phi - HORN) / (Math.PI - HORN) : (HORN - phi) / HORN * 0.2;
       var bf = u * (BARS - 1), b0 = Math.floor(bf), b1 = Math.min(BARS - 1, b0 + 1), fr = bf - b0;
       fr = fr * fr * (3 - 2 * fr);
       var v = vals[b0] + (vals[b1] - vals[b0]) * fr;
       // slow waves round the edge so it is never a dead circle
       var slow = Math.sin(ang * 3 + t * 0.9) * 0.5 + Math.sin(ang * 5 - t * 1.3) * 0.3 + Math.sin(ang * 2 + t * 0.5) * 0.4;
-      var target = (v * 0.62 * big + slow * 0.035 * (0.5 + A.drive)) * cfg.wobble;
+      // loud bars stand out far more than quiet ones, and the bass more than the treble
+      // (the example's drop stays narrow and smooth below its shoulders: the sides carry little)
+      v = Math.pow(v, 1.5) * (0.18 + 1.1 * Math.pow(1 - u, 2.2));
+      var target = (v * 0.42 * big + slow * 0.035 * (0.5 + A.drive)) * cfg.wobble;
+      // the boom: two sharp horns, pointed because the push falls away evenly on both sides
+      target += Math.exp(-Math.abs(phi - HORN) / 0.24) * swell * 0.8;
       if (L.kind === 'slime'){
         // drips: three lobes hang from the lower half and stretch as they fill
         var down = Math.max(0, -Math.cos(ang));
@@ -117,13 +164,17 @@
     hist[histAt].set(rad);
 
     /* --- rings of lighter liquid that follow the edge, widest and latest first --- */
-    var rings = Math.round(cfg.rings), sw = 1 + swell * 0.09;
+    var rings = Math.round(cfg.rings), sw = 1 + swell * 0.34;
     for (var g = rings; g >= 1; g--){
       var old = hist[(histAt - Math.min(HIST - 1, g * 3) + HIST * 2) % HIST];
-      blobPath(cx, cy, R * sw, old, 1 + g * 0.3, 1 + g * 0.25);
-      ctx.fillStyle = L.rainbow ? 'hsla(' + Math.round(g * 70 + A.t * 30) % 360 + ',85%,62%,' + (0.34 - g * 0.06).toFixed(3) + ')'
-                                : U.rgba(rim, (0.36 - g * 0.07 + A.drive * 0.06).toFixed(3));
+      // the nearest ring is the bright copy that flashes behind the drop on a boom
+      var flash = g === 1 ? swell * 0.6 : swell * 0.18;
+      blobPath(cx, cy, R * sw, old, 1 + g * 0.3, 1 + g * 0.25 + swell * 0.25);
+      ctx.fillStyle = L.rainbow ? 'hsla(' + Math.round(g * 70 + A.t * 30) % 360 + ',85%,62%,' + Math.min(1, 0.34 - g * 0.06 + flash).toFixed(3) + ')'
+                                : U.rgba(rim, Math.min(1, 0.36 - g * 0.07 + A.drive * 0.06 + flash).toFixed(3));
+      if (g === 1 && swell > 0.1){ ctx.shadowColor = L.rim; ctx.shadowBlur = swell * 34 * k * cfg.glow; }
       ctx.fill();
+      ctx.shadowBlur = 0;
     }
 
     /* --- droplets: thrown by a snare, pulled back by the drop --- */
@@ -207,17 +258,21 @@
   }
   function reset(){ drops = []; for (var i = 0; i < N; i++){ rad[i] = 0; poke[i] = 0; } }
 
-  App.modes.register('liquid', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, fx: 0.7 });
+  App.modes.register('liquid', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, fx: 1,
+    // for the browser probe: how far the boom has swollen the drop, and its longest horn
+    probe: function(){ var mx = 0; for (var i = 0; i < N; i++) if (rad[i] > mx) mx = rad[i]; return { swell: swell, horn: mx }; } });
 
   App.cfg.registerDefaults('liquid', {
-    followTheme: true, size: 1, wobble: 1, rings: 3, swirl: true, droplets: true, mark: true, glow: 0.6,
+    followTheme: true, size: 1, wobble: 1, boom: 1, rings: 3, swirl: true, specks: true, droplets: true, mark: true, glow: 0.6,
     fill: '#07050F', rim: '#B06BFF', bg1: '#1B1140', bg2: '#06040E'
   });
   App.cfg.registerSchema({ id: 'liquid', label: 'Liquid', fields: [
     ['followTheme', 'Follow theme (the liquid, its colours and the water)', 'bool'],
     ['size', 'Drop size', 'range', 0.5, 1.8, 0.05],
     ['wobble', 'How far the edge moves', 'range', 0.2, 2.5, 0.05],
+    ['boom', 'Boom: how hard a kick swells the drop', 'range', 0, 2, 0.05],
     ['rings', 'Rings that follow the edge', 'range', 0, 3, 1],
+    ['specks', 'Specks in the water', 'bool'],
     ['swirl', 'Whirlpool behind the drop', 'bool'],
     ['droplets', 'Droplets on a snare', 'bool'],
     ['mark', 'Theme mark in the middle', 'bool'],
