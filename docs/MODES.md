@@ -5,6 +5,12 @@ enough for one session and belongs to a ROADMAP.md item until it is built. Sourc
 `kick`, `snare`, `hat`, `onset`, `energy`, `drive`, the one-frame events `kickHit` / `snareHit` / `hatHit`, and
 `Aud.bars()`.
 
+The four kinds (user, 2026-11-16):
+- **Custom modes** change with the theme codes: Basic, String, Emoji, Fire, Rain, Nature, Clock, Liquid.
+- **Special modes** keep an art style of their own and ignore the codes: Ice, Aquatic, Piano.
+- **Complex games** grow large later (v1.x, v2.x): Undarum, Artificium.
+- **Mini-games** stay small: Dungeon of Echoes, Solarium.
+
 The research gave four ideas that apply to every mode:
 - **A. Quiet must look quiet.** Tie the mode's overall scale to `drive` (`energy` stretched to 0 to 1), so a
   verse is small and a drop is huge.
@@ -122,8 +128,13 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   coloured by octave; "melody only" (the strongest note of each moment); the chord name in the corner; with
   nothing playing it plays the idle song's notes. It takes no part in the picture layer: a keyboard that zooms
   and shakes is hard to read.
-- Ideas left: with the song map (ROADMAP 6), read the song ahead and let notes **fall onto** the keys before
-  they sound (ROADMAP 8, P5).
+- Added 2026-11-16 from the piano video in test-songs (docs/RESEARCH.md section 6): a white glow where a note
+  starts, small flames rising from every held key (bigger when `drive` is high; "Flames from the keys" setting),
+  the whole key takes the note's colour, a brighter edge on the bars, and the roll moves 0.35 screen heights a
+  second. Colours unchanged (the user: the video is the example for the behaviour, not the palette).
+  1.3 to 1.4 ms a frame at 1200 px and at phone width.
+- Ideas left: notes that **fall onto** the keys before they sound (ROADMAP 20). Two routes, written up in
+  docs/RESEARCH.md section 6: read the whole file first (the song map), or play the sound 2.3 s late.
 
 ## Clock
 - Listens to: `level`, `punch`, `beat` (pulses, gear speed), `kick` (second hand), `drive` (rings of light).

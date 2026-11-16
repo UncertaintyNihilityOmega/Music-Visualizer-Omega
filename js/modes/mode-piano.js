@@ -9,7 +9,15 @@
    it is tightened here with a broadband/percussive gate: a drum hit or
    noisy passage lights up the whole keyboard near-evenly, while a real
    note stays a sharp, lonely peak. When the keyboard-wide energy reads
-   flat instead of peaky, detection gets much more skeptical that frame. */
+   flat instead of peaky, detection gets much more skeptical that frame.
+
+   What happens at the keys follows the piano video in test-songs (measured
+   2026-11-16, docs/RESEARCH.md section 6): a white flash where a note
+   meets the keyboard, small flames rising from every key that is held,
+   the whole key taking the note's colour, and a roll that moves 0.35
+   screen heights a second. The colours stay Piano's own (user,
+   2026-11-16): the video was the example for the behaviour, not the
+   palette. */
 (function(){
   'use strict';
   var Can = App.canvas, Aud = App.audio, Cfg = App.cfg, U = App.util;
@@ -20,6 +28,7 @@
   var WHITE_SET = { 0: 1, 2: 1, 4: 1, 5: 1, 7: 1, 9: 1, 11: 1 };
   var pianoSegs = [], pianoOn = {}, pianoKeys = null, pianoKeyKey = '';
   var tapNotes = [];
+  var wisps = [], glows = [];          // flames rising from held keys; the flash where a note starts
 
   function noteName(m){ return NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1); }
   function noteFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
@@ -80,6 +89,57 @@
     if (hp < 1){ r = c; g = x; } else if (hp < 2){ r = x; g = c; } else if (hp < 3){ g = c; b = x; }
     else if (hp < 4){ g = x; b = c; } else if (hp < 5){ r = x; b = c; } else { r = c; b = x; }
     return [Math.round((r + mm) * 255), Math.round((g + mm) * 255), Math.round((b + mm) * 255)];
+  }
+  // the colour a note is drawn in: by octave, or the two colours from the settings
+  function noteRGB(m){
+    var cfg = Cfg.CFG.piano;
+    if (cfg.octaves) return octaveRGB(m);
+    return U.hexRGB(WHITE_SET[m % 12] ? cfg.noteColor : cfg.activeColor);
+  }
+  // n small flames from the top of key m; v = how strong the note is (0..1)
+  function spawnWisps(m, v, n){
+    var kx = pianoXFor(m);
+    if (!kx) return;
+    var k = Can.dpr(), rgb = noteRGB(m), big = 0.7 + 0.6 * A.drive;   // bigger in a big part of the song
+    for (var i = 0; i < n && wisps.length < 260; i++){
+      wisps.push({ x: kx.x + kx.w / 2 + (Math.random() - 0.5) * kx.w * 0.6, up: 0,
+                   vx: (Math.random() - 0.5) * 16 * k, vy: (38 + Math.random() * 46) * k * big,
+                   age: 0, life: 0.35 + Math.random() * 0.5, ph: Math.random() * 6.283,
+                   r: (2.2 + Math.random() * 2.6) * k * big * (0.6 + 0.4 * v), rgb: rgb });
+    }
+  }
+  function drawWisps(keyTop, dt, now){
+    var k = Can.dpr(), i;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (i = wisps.length - 1; i >= 0; i--){
+      var wp = wisps[i];
+      wp.age += dt;
+      if (wp.age >= wp.life){ wisps.splice(i, 1); continue; }
+      var f = wp.age / wp.life;
+      wp.up += wp.vy * dt * (1 - f * 0.5);
+      wp.x += wp.vx * dt;
+      var r = wp.r * (1 - f * 0.6);
+      ctx.fillStyle = U.rgba(wp.rgb, ((1 - f) * 0.5).toFixed(3));
+      ctx.beginPath();
+      ctx.ellipse(wp.x + Math.sin(now * 9 + wp.ph) * 3 * k * f, keyTop - wp.up, r * 0.7, r * 1.6, 0, 0, 6.283);
+      ctx.fill();
+    }
+    for (i = glows.length - 1; i >= 0; i--){
+      var gl = glows[i];
+      gl.age += dt;
+      if (gl.age >= 0.32){ glows.splice(i, 1); continue; }
+      var kx = pianoXFor(gl.m);
+      if (!kx) continue;
+      var g = 1 - gl.age / 0.32, cx = kx.x + kx.w / 2, rad = (9 + 12 * g) * k * (0.7 + 0.5 * gl.v);
+      var grad = ctx.createRadialGradient(cx, keyTop, 0, cx, keyTop, rad);
+      grad.addColorStop(0, 'rgba(255,255,255,' + (0.95 * g).toFixed(3) + ')');
+      grad.addColorStop(0.4, U.rgba(gl.rgb, (0.55 * g).toFixed(3)));
+      grad.addColorStop(1, U.rgba(gl.rgb, '0'));
+      ctx.fillStyle = grad;
+      ctx.fillRect(cx - rad, keyTop - rad, rad * 2, rad);
+    }
+    ctx.restore();
   }
   // Names the chord made by the notes that sounded in the last half second.
   // Looks for a major or minor triad: a root, its third and its fifth,
@@ -188,7 +248,8 @@
 
     var keyH = Math.min(h * 0.32, 92 * k);
     var keyTop = h - keyH;
-    var rollSpeed = 70 * k * cfg.fall * Cfg.CFG.look.motion;
+    var rollSpeed = 0.35 * h * cfg.fall * Cfg.CFG.look.motion;   // 0.35 screen heights a second, as in the video
+    var sparks = cfg.sparks * Cfg.CFG.look.motion;
     var rollTime = keyTop / rollSpeed;
     var now = A.t;
 
@@ -198,8 +259,18 @@
       var e = active[m];
       if (e){
         if (pianoOn[m]) pianoOn[m].t1 = now;
-        else { pianoOn[m] = { m: m, t0: now, t1: now, v: e }; pianoSegs.push(pianoOn[m]); }
+        else {
+          pianoOn[m] = { m: m, t0: now, t1: now, v: e, em: 0 };
+          pianoSegs.push(pianoOn[m]);
+          if (sparks > 0){
+            glows.push({ m: m, age: 0, v: e, rgb: noteRGB(m) });
+            spawnWisps(m, e, Math.round(3 * sparks));
+          }
+        }
         if (e > pianoOn[m].v) pianoOn[m].v = e;
+        // a held key keeps a small flame going
+        pianoOn[m].em += dt * 16 * e * sparks;
+        while (pianoOn[m].em >= 1){ pianoOn[m].em -= 1; spawnWisps(m, e, 1); }
       } else if (pianoOn[m]){
         if (now - pianoOn[m].t1 > 0.06 * cfg.sustain) delete pianoOn[m];
       }
@@ -220,10 +291,18 @@
       var hgt = Math.max(2 * k, yBottom - yTop);
       var isBlack = !WHITE_SET[seg.m % 12];
       var fade = Math.max(0, 1 - (now - seg.t1) / (rollTime + 0.001));
-      ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(seg.m) : (isBlack ? ac : nc), (0.25 + seg.v * 0.6 * fade).toFixed(3));
+      var al = 0.25 + seg.v * 0.6 * fade, rgb = cfg.octaves ? octaveRGB(seg.m) : (isBlack ? ac : nc);
+      ctx.fillStyle = U.rgba(rgb, al.toFixed(3));
       U.roundRect(ctx, kx.x + kx.w * 0.12, Math.max(0, yTop), kx.w * 0.76, hgt, Math.min(3 * k, kx.w * 0.3));
       ctx.fill();
+      // a brighter edge, like the frosted notes in the video (skipped when the keys are very narrow)
+      if (kx.w > 5 * k){
+        ctx.strokeStyle = U.rgba(rgb, Math.min(1, al * 1.5).toFixed(3));
+        ctx.lineWidth = Math.max(1, k);
+        ctx.stroke();
+      }
     }
+    drawWisps(keyTop, dt, now);
 
     // keyboard — a tight accent line marks a pressed key, not a full wash
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -238,9 +317,13 @@
       ctx.fillStyle = kg;
       ctx.fillRect(wk.x + 0.5, keyTop, wk.w - 1, keyH);
       if (on){
-        ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(wk.m) : ac, (0.85 + on * 0.15).toFixed(3));
-        ctx.fillRect(wk.x + 0.5, keyTop, wk.w - 1, 2.4 * k);
-        ctx.fillRect(wk.x + 0.5, keyTop + keyH - 2.4 * k, wk.w - 1, 2.4 * k);
+        ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(wk.m) : ac, (0.6 + on * 0.3).toFixed(3));
+        ctx.fillRect(wk.x + 0.5, keyTop, wk.w - 1, keyH);
+        var pressG = ctx.createLinearGradient(0, keyTop, 0, keyTop + keyH * 0.5);
+        pressG.addColorStop(0, 'rgba(0,0,0,0.34)');
+        pressG.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = pressG;
+        ctx.fillRect(wk.x + 0.5, keyTop, wk.w - 1, keyH * 0.5);
       }
       ctx.strokeStyle = 'rgba(0,0,0,0.28)';
       ctx.lineWidth = 1;
@@ -259,8 +342,8 @@
       ctx.fillStyle = 'rgba(18,14,24,0.97)';
       ctx.fillRect(bk.x, keyTop, bk.w, keyH * 0.62);
       if (bon){
-        ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(bk.m) : ac, (0.85 + bon * 0.15).toFixed(3));
-        ctx.fillRect(bk.x, keyTop + keyH * 0.62 - 2.4 * k, bk.w, 2.4 * k);
+        ctx.fillStyle = U.rgba(cfg.octaves ? octaveRGB(bk.m) : ac, (0.75 + bon * 0.25).toFixed(3));
+        ctx.fillRect(bk.x + 1, keyTop + keyH * 0.14, bk.w - 2, keyH * 0.48 - 1);
       }
     }
 
@@ -330,14 +413,14 @@
     }
   }
 
-  function reset(){ pianoSegs = []; pianoOn = {}; pianoKeys = null; seen = {}; chordShown = chordWant = ''; }
+  function reset(){ pianoSegs = []; pianoOn = {}; pianoKeys = null; seen = {}; wisps = []; glows = []; chordShown = chordWant = ''; }
 
   // fx: 0 - a keyboard that zooms and shakes is hard to read
   App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, reset: reset, fx: 0 });
 
   App.cfg.registerDefaults('piano', {
     low: 36, high: 96, threshold: 0.4, polyphony: 6, melody: false, octaves: true, chord: true,
-    fall: 1, labels: true, sustain: 1,
+    fall: 1, labels: true, sustain: 1, sparks: 1,
     keyColor: '#F4ECE1', activeColor: '#E0728A', noteColor: '#7BD3F7',
     bg1: '#161127', bg2: '#05030C'
   });
@@ -349,7 +432,8 @@
     ['melody', 'Melody only (the strongest note of each moment)', 'bool'],
     ['octaves', 'Colour notes by octave', 'bool'],
     ['chord', 'Show the chord name', 'bool'],
-    ['fall', 'Roll speed', 'range', 0.3, 3, 0.05],
+    ['fall', 'Roll speed (1 = 0.35 screens a second)', 'range', 0.3, 3, 0.05],
+    ['sparks', 'Flames from the keys', 'range', 0, 2, 0.05],
     ['sustain', 'Note hold', 'range', 0.2, 3, 0.05],
     ['labels', 'Note labels', 'bool'],
     ['keyColor', 'White keys', 'color'],

@@ -113,7 +113,79 @@ comes from how the tool lines up sound and frames, not from the videos: treat it
 Not built yet, in ROADMAP.md: the picture layer (zoom / shake / brightness), mapping tables per mode, whole-song
 analysis, tempo, particles toward the viewer, feedback effects.
 
+## 6. Piano visualisers, and the piano video in test-songs (2026-11-16)
+The video ("Skarrsinger Karmelita - Piano Tutorial", 640 x 360, 30 pictures a second) is the usual piano
+tutorial look. Programs of this kind (Synthesia, Neothesia, SeeMusic, Piano VFX) do not listen to sound at all:
+they read a MIDI file, which is a list of "this key, from this moment, for this long", and draw each entry as a
+block that falls onto the keyboard. That is why their notes are exact and can be seen before they sound.
+
+Measured on the video with ffmpeg and a script (the same method as section 4):
+
+| | Measured |
+| --- | --- |
+| Keyboard | all 88 keys on the bottom 20% of the picture; a thin blue-white line on its top edge |
+| Stage | plain black; notes light up 3.5% of it on average |
+| Notes | rounded bars as wide as their key and as long as the note lasts; left hand red (about 200, 20, 20), right hand white |
+| Fall speed | 126 px a second at 360 px high = **0.35 screen heights a second**, constant; a note is on screen 2.3 s before it lands |
+| Where a note lands | a white glow on the key line, and small flames (red or white smoke) that rise about a key's height and fade in about half a second; they keep coming while the key is held |
+| Pressed key | the whole key takes the hand's colour |
+| Calm against lively | nothing is added in a busy passage: there are simply more notes, so more light |
+
+What Piano mode took from it (the user: the video shows how such a visualiser behaves; Piano keeps its own
+colours): the glow where a note starts, the flames from held keys, the whole key lighting up, a brighter edge
+on the bars, and the roll speed of 0.35 screen heights a second.
+
+What it cannot take yet: **notes that fall onto the keys before they sound.** Our mode hears the song as it
+plays, so it only knows a note once it has started; its roll therefore rises from the keys. Two ways to get
+real falling notes, for the Piano pass in v0.2.0 (ROADMAP item 20):
+1. **Read the whole file first** (the song map, ROADMAP item 6): find the notes of the whole song before it
+   plays. Exact timing; needs the file, so not the microphone and not a web address that blocks reading.
+2. **Play the sound 2.3 s late.** The analysis hears the song at once and the speakers get it through a delay,
+   so every note found can fall for 2.3 s and land as it is heard. No waiting before the song starts; pausing
+   and seeking need care (the delayed sound must stop with the picture).
+Either way a full mix will never read as cleanly as a MIDI file: drums and voices are not piano notes.
+
+## 7. How a phone music app finds your songs, and what a web app can do (2026-11-16)
+The user's question: "Music Player & MP3 Player" by InShot Inc. (Android, 100 million installs) shows every
+song on the phone by itself and has folders and playlists inside the app. How?
+
+- **It is a native Android app, and Android keeps the list for it.** Android indexes every media file on the
+  phone in a database called the media store. An app that holds the permission `READ_MEDIA_AUDIO` (Android 13
+  and later; `READ_EXTERNAL_STORAGE` before) asks the media store for "all audio" and gets title, artist,
+  album, length and folder for every song, without scanning anything itself. The one permission question the
+  app shows on first start ("allow access to music and audio") is all the user ever sees.
+- **Its folders view** is the same list grouped by the folder each file is in. **Its playlists** are the app's
+  own lists of song ids, kept in its private storage; no file moves.
+- **A web page cannot ask the media store.** A browser gives a page only what the user picks: single files, or
+  a folder through the File System Access API. That is a rule of the web, not a missing feature of ours.
+
+What our app can do instead:
+1. **A remembered folder that opens itself.** Chrome on Android has had the folder picker since version 132
+   (January 2025), like Chrome and Edge on a computer. The app already keeps the folder's handle; on the next
+   start it shows "Reconnect <folder>" and one tap brings every song back. Picking the phone's whole "Music"
+   folder once gives nearly the InShot result. To do for v0.2.0 (ROADMAP item 19): remember several folders,
+   remember files added one by one (file handles, where the browser has them), show the remembered list at
+   once and reconnect it with one tap, remember the last song and where it stopped.
+2. **Folders inside the app (playlists)**: lists of songs kept by the app (IndexedDB), each entry pointing at a
+   remembered file. Nothing is copied, which keeps the decision of 2026-11-15.
+3. **iPhone**: Safari has no folder picker and no file handles, so there a song can only be remembered by
+   keeping a copy inside the app's own storage. That breaks "nothing is copied", so it needs the user's word.
+4. **The only way to the real media store** is to ship the same web app inside a small native Android shell
+   (for example Capacitor) with a plugin that reads the list. That means a Play Store listing or an APK to
+   install by hand: a decision for after v0.2.0, not a quick step.
+
+Not confirmed from a first-hand source: the exact list of the InShot app's permissions (its Play Store page
+did not load in full); the description above is how every Android music player of this kind works.
+
 ## Sources
+- Synthesia, how it reads MIDI: https://synthesia.app/support/faq ; Neothesia: https://github.com/PolyMeilex/Neothesia ;
+  Piano VFX: https://piano-vfx.itch.io/piano-vfx-basic (read 2026-11-16)
+- Android media store: https://developer.android.com/training/data-storage/shared/media (read 2026-11-16)
+- File System Access API, with Android: https://developer.chrome.com/docs/capabilities/web-apis/file-system-access
+  and https://developer.chrome.com/blog/new-in-chrome-132 (read 2026-11-16)
+- InShot "Music Player & MP3 Player": https://play.google.com/store/apps/details?id=musicplayer.musicapps.music.mp3player
+- Safari's Audio Session API: https://www.w3.org/TR/audio-session/ ; the silent-switch bug report:
+  https://bugs.webkit.org/show_bug.cgi?id=237322 (read 2026-11-16)
 - Web Audio API, AnalyserNode: https://webaudio.github.io/web-audio-api/#AnalyserNode
 - MilkDrop preset authoring guide: https://www.geisswerks.com/milkdrop/milkdrop_preset_authoring.html
 - Vizzy documentation: https://vizzydocs.igerman.cc/ (Concepts; Audio Impact Automation; Camera Shake; Impact Ripple; sitemap)

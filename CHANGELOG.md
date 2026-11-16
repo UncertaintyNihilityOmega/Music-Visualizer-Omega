@@ -5,6 +5,13 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **Piano: flames at the keys.** A note flashes white where it starts, a held key keeps a small flame going,
+  and the whole key lights up in the note's colour. The roll moves a little faster. "Flames from the keys" in
+  Piano's settings turns it down or off.
+- **iPhone and iPad**: the ring/silent switch no longer mutes the music; the fullscreen button makes the
+  picture fill the window on an iPhone (which has no real fullscreen for a page); text boxes no longer zoom the
+  page when tapped. Not checked on a device yet.
+- **A song on repeat keeps repeating on a phone.** It sometimes stopped at its end while the screen was off.
 - **Emoji** takes its background from the theme code too, so it is dark under dark codes.
 - **Icons on the buttons.** Every mode, game, code and layout button and the four page tabs (a disc for Music, a
   gamepad for Games, a gear for Settings, a book for Guide) has a small drawn icon in the theme's colours.

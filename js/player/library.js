@@ -1,13 +1,14 @@
 /* =========================================================================
    LIBRARY: a music folder that stays where it is
    Uses the File System Access API (Chrome, Edge and other Chromium
-   browsers on desktop) to read a folder the user picks, in place. Nothing
+   browsers on a computer, and on Android since Chrome 132) to read a
+   folder the user picks, in place. Nothing
    is copied into the app: each song is opened from the disk when it is
    played. The folder's handle (a permission ticket, not the files) is
    kept in IndexedDB so the next visit can bring the folder back with one
    tap.
 
-   Where the API does not exist (Firefox, Safari, phones) supported()
+   Where the API does not exist (Firefox, Safari, every iPhone) supported()
    is false and the Music page falls back to the ordinary file picker.
    ========================================================================= */
 (function(){

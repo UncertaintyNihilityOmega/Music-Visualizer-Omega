@@ -1,9 +1,9 @@
 # Music Visualiser Ω
 
 A free music player and visualiser for phone, PC and the web. It plays the songs already on your device (nothing
-is uploaded or copied), can listen to your microphone instead, and needs no internet. Ten visual modes, four
-mini-games that react to the music, secret code words that restyle everything, and a page that explains how
-sound becomes a picture.
+is uploaded or copied), can listen to your microphone instead, and needs no internet. Eleven visual modes, four
+games that react to the music, code words that restyle everything, and a page that explains how sound becomes a
+picture. It installs like an app on a phone or a computer and keeps playing in the background.
 
 **Open it:** https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/
 
@@ -21,14 +21,29 @@ sound becomes a picture.
 | Player: files, a remembered music folder, drag and drop, direct links, shuffle, repeat | working |
 | Microphone mode | working |
 | Sound engine: six bands, level, energy, beat, kick, snare, hi-hat, onset | working, tested on real songs |
-| Visual modes: Basic, String, Emoji, Rain, Fire, Ice, Aquatic, Nature, Piano, Clock | working; Basic rebuilt on the new engine, the rest queued |
-| Games: Undarum (survivor), Artificium (tower defence), Dungeon of Echoes (cards), Solarium (pixel sandbox) | working; full play-test queued |
-| Theme codes (8) | working |
-| Install as an offline app | planned |
-| Whole-song analysis (tempo, sections, falling piano notes, bosses on the drops) | planned |
-| A full survivor game whose spells are visualisers | planned for v1.x |
+| Custom modes (they change with the codes): Basic, String, Emoji, Fire, Rain, Nature, Clock, Liquid | working |
+| Special modes (each keeps its own look): Ice, Aquatic, Piano | working; a deeper pass is planned for v0.2.0 |
+| Complex games: Undarum (survivor), Artificium (tower defence) | working; they grow in v1.x and v2.x |
+| Mini-games: Dungeon of Echoes (cards), Solarium (pixel sandbox) | working; a pass is planned for v0.3.0 |
+| Codes (9) | working |
+| Install as an offline app, background play, lock-screen buttons | working (checked on an Android phone; iPhone not checked yet) |
+| Whole-song analysis (tempo, sections, bosses on the drops) | planned |
+| Remembering every folder and song, folders inside the app | planned for v0.2.0 |
 
 The build queue and what is next: ROADMAP.md. What changed: CHANGELOG.md.
+
+## Codes
+Type one into Settings > Code and see what happens.
+
+- Omega
+- Tessa
+- New Year
+- Halloween
+- Love
+- Solarpunk
+- Cyberpunk
+- Decensus Ad Nihilum
+- Ascensus Ad Incertum
 
 ## How it works
 `docs/HOW-IT-WORKS.md` explains, for a complete beginner, how a song turns into moving shapes and which setting
@@ -42,10 +57,11 @@ Requirements: any modern browser. For the tools: Node 18 or newer. For the real-
 | --- | --- |
 | open `index.html` | runs the app from disk |
 | `node engine/serve.js` | serves it at http://localhost:8123 (the microphone and the remembered folder work best from a server) |
-| `node engine/test.js` | engine self-test: 16 checks on made-up sounds with known answers |
+| `node engine/test.js` | engine self-test: 25 checks on made-up sounds with known answers |
 | `node engine/check.js` | structure check: scripts, load order, modes, themes, versions, no internet use |
 | `node engine/songtest.js` | runs your own songs in `test-songs/` through the engine and reports how it behaves |
 | `node engine/icons.js [n]` | regenerates the icon options; with a number, selects one |
+| `node engine/sw-build.js` | rewrites the offline file list after a change to a file the app loads |
 
 ## Repository
 

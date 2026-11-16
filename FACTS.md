@@ -12,8 +12,17 @@ One home per fact. Measured numbers about our own tools are in engine/README.md.
 - A full-scale tone through that window reads 20 * log10(0.42 / 2) = -13.6 dB. (Computed; 2026-11-16.)
 - An `<audio>` element's own `volume` and `muted` are applied before `createMediaElementSource`, so they change
   what an analyser sees. (Observed in the app, 2026-11-16: with volume 0.02 the level read 0.012.)
-- `showDirectoryPicker` and stored directory handles exist in Chromium browsers on desktop only; a stored handle
-  needs `requestPermission` from a tap on a later visit. (MDN, File System Access API; from memory, 2026-11-16.)
+- `showDirectoryPicker` and stored directory handles exist in Chromium browsers on Windows, macOS, Linux,
+  ChromeOS and, since Chrome 132 (14 January 2025), Android; not in Safari or Firefox. A handle can be kept in
+  IndexedDB; on a later visit the page must check `queryPermission` and ask again with `requestPermission`,
+  which only works from a tap. (https://developer.chrome.com/docs/capabilities/web-apis/file-system-access and
+  https://developer.chrome.com/blog/new-in-chrome-132; read 2026-11-16. This replaces the earlier "desktop only".)
+- Safari (iPhone, iPad, Mac) has `navigator.audioSession`; its `type` is "auto" by default, which lets the
+  ring/silent switch mute Web Audio. Setting it to "playback" stops that; background play is still not
+  reliable with it. No other browser has the API. (https://www.w3.org/TR/audio-session/ and WebKit bug 237322;
+  read 2026-11-16. Not tested on a device.)
+- An `<audio>` element with `loop = true` restarts by itself and does not fire `ended`. (HTML specification,
+  media elements; seen in the app 2026-11-16: 0 `ended` events across a loop.)
 - `getUserMedia` needs https or localhost. (MDN; from memory, 2026-11-16.)
 
 ## Music and hearing
@@ -37,9 +46,21 @@ One home per fact. Measured numbers about our own tools are in engine/README.md.
   for 17 August 2023. (https://phaser.io/news/2024/02/vampire-survivors-space-54 and
   https://www.gamingonlinux.com/2023/07/vampire-survivors-switching-to-new-game-engine-on-august-17; read 2026-11-15.)
 
+## Phones
+- A native Android app lists every song through the media store with the permission `READ_MEDIA_AUDIO`
+  (Android 13 and later). A web page has no such access: it gets only the files or the folder the user picks.
+  (https://developer.android.com/training/data-storage/shared/media; read 2026-11-16.)
+- Google Search Console: a GitHub Pages project site is added as a "URL prefix" property with the full address
+  including the repository name, and verified with an HTML file in the repository root or a
+  `google-site-verification` meta tag in the page head (DNS is not ours to change). (Guides found 2026-11-16;
+  check against Google's own help page when doing it.)
+
 ## The test videos (measured with ffmpeg and a script, 2026-11-16; method and table in docs/RESEARCH.md)
 - "Kirara Magic - Checkmate": about 140 bars covering about 30 to 800 Hz left to right; rise and fall about 33 ms;
   height ~ strength^0.35; the picture does not react to the sound.
 - "HORROR! Nightcore Creepy Mix pt. II": mirrored, bass at the outer edges, about 30 to 350 Hz per side; rise and
   fall about 133 ms; height ~ strength^0.75; picture brightness follows loudness (r = 0.74); picture motion is 0
   in a quiet passage.
+- "Skarrsinger Karmelita - Piano Tutorial" (640 x 360): keyboard on the bottom 20%; notes fall 126 px a second =
+  0.35 screen heights a second, on screen 2.3 s; left hand red, right hand white; glow and small flames where a
+  note lands. (docs/RESEARCH.md section 6.)
