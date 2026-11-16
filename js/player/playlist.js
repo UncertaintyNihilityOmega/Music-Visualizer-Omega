@@ -51,13 +51,14 @@
   function start(track){
     var plain = S.plainAudio;
     // a source already found to block reading goes straight to the plain player
-    if (track.noRead){
+    // ... and so does any song while the page is hidden on an iPhone (js/player/background.js)
+    if (track.noRead || S.bgPlain){
       audio.pause();
       S.usingPlain = true;
       plain.src = track.url;
       var pp = plain.play();
       if (pp && pp.catch) pp.catch(function(){});
-      S.corsNoteEl.textContent = P.NO_READ_NOTE;
+      if (track.noRead) S.corsNoteEl.textContent = P.NO_READ_NOTE;
       return;
     }
     if (S.usingPlain){ plain.pause(); plain.removeAttribute('src'); plain.load(); S.usingPlain = false; }

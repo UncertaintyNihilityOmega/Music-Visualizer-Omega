@@ -12,7 +12,9 @@ App.pages.define('music', {
         '<button type="button" class="pill-btn primary" id="openFolderBtn">📁 Open a music folder</button>' +
         '<button type="button" class="pill-btn" id="addFilesBtn">🎵 Add files</button>' +
         '<button type="button" class="pill-btn" id="micBtn" aria-pressed="false">🎙 Microphone: off</button>' +
+        '<button type="button" class="pill-btn" id="installBtn">⬇ Install the app</button>' +
       '</div>' +
+      '<p class="source-note" id="installNote" aria-live="polite"></p>' +
       '<p class="source-note" id="reconnectRow" hidden>' +
         '<button type="button" class="pill-btn" id="reconnectBtn">↻ Reconnect folder</button>' +
         '<button type="button" class="link-btn" id="forgetFolderBtn">forget it</button>' +
@@ -68,6 +70,20 @@ App.pages.define('music', {
       if (Aud.source === 'mic'){ Aud.stopMic(); return; }
       micNote.textContent = 'Asking for the microphone…';
       Aud.startMic().catch(function(err){ micNote.textContent = err.message; });
+    });
+
+    /* ----- install (js/core/install.js) ----- */
+    var Ins = App.install, installBtn = document.getElementById('installBtn'), installNote = document.getElementById('installNote');
+    function paintInstall(){
+      installBtn.hidden = Ins.installed();
+      installBtn.classList.toggle('primary', Ins.canPrompt);
+      if (Ins.installed()) installNote.textContent = '';
+    }
+    Ins.onChange = paintInstall;
+    paintInstall();
+    installBtn.addEventListener('click', function(){
+      var words = Ins.install();
+      installNote.textContent = words || '';
     });
 
     /* ----- folder that stays on the device ----- */

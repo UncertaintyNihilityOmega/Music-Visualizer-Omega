@@ -85,6 +85,12 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-16: A web address whose server blocks reading is played on a second, plain player
   (`S.plainAudio`), because the browser silences such a source once it is wired into the analysis.
 
+- 2026-11-16: Offline: `sw.js` keeps a copy of the app's files under a name that holds a hash of their contents
+  (`node engine/sw-build.js` writes it; `check.js` fails when it is stale). It is not registered on localhost
+  unless the address ends in `?sw=1`. To test offline: load with `?sw=1`, stop the preview server, reload.
+- 2026-11-16: On iPhone and iPad a song moves to the plain player while the page is hidden
+  (`js/player/background.js`), because Safari silences analysed sound in the background. Not tested on a device.
+
 ## Environment (this machine)
 - Windows 10, PowerShell. Node 24. **No Python** (the `python` command is the Store stub): tools are Node only.
 - `ffmpeg` and `ffprobe` are on the PATH; `gh` (GitHub CLI) is not.

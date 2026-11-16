@@ -5,6 +5,10 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **Install the app.** Music > "Install the app" puts it on the home screen or desktop like any other app. Once
+  opened one time it works with no network. A new version arrives on its own: it shows after one reload.
+- **Plays in the background.** The lock screen and the notification show the song with play, pause, next and
+  previous; headphone buttons work. On iPhone and iPad the song moves to a plain player while the app is hidden.
 - The app is now **Music Visualiser Omega**, with a dark purple look. The old look is still there: Settings >
   Code > "Love".
 - **Codes.** Type a word in Settings > Code to change the whole look and how Basic mode draws: New Year,

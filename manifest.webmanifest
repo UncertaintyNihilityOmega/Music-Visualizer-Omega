@@ -2,6 +2,7 @@
   "name": "Music Visualiser Omega",
   "short_name": "Visualiser Ω",
   "description": "A music player and visualiser that plays the songs already on your device, listens to your microphone, and works offline.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -159,6 +159,21 @@ const road = read('ROADMAP.md');
   if (!read('js/core/state.js').includes('S.plainAudio') || !read('js/player/playlist.js').includes('track.noRead')) err('the plain player for addresses that block reading (state.js, playlist.js) is missing');
 }
 
+/* 10. offline install (ROADMAP item 4) */
+{
+  try { new vm.Script(read('sw.js'), { filename: 'sw.js' }); } catch (e){ err('sw.js: does not parse: ' + e.message); }
+  const swb = require('./sw-build.js');
+  try { if (!swb.check()) err('sw.js is out of date (a file it caches changed): run  node engine/sw-build.js'); }
+  catch (e){ err('sw.js: ' + e.message); }
+  for (const f of swb.appFiles()) if (!exists(f)) err(`sw.js would cache ${f}, which does not exist`);
+  const ins = read('js/core/install.js');
+  if (!/isLocal/.test(ins) || !/unregister()/.test(ins)) err('install.js: the service worker must not be registered on the local dev server (and a left-over one must be removed)');
+  const man = JSON.parse(read('manifest.webmanifest'));
+  for (const size of ['192x192', '512x512']) if (!(man.icons || []).some(i => i.sizes === size && i.type === 'image/png')) err(`manifest.webmanifest: a ${size} PNG icon is needed for the app to be installable`);
+  if (man.display !== 'standalone' || !man.start_url || !man.name) err('manifest.webmanifest: name, start_url and display "standalone" are needed for the app to be installable');
+  if (!read('js/player/background.js').includes('setActionHandler')) err('background.js: the lock-screen controls (Media Session) are missing');
+}
+
 notes.push(`${appJs.length} app scripts, ${buttons.length} modes, version ${appVer}`);
 if (errors.length){
   console.log(errors.map(e => 'ERROR  ' + e).join('\n'));

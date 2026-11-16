@@ -5,6 +5,7 @@ Node only (no Python on the build machine), no dependencies to install. `songtes
 | Command | Does | When |
 | --- | --- | --- |
 | `node engine/serve.js [port]` | local preview at http://localhost:8123: no caching, Range requests (seeking works), lists `test-songs/` for the Music page | while working |
+| `node engine/sw-build.js` | writes the offline file list and build version into `sw.js` (the service worker) | after any change to a file the app loads; `check.js` fails until it is run |
 | `node engine/test.js` | engine self-test: made-up spectra with known answers through `js/core/analysis.js` (16 checks) | after any change to `analysis.js` |
 | `node engine/check.js` | structure check: every script parses and is loaded once, load order, mode buttons match registered modes, nothing loaded from the internet, themes complete, versions agree, ROADMAP sections present | before every commit |
 | `node engine/songtest.js [name] [--tune]` | runs the real songs in `test-songs/` through the same engine and fails on pinned bass, missed beats, or a quiet passage that looks loud; `--tune` compares candidate settings | after any change to how sound is shaped |
