@@ -236,6 +236,30 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!read('js/main.js').includes('viz-fill') || !read('css/styles.css').includes('.viz-card.viz-fill')) err('the fill-the-window stand-in for fullscreen on iPhone (main.js, styles.css) is missing');
 }
 
+/* 8b. late sound (Piano's falling notes): only while a mode asks for it, and a paused song's held sound is
+       never started by "the app is on screen again" */
+{
+  const eng = read('js/core/audio-engine.js');
+  if (!/else if \(Aud\.late > 0\) applyLate\(0\)/.test(eng)) err('audio-engine.js: late sound must switch itself off when no mode asks for it (Aud.frame)');
+  if (!/if \(Aud\.frozen\) return;/.test(read('js/player/background.js'))) err('background.js: wake() must leave the sound engine alone while a paused song\'s late sound is held (Aud.frozen)');
+  if (!/Aud\.unfreeze\(\)/.test(read('js/player/playlist.js'))) err('playlist.js: wakeEngine() must release held late sound (Aud.unfreeze) before sound starts');
+  const late = walk('js/modes', '.js').filter(f => /Aud\.askLate\(/.test(read(f)));
+  if (late.join() !== 'js/modes/mode-piano.js') err('only Piano may ask for late sound (Aud.askLate); found in: ' + late.join(', '));
+}
+
+/* 9. what the app remembers (user decisions, 2026-11-15 and 2026-11-16): copies are made only while the
+      "Keep a copy" switch is on, the switch is off until the user turns it on, and songs brought back from
+      last time never start playing by themselves */
+{
+  const lib = read('js/player/library.js'), pl = read('js/player/playlist.js');
+  if (!/getItem\('viz\.keepCopies'\) === '1'/.test(lib)) err('library.js: "Keep a copy" must be off unless the user switched it on (viz.keepCopies === "1")');
+  const copies = lib.split('\n').filter(l => /kind: 'copy'/.test(l) && !/keepCopies\(\)/.test(l));
+  if (copies.length !== 1 || !/if \(!L\.keepCopies\(\)/.test(lib)) err('library.js: a copy may only be made behind L.keepCopies() (found a new place that makes one?)');
+  if (!/addTracks\(singles, \{ quiet: true \}\)/.test(lib) || !/opts && opts\.quiet/.test(pl)) err('songs remembered from last time must be added quietly (no autoplay): library.js restore, playlist.js addTracks');
+  const cueBody = (pl.match(/function cue\(i, t\)\{[\s\S]*?\n  \}\n/) || [''])[0];
+  if (!cueBody || /play\(/i.test(cueBody)) err('playlist.js: cue() must put the last song on the player without starting it');
+}
+
 notes.push(`${appJs.length} app scripts, ${buttons.length} modes, version ${appVer}`);
 if (errors.length){
   console.log(errors.map(e => 'ERROR  ' + e).join('\n'));

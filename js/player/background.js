@@ -50,7 +50,7 @@
     if (!MS) return;
     try { MS.setActionHandler(name, fn); } catch (e) {}   // a browser that lacks one action throws
   }
-  handler('play', function(){ wake(); var p = S.player().play(); if (p && p.catch) p.catch(function(){}); });
+  handler('play', function(){ P.wakeEngine(); P.safePlay(S.player()); });
   handler('pause', function(){ S.player().pause(); });
   handler('previoustrack', function(){ P.goPrev(); });
   handler('nexttrack', function(){ P.goNext(false); });
@@ -73,6 +73,7 @@
 
   /* ---------- 2. wake the sound engine ---------- */
   function wake(){
+    if (Aud.frozen) return;       // paused with late sound held (audio-engine.js): only starting to play may wake it
     var ctx = Aud.audioCtx;
     if (ctx && ctx.state !== 'running' && ctx.state !== 'closed' && ctx.resume){
       var p = ctx.resume();

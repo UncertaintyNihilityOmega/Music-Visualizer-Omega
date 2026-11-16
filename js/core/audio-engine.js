@@ -6,7 +6,8 @@
    results from App.audio.A and never touch Web Audio themselves.
 
    Graph:
-     <audio> --> speakers
+     <audio> --> direct --------------> volume --> speakers
+     <audio> --> delay --> late ------> volume          (see "Late sound")
      <audio> --> analyser (2048)        } unless the microphone is on,
      <audio> --> pitchAnalyser (16384)  } then the mic feeds both instead
    The analysers are taps only: nothing the microphone hears is ever sent
@@ -65,6 +66,7 @@
   };
 
   var mediaNode = null, micNode = null, volumeNode = null;
+  var delayNode = null, directGain = null, lateGain = null;
   Aud.volume = 0.8;
   Aud.muted = false;
   function applyVolume(){
@@ -110,7 +112,18 @@
     S.audio.volume = 1;
     S.audio.muted = false;
     applyVolume();
-    mediaNode.connect(volumeNode);
+    // two ways to the speakers: straight, or through a delay (see "Late sound" below)
+    directGain = Aud.audioCtx.createGain();
+    lateGain = Aud.audioCtx.createGain();
+    delayNode = Aud.audioCtx.createDelay(4);
+    delayNode.delayTime.value = Aud.late || 2.3;
+    directGain.gain.value = Aud.late > 0 ? 0 : 1;
+    lateGain.gain.value = Aud.late > 0 ? 1 : 0;     // the delay starts empty, so the first notes fall in silence
+    mediaNode.connect(directGain);
+    directGain.connect(volumeNode);
+    mediaNode.connect(delayNode);
+    delayNode.connect(lateGain);
+    lateGain.connect(volumeNode);
     volumeNode.connect(Aud.audioCtx.destination);
     mediaNode.connect(Aud.analyser);
     mediaNode.connect(Aud.pitchAnalyser);
@@ -122,6 +135,83 @@
   }
   Aud.ensureAudioGraph = ensureAudioGraph;
 
+  /* ---------- Late sound ----------
+     Piano mode shows a note falling onto the keys before it is heard, like
+     a piano tutorial video. A live analysis cannot see the future, so the
+     future is made instead: the analysis hears the song at once and the
+     speakers get it Aud.late seconds later. A note found now has that long
+     to fall. Nothing else uses it; every other mode has Aud.late = 0 and
+     the sound goes straight through.
+
+       - a mode asks every frame with Aud.askLate(seconds); when it stops
+         asking (another mode is on screen), the sound goes straight again
+       - switching it on leaves a gap of silence that long (the first notes
+         fall in it); switching it off skips that long ahead
+       - pause: the sound engine is stopped, which holds the delayed sound
+         exactly where it is (Aud.frozen); play starts it again
+       - a jump in the song or a new song by hand: the delayed sound is
+         muted until the new place arrives, and Aud.lateEpoch goes up so the
+         mode can drop the notes that will now never land
+       - the microphone cannot be late: the room is heard as it happens */
+  Aud.late = 0;            // seconds the speakers are behind the analysis right now
+  Aud.lateEpoch = 0;       // goes up whenever notes already found will never be heard
+  Aud.frozen = false;      // true while paused with late sound held in the delay
+  var lateWant = 0, lateTTL = 0, naturalEnd = false;
+  Aud.askLate = function(sec){ lateWant = sec; lateTTL = 3; };
+  // mutes the late path until what is in the delay now has run out
+  function flushLate(){
+    Aud.lateEpoch++;
+    if (!lateGain || !(Aud.late > 0)) return;
+    var t = Aud.audioCtx.currentTime, g = lateGain.gain;
+    g.cancelScheduledValues(t);
+    g.setTargetAtTime(0, t, 0.01);
+    g.setValueAtTime(0, t + Aud.late - 0.02);
+    g.linearRampToValueAtTime(1, t + Aud.late + 0.02);
+  }
+  function unfreeze(){
+    if (!Aud.frozen) return;
+    Aud.frozen = false;
+    if (Aud.audioCtx && Aud.audioCtx.state !== 'running' && Aud.audioCtx.state !== 'closed'){
+      var p = Aud.audioCtx.resume();
+      if (p && p.catch) p.catch(function(){});
+    }
+  }
+  Aud.unfreeze = unfreeze;
+  function applyLate(sec){
+    sec = Aud.source === 'mic' ? 0 : Math.max(0, Math.min(3.8, sec || 0));
+    if (Math.abs(sec - Aud.late) < 0.01) return;
+    Aud.late = sec;
+    if (!Aud.audioCtx) return;                      // no graph yet: ensureAudioGraph starts in the right state
+    var t = Aud.audioCtx.currentTime;
+    if (sec > 0){
+      delayNode.delayTime.setValueAtTime(sec, t);
+      directGain.gain.cancelScheduledValues(t);
+      directGain.gain.setTargetAtTime(0, t, 0.012);
+      flushLate();
+    } else {
+      Aud.lateEpoch++;
+      unfreeze();
+      lateGain.gain.cancelScheduledValues(t);
+      lateGain.gain.setTargetAtTime(0, t, 0.012);
+      directGain.gain.cancelScheduledValues(t);
+      directGain.gain.setTargetAtTime(1, t, 0.012);
+    }
+  }
+  S.audio.addEventListener('pause', function(){
+    if (!(Aud.late > 0) || !Aud.audioCtx || Aud.source === 'mic' || S.audio.ended) return;   // at a song's own end the tail plays out
+    Aud.frozen = true;
+    if (Aud.audioCtx.state === 'running') Aud.audioCtx.suspend();
+  });
+  S.audio.addEventListener('play', unfreeze);
+  S.audio.addEventListener('seeking', function(){ if (!S.audio.loop || S.audio.currentTime > 0.5) flushLate(); });
+  S.audio.addEventListener('ended', function(){ naturalEnd = true; });
+  S.audio.addEventListener('loadstart', function(){
+    if (naturalEnd){ naturalEnd = false; return; }  // the next song follows on its own: the old one's tail plays out under it
+    unfreeze();
+    flushLate();
+  });
+  S.audio.addEventListener('emptied', unfreeze);
+
   /* ---------- Microphone ---------- */
   Aud.micSupported = function(){
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
@@ -132,6 +222,7 @@
     if (Aud.source === 'mic') return Promise.resolve();
     if (!Aud.micSupported()) return Promise.reject(new Error('This browser cannot use the microphone here (it needs https or localhost).'));
     ensureAudioGraph();
+    unfreeze();
     sessionType('play-and-record');
     if (Aud.audioCtx.state !== 'running' && Aud.audioCtx.state !== 'closed') Aud.audioCtx.resume();
     // the three "clean-up" options are for phone calls; for music they pump
@@ -170,6 +261,8 @@
     if (!Aud.analyser) return false;
     return Aud.source === 'mic' || !S.audio.paused;
   };
+  // true when a song is on the player but paused: a mode showing notes on their way holds them still
+  Aud.isHeld = function(){ return Aud.source !== 'mic' && Aud.frozen; };
 
   /* ---------- Idle preview (no track loaded / paused) ----------
      With nothing playing, the engine is fed a small silent "ghost song" made
@@ -301,6 +394,8 @@
       fillSyntheticData(now / 1000);
     }
     if (Aud.wantPitch > 0) Aud.wantPitch--;
+    // late sound stays on only while a mode keeps asking for it
+    if (lateTTL > 0){ lateTTL--; applyLate(lateWant); } else if (Aud.late > 0) applyLate(0);
     An.analyze(dt, now / 1000, cfg());
   };
   // kept for anything that still calls the old name

@@ -59,6 +59,7 @@
   };
   // the sound engine may have been put to sleep while the app was away
   function wakeEngine(){
+    if (Aud.unfreeze) Aud.unfreeze();      // sound held for Piano's falling notes (audio-engine.js "Late sound")
     var ctx = Aud.audioCtx;
     if (ctx && ctx.state !== 'running' && ctx.state !== 'closed' && ctx.resume){
       var p = ctx.resume();

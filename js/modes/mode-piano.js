@@ -1,8 +1,13 @@
 /* ---------- Piano ----------
-   A live analyser cannot know what is coming next, so notes cannot fall
-   from above without the future. This is the piano-roll used by live
-   visualizers: the keyboard lights up as notes sound and the roll of what
-   just played scrolls upward away from the keys.
+   Notes fall onto the keys and land as they are heard, like a piano
+   tutorial video. Those videos read a file that lists every note in
+   advance; this mode only has the sound, and a live analyser cannot know
+   what comes next. So while Piano is on screen the engine plays the song
+   a little late (audio-engine.js "Late sound"): a note is found the
+   moment it starts, is drawn at the top of the picture, and has the
+   length of the delay to fall. With the microphone nothing can be late,
+   so there the roll rises from the keys instead (also when "Notes fall"
+   is switched off).
 
    Note detection on a full music mix (not a clean solo instrument) will
    never be perfect — see the write-up in the project notes for why — but
@@ -29,6 +34,16 @@
   var pianoSegs = [], pianoOn = {}, pianoKeys = null, pianoKeyKey = '';
   var tapNotes = [];
   var wisps = [], glows = [];          // flames rising from held keys; the flash where a note starts
+  // A segment of the roll: { m, a, b, v, on, hit, em, last }. a and b are the
+  // moments (on the mode's own clock, pc) the note starts and stops being
+  // HEARD; with late sound they lie in the future while the note falls.
+  var FALL_TIME = 2.3;                 // seconds a note is on screen before it lands (the video: 2.3)
+  // The fine spectrum looks at a third of a second of sound at a time, so it
+  // shows a note a little after it starts and goes on showing it after it
+  // stops. Measured in the browser with made-up notes of known times
+  // (2026-11-16): 0.05 to 0.10 s late at the start, 0.31 to 0.36 s at the end.
+  var LAG_ON = 0.07, LAG_OFF = 0.33;
+  var pc = 0, lastT = 0, epoch = 0;
 
   function noteName(m){ return NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1); }
   function noteFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
@@ -149,8 +164,8 @@
     var pc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], total = 0, i;
     for (i = 0; i < pianoSegs.length; i++){
       var sg = pianoSegs[i];
-      if (now - sg.t1 > 0.5) continue;
-      var wgt = sg.v * Math.min(1, 0.15 + (sg.t1 - sg.t0) * 2);
+      if (now - sg.b > 0.5 || sg.a > now) continue;
+      var wgt = sg.v * Math.min(1, 0.15 + (Math.min(sg.b, now) - sg.a) * 2);
       pc[sg.m % 12] += wgt; total += wgt;
     }
     if (total < 0.5) return '';
@@ -171,6 +186,7 @@
   var DB_RANGE = 78;   // the engine's analysers cover -90..-12 dB
   function strength(v){ return Math.pow(10, (v - 1) * DB_RANGE / 20); }
   var seen = {};       // note -> how many frames in a row it has been found
+  var peakSlow = 0;    // the strongest key of the last moments (see detectNotes)
   function detectNotes(){
     var cfg = Cfg.CFG.piano, out = {};
     if (!Aud.isLive()){
@@ -186,16 +202,22 @@
 
     var lo = pianoKeys.lo, hi = pianoKeys.hi, m;
     var e = {}, list = [], peak = 1e-9;
-    for (m = lo - 2; m <= hi + 2; m++){
+    for (m = Math.max(12, lo - 31); m <= hi + 2; m++){
       e[m] = strength(noteEnergy(m));
       if (m >= lo && m <= hi){ list.push(e[m]); if (e[m] > peak) peak = e[m]; }
     }
     list.sort(function(a, b){ return a - b; });
     var median = list[Math.floor(list.length / 2)] || 0;
+    // Notes are scored against the strongest key. In the tail of a note, or
+    // in a gap, the strongest key is itself next to nothing, and scoring
+    // against it turned leftovers into notes. So the yardstick remembers how
+    // strong the music was a moment ago (it falls by half every 0.7 s).
+    peakSlow = Math.max(peak, peakSlow * Math.pow(0.5, (A.dt || 0.016) / 0.7));
+    var ref = Math.max(peak, peakSlow * 0.25);
     // A drum hit or a noisy passage lifts the whole keyboard at once; a note
     // is a lonely spike. When the keyboard as a whole is nearly as strong as
     // its strongest key, be much harder to convince.
-    var noisy = U.clamp01((median / peak - 0.06) / 0.2);
+    var noisy = U.clamp01((median / ref - 0.06) / 0.2);
 
     var scored = [];
     for (m = lo; m <= hi; m++){
@@ -211,12 +233,19 @@
       }
       var around = cnt ? sum / cnt : 0;
       if (v < around * (2.4 + noisy * 3)) continue;
-      // An octave, an octave and a fifth, or two octaves below, at least as
-      // strong: this is almost certainly an overtone of that lower note.
+      // Overtones. A piano string also sounds an octave, an octave and a
+      // fifth, two octaves (and more) above its note, each weaker than the
+      // note. A key that has a clearly stronger key at one of those
+      // distances below it is that key's overtone, not a note: it is left
+      // out. A real octave played with it is about as strong as the lower
+      // note, so it stays. (Measured 2026-11-16: before this rule a made-up
+      // note with overtones at 40% and 20% drew two ghost notes above it.)
       var below = Math.max(e[m - 12] || 0, e[m - 19] || 0, e[m - 24] || 0);
-      if (below > v * 0.9) v *= 0.3;
+      if (below * 0.6 > v) continue;
+      if (Math.max(e[m - 28] || 0, e[m - 31] || 0) * 0.3 > v) continue;
+      if (below > v * 0.9) v *= 0.6;
       // score: 1 at the strongest key, 0 at 36 dB below it
-      var score = 1 + (20 * Math.log(v / peak) / Math.LN10) / 36;
+      var score = 1 + (20 * Math.log(v / ref) / Math.LN10) / 36;
       if (score > 0) scored.push({ m: m, v: score });
     }
     scored.sort(function(a, b){ return b.v - a.v; });
@@ -237,6 +266,16 @@
     }
     return out;
   }
+  function dropPending(){
+    for (var i = pianoSegs.length - 1; i >= 0; i--){
+      var sg = pianoSegs[i];
+      sg.on = false;
+      if (sg.a > pc) pianoSegs.splice(i, 1);
+      else if (sg.b > pc) sg.b = pc;
+    }
+    pianoOn = {};
+    seen = {};
+  }
   function drawPiano(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.piano;
     Can.backdrop(1);
@@ -248,52 +287,93 @@
 
     var keyH = Math.min(h * 0.32, 92 * k);
     var keyTop = h - keyH;
-    var rollSpeed = 0.35 * h * cfg.fall * Cfg.CFG.look.motion;   // 0.35 screen heights a second, as in the video
     var sparks = cfg.sparks * Cfg.CFG.look.motion;
-    var rollTime = keyTop / rollSpeed;
-    var now = A.t;
 
-    // note detection + roll history
-    var active = detectNotes();
-    for (var m = pianoKeys.lo; m <= pianoKeys.hi; m++){
-      var e = active[m];
-      if (e){
-        if (pianoOn[m]) pianoOn[m].t1 = now;
-        else {
-          pianoOn[m] = { m: m, t0: now, t1: now, v: e, em: 0 };
-          pianoSegs.push(pianoOn[m]);
-          if (sparks > 0){
-            glows.push({ m: m, age: 0, v: e, rgb: noteRGB(m) });
-            spawnWisps(m, e, Math.round(3 * sparks));
+    // Ask the engine for late sound (it stops as soon as this mode stops
+    // asking). lead = how long a note found now has before it is heard:
+    // 0 with the microphone, which cannot be late.
+    Aud.askLate(cfg.falling ? Math.max(0.8, Math.min(3.8, FALL_TIME / cfg.fall)) : 0);
+    // leadOn / leadOff: from the moment a note is seen to start / stop, to the moment that is heard
+    var lead = Aud.late > 0.7 ? Aud.late - LAG_ON : 0, leadOff = lead ? Aud.late - LAG_OFF : 0;
+    // the end of a note is the last thing known about it, so it is the end that enters at the very top
+    var rollSpeed = lead ? keyTop / leadOff : 0.35 * h * cfg.fall * Cfg.CFG.look.motion;
+    var rollTime = keyTop / rollSpeed;
+
+    // the mode's own clock: it stops while a paused song's sound is held, so
+    // the notes on their way hang in the air until play
+    var held = Aud.isHeld();
+    var step = A.t - lastT;
+    lastT = A.t;
+    if (step < 0 || step > 0.5){ step = 0; dropPending(); }        // the picture was away: what was falling is gone
+    if (Aud.lateEpoch !== epoch){ epoch = Aud.lateEpoch; dropPending(); }   // a jump in the song: those notes will never be heard
+    if (held) step = 0;
+    pc += step;
+    var now = pc;
+
+    // note detection: a note found now is heard (lands) lead seconds from now
+    if (!held){
+      var active = detectNotes();
+      for (var m = pianoKeys.lo; m <= pianoKeys.hi; m++){
+        var e = active[m], cur = pianoOn[m];
+        if (e){
+          if (!cur){
+            cur = pianoOn[m] = { m: m, a: now + lead, b: now + lead, v: e, on: true, hit: false, em: 0, last: now };
+            pianoSegs.push(cur);
           }
+          cur.last = now;
+          cur.b = Math.max(cur.a + 0.07, now + leadOff);
+          if (e > cur.v) cur.v = e;
+        } else if (cur && now - cur.last > 0.06 * cfg.sustain){
+          cur.on = false;
+          delete pianoOn[m];
         }
-        if (e > pianoOn[m].v) pianoOn[m].v = e;
-        // a held key keeps a small flame going
-        pianoOn[m].em += dt * 16 * e * sparks;
-        while (pianoOn[m].em >= 1){ pianoOn[m].em -= 1; spawnWisps(m, e, 1); }
-      } else if (pianoOn[m]){
-        if (now - pianoOn[m].t1 > 0.06 * cfg.sustain) delete pianoOn[m];
       }
     }
     for (var s = pianoSegs.length - 1; s >= 0; s--){
-      if (now - pianoSegs[s].t1 > rollTime + 0.4) pianoSegs.splice(s, 1);
+      if (now - pianoSegs[s].b > (lead ? 0.6 : rollTime + 0.4)) pianoSegs.splice(s, 1);
     }
     if (pianoSegs.length > 900) pianoSegs.splice(0, pianoSegs.length - 900);
 
+    // which keys are down now, and the flash and flames where notes meet the keys
+    var down = {};
     var nc = U.hexRGB(cfg.noteColor), ac = U.hexRGB(cfg.activeColor);
     for (var i = 0; i < pianoSegs.length; i++){
       var seg = pianoSegs[i];
       var kx = pianoXFor(seg.m);
       if (!kx) continue;
-      var yBottom = keyTop - (now - seg.t1) * rollSpeed;
-      var yTop = keyTop - (now - seg.t0) * rollSpeed;
-      if (yBottom < 0) continue;
-      var hgt = Math.max(2 * k, yBottom - yTop);
+      if (seg.a <= now && now <= seg.b){
+        if (!down[seg.m] || seg.v > down[seg.m]) down[seg.m] = seg.v;
+        if (sparks > 0){
+          if (!seg.hit){
+            glows.push({ m: seg.m, age: 0, v: seg.v, rgb: noteRGB(seg.m) });
+            spawnWisps(seg.m, seg.v, Math.round(3 * sparks));
+          }
+          // a held key keeps a small flame going
+          seg.em += step * 16 * seg.v * sparks;
+          while (seg.em >= 1){ seg.em -= 1; spawnWisps(seg.m, seg.v, 1); }
+        }
+        seg.hit = true;
+      }
+      var yTop, yBottom, al;
+      if (lead){
+        // falling: the leading edge is lead seconds from the keys when found, and at them when heard
+        yBottom = keyTop - (seg.a - now) * rollSpeed;
+        yTop = keyTop - (seg.b - now) * rollSpeed;
+        if (yTop >= keyTop || yBottom <= 0) continue;
+        yBottom = Math.min(yBottom, keyTop);
+        al = 0.35 + seg.v * 0.55;
+      } else {
+        // rising: what was just played drifts up and fades
+        yBottom = keyTop - (now - seg.b) * rollSpeed;
+        yTop = keyTop - (now - seg.a) * rollSpeed;
+        if (yBottom < 0) continue;
+        al = 0.25 + seg.v * 0.6 * Math.max(0, 1 - (now - seg.b) / (rollTime + 0.001));
+      }
       var isBlack = !WHITE_SET[seg.m % 12];
-      var fade = Math.max(0, 1 - (now - seg.t1) / (rollTime + 0.001));
-      var al = 0.25 + seg.v * 0.6 * fade, rgb = cfg.octaves ? octaveRGB(seg.m) : (isBlack ? ac : nc);
+      var rgb = cfg.octaves ? octaveRGB(seg.m) : (isBlack ? ac : nc);
+      var top = Math.max(-4 * k, yTop), hgt = Math.max(2 * k, yBottom - top);
       ctx.fillStyle = U.rgba(rgb, al.toFixed(3));
-      U.roundRect(ctx, kx.x + kx.w * 0.12, Math.max(0, yTop), kx.w * 0.76, hgt, Math.min(3 * k, kx.w * 0.3));
+      U.roundRect(ctx, kx.x + kx.w * 0.12, top, kx.w * 0.76, hgt, Math.min(3 * k, kx.w * 0.3, hgt / 2));
       ctx.fill();
       // a brighter edge, like the frosted notes in the video (skipped when the keys are very narrow)
       if (kx.w > 5 * k){
@@ -302,7 +382,7 @@
         ctx.stroke();
       }
     }
-    drawWisps(keyTop, dt, now);
+    drawWisps(keyTop, held ? 0 : dt, now);
 
     // keyboard — a tight accent line marks a pressed key, not a full wash
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -310,7 +390,7 @@
     var wc = U.hexRGB(cfg.keyColor);
     for (var wq = 0; wq < pianoKeys.white.length; wq++){
       var wk = pianoKeys.white[wq];
-      var on = active[wk.m] || 0;
+      var on = down[wk.m] || 0;
       var kg = ctx.createLinearGradient(0, keyTop, 0, keyTop + keyH);
       kg.addColorStop(0, U.rgba(wc, '0.99'));
       kg.addColorStop(1, U.rgba(wc, '0.86'));
@@ -338,7 +418,7 @@
     }
     for (var bq = 0; bq < pianoKeys.black.length; bq++){
       var bk = pianoKeys.black[bq];
-      var bon = active[bk.m] || 0;
+      var bon = down[bk.m] || 0;
       ctx.fillStyle = 'rgba(18,14,24,0.97)';
       ctx.fillRect(bk.x, keyTop, bk.w, keyH * 0.62);
       if (bon){
@@ -386,7 +466,7 @@
     if (pianoKeys){
       for (var q = 0; q < pianoKeys.white.length; q++){
         var wk = pianoKeys.white[q];
-        if (x >= wk.x && x < wk.x + wk.w){ pianoSegs.push({ m: wk.m, t0: A.t, t1: A.t + 0.14, v: 0.9 }); break; }
+        if (x >= wk.x && x < wk.x + wk.w){ pianoSegs.push({ m: wk.m, a: pc, b: pc + 0.14, v: 0.9, on: false, hit: false, em: 0, last: pc }); break; }
       }
     }
   }
@@ -413,14 +493,16 @@
     }
   }
 
-  function reset(){ pianoSegs = []; pianoOn = {}; pianoKeys = null; seen = {}; wisps = []; glows = []; chordShown = chordWant = ''; }
+  function reset(){ pianoSegs = []; pianoOn = {}; pianoKeys = null; seen = {}; wisps = []; glows = []; peakSlow = 0; chordShown = chordWant = ''; }
 
   // fx: 0 - a keyboard that zooms and shakes is hard to read
-  App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, reset: reset, fx: 0 });
+  // probe: read by engine/probe.js and by checks in the browser, never by the app
+  App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, reset: reset, fx: 0,
+                                probe: function(){ return { clock: pc, segs: pianoSegs, lagOn: LAG_ON, lagOff: LAG_OFF }; } });
 
   App.cfg.registerDefaults('piano', {
     low: 36, high: 96, threshold: 0.4, polyphony: 6, melody: false, octaves: true, chord: true,
-    fall: 1, labels: true, sustain: 1, sparks: 1,
+    fall: 1, falling: true, labels: true, sustain: 1, sparks: 1,
     keyColor: '#F4ECE1', activeColor: '#E0728A', noteColor: '#7BD3F7',
     bg1: '#161127', bg2: '#05030C'
   });
@@ -432,7 +514,8 @@
     ['melody', 'Melody only (the strongest note of each moment)', 'bool'],
     ['octaves', 'Colour notes by octave', 'bool'],
     ['chord', 'Show the chord name', 'bool'],
-    ['fall', 'Roll speed (1 = 0.35 screens a second)', 'range', 0.3, 3, 0.05],
+    ['falling', 'Notes fall onto the keys (in this mode the song is heard about 2 seconds late)', 'bool'],
+    ['fall', 'Fall speed', 'range', 0.6, 2.8, 0.05],
     ['sparks', 'Flames from the keys', 'range', 0, 2, 0.05],
     ['sustain', 'Note hold', 'range', 0.2, 3, 0.05],
     ['labels', 'Note labels', 'bool'],
