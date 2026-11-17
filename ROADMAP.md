@@ -1,18 +1,22 @@
 # ROADMAP: build queue and current state
 
 ## Now
-- The site is live: https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/ (GitHub Pages publishes
-  the `main` branch on every push). Runs may push on their own (ORGANIZER.md).
-- Run of 2026-11-16/17, fourth (the user joined it): songs added one by one are remembered; a "Keep a copy"
-  switch; the last song's place comes back; Piano's notes fall onto the keys; fullscreen on a phone fixed;
-  Clock redrawn (by an agent: agents are allowed again, ORGANIZER.md). Details under "Done".
-- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` passed (5 songs; the
-  engine's sound path changed for Piano), browser checks at 1280 px, 375 px and phone fullscreen both ways.
-- Not tested on a device: Piano's late sound on a phone, fullscreen turning sideways, the remembered single
-  files after the app is closed (needs Chrome on Android), everything for iPhone.
-- Next steps, v0.1.0 only (version by version): item 17 (custom modes pass: Clock in hand, then the review and
-  one mode per step), item 6 (song map), item 7 (mapping selectors), item 11 (phone pass), item 12 (release),
-  item 18 (Google). Nothing from v0.2.0 until those are done.
+- Run closed on 2026-11-17 to save the weekly limit (the user's word). Everything finished is committed and
+  pushed; no lock is left. GitHub checks pass.
+- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, browser checks of the Clock and the
+  folders at 1280 px and 375 px: no errors.
+- **Item 17 in hand.** Clock is done (designs apart from the codes). The review of the eight custom modes is
+  half done: the "## Review" section of docs/MODES.md has numbers for Omega and Love and the three worst
+  faults (Liquid moves the same quiet and loud; Emoji moves a lot when quiet, worst under Love; String moves a
+  lot when quiet). Not yet looked at: the other seven codes, looks (no contact sheets), 375 px and phone
+  fullscreen. Next: finish the review, then fix Liquid, Emoji and String, one per step.
+- **Item 6 started, not committed.** The pure maths is in `.run/wip/song-map.js` (git-ignored, kept out of
+  `js/` so `check.js` passes): tempo, beat grid, hits, sections, energy curve, and the sliced browser part.
+  Not started: `engine/songmap.js`, tests, the seek-bar drawing, the docs. First numbers: a 128 a minute click
+  track reads 128.0; the biggest drop is among the top three hits in 1 of 3 songs (fix idea: weight a hit at
+  a section start by how much louder the section is); confidence reads too high. To resume: move the file
+  back to `js/core/` and add it to `index.html` in the same commit.
+- Version by version: v0.1.0 items only until they are done (17, 6, 7, 11, 12, then 18).
 
 ## Rules
 - After each step: `node engine/test.js`, `node engine/check.js`, `node engine/songtest.js` if sound changed,
@@ -108,6 +112,7 @@
 - User requests of 2026-11-16, third list: (a) a song on repeat sometimes stopped on the phone: "repeat one" is now the player's own loop, every start of sound goes through `P.safePlay`, and a start refused while the page is hidden is made up for when it is seen again; rules in `check.js`; in the browser a song looped with 0 "ended" events and the next song followed with repeat off; (b) iPhone and Safari: sound session "playback", Home Screen tags, a fill-the-window stand-in for fullscreen, 16 px text boxes, no folder button where no folder can be opened; not tested on a device; (c) Piano: glow where a note starts, flames from held keys, whole key lit, roll at 0.35 screen heights a second, taken from the piano video (measured in docs/RESEARCH.md section 6); colours unchanged at the user's word; 1.3 to 1.4 ms a frame; (d) README lists the nine codes without saying what they do; (e) research: how the InShot player finds songs (Android's media store, closed to web pages) and what the app can do instead (docs/RESEARCH.md section 7); (f) the user's version plan and the four kinds of mode recorded in ORGANIZER.md; queue regrouped.
 - User requests of 2026-11-16, fourth list: (a) item 19 (a, b, d): single files are remembered as handles like folders (`js/player/library.js` rewritten: folders, files and copies in one IndexedDB store; the old single folder moves over by itself); "Reconnect" brings back everything that waits for permission with one tap; a "Keep a copy of added songs inside the app" switch on the Music page, off by default, with the space used and "delete the copies"; the last song and its second come back paused. Checked in the browser: two songs kept as copies, reload: both back, the first cued at 0:42, paused, and playing on a tap; rules in `check.js`. (b) item 20, Piano: notes fall onto the keys and land as they are heard. The engine plays the song 2.3 s late while Piano is on screen ("late sound", `audio-engine.js`); pause holds the delayed sound; a seek or a new song mutes it. Measured with made-up notes of known times: every note lands within 0.01 s of the moment it is heard; overtones no longer draw ghost notes; 1.1 to 1.5 ms a frame. (c) Fullscreen on a phone: the picture fills the screen, the buttons lie over it in one sliding line and fade out, a phone held upright turns sideways; all eleven modes checked upright and sideways. (d) Clock redrawn (see docs/MODES.md "Clock"). (e) Decisions recorded in ORGANIZER.md: agents allowed again, "Keep a copy" for every browser, Play Store later.
 - 19 Remember folders and songs; folders inside the app (asked by the user, 2026-11-16): (a, b, d) see the fourth list above; (c) folders inside the app, `js/player/folders.js`: a bar of folders over the playlist ("All songs", the user's folders, "+ New folder"), a folder button on every song to put it in or take it out, rename and delete (deleting a folder removes no song), a song added while a folder is open goes into it, and playing inside a folder plays only its songs (shuffle and repeat too). A folder holds the songs' keys, so nothing is copied; a song not in the playlist today is counted as waiting. Kept in localStorage. Checked in the browser at 1280 px and 375 px: made, filled, played (the next song stayed in the folder), song taken out, reload: folder and its song kept; row buttons 36 px. Not yet seen on the user's phone (2026-11-17).
+- 17 (part) Clock, asked by the user (2026-11-16/17, by two agents): first redrawn (a plain dial, a crown of sound, a ring for the song, three orbits); then its styles became the Clock's own designs (Classic, Gears, Garden, Grid, Sky) apart from the codes, which set palette and forms; rainbow under the rainbow code; layered wings; gears with meshing teeth; a real sand pile; Solarpunk's leftover panels and still leaves gone. Under 2 ms a frame at every size. Weak still: white wings on pale codes, sand streams crossing the top gears.
 
 ## For the user
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
@@ -116,7 +121,8 @@
   they land in time on your phone, and whether pause and play behave.
 - **Fullscreen on the phone.** Tap the fullscreen button with the phone held upright: the picture should turn
   sideways and fill the screen, the buttons fade away and come back on a touch. Try two or three modes.
-- **Clock.** After its second pass (designs apart from the codes), say whether it looks right.
+- **Clock.** Settings > the bar at the top: try Classic, Gears, Garden, Grid and Sky, with two or three codes.
+  Say whether it looks right now.
 - **Folders inside the app.** On the Music page, make a folder, put two or three songs in it with the small
   folder button on each song, open the folder and play: only its songs should play. Close and reopen the app:
   the folder should still be there (with "Keep a copy" on, its songs too).
@@ -127,5 +133,8 @@
   and does the lock screen show the song? (3) Share > "Add to Home Screen", open it from there, switch the
   network off, open it again. (4) Tap the fullscreen button: the picture should fill the window. (5) Turn on
   "Keep a copy", add a song, close and reopen: is it still there?
+- **Count the beat of a few songs, when you have a minute.** For item 6: tap along to "Decensus Ad Nihilum",
+  "To Be Human" and "Want Some Fun" for 15 seconds and say the beats a minute (any tap-tempo app or website
+  works). The song map read 77.5, 109.4 and 84.9; that tells whether it is right, half or double.
 - **Google Search Console** comes at the end of v0.1.0 (item 18). It needs your Google account: nothing to do
   until a run asks for the verification file or tag.

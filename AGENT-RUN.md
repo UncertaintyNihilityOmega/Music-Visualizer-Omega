@@ -95,6 +95,11 @@ Run of 2026-11-16, fourth (the user joined it and lifted both meters' gates; 5-h
 | Fullscreen on a phone, every mode upright and sideways | about 10% | |
 | Clock redrawn | Fable's own limit ran out here; the session moved to Opus 5.5 and an agent finished it | |
 
+Run of 2026-11-17 (Opus 5.5, agents; weekly meter from 93%): Clock designs (one agent, about 290k tokens), the
+folders, half a review (one agent, about 125k tokens) and the start of the song map (one agent, about 150k
+tokens). Two agents at once doubled the spend; the user closed the run to save the weekly limit. Lesson: one
+agent at a time, and ask each agent to checkpoint-commit as soon as one part passes its gates.
+
 So a run fits about three steps, and a step that starts above 60% is likely to cross 75%. Browser checks cost
 most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over
 screenshots, and one screenshot per fault. Update this table after more runs.
