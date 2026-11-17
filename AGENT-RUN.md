@@ -33,9 +33,13 @@ other session can continue from. Runs are started by hand (a prompt from PROMPTS
    ended and takes over).
 
 ## Rules for runs
-- **No subagents and no other sessions** (user decision, 2026-11-15, repeated 2026-11-16). The run does the work
-  itself. If the user lifts this, at most one Writer agent per package, one area at a time, with a
-  save-as-you-go rule.
+- **Agents** (no agents from 2026-11-15; lifted by the user 2026-11-16): at most one Writer agent per package,
+  one area at a time, with a save-as-you-go rule. The agent gets a prompt that stands alone, edits only its
+  package's files, and commits only those; the Organizer session keeps the root docs, so two writers never
+  edit one file. An agent stopped by a usage limit keeps its work: resume it after the reset rather than
+  starting a new one.
+  User rule (2026-11-17): an agent sees and edits only its own files, and checks its work on the preview
+  server (the "static-server" launch configuration, in a tab of its own).
 - **One step at a time.** Each step has its own gates and its own commit, so a stop at any point loses nothing.
 - **Preview.** The user allows the preview server in runs (2026-11-16). Start the "static-server" launch
   configuration. If it asks for approval or will not start, skip the browser check, say so in the step's Done
@@ -80,7 +84,16 @@ Run of 2026-11-16, third (the user joined it; 5-hour meter from 3%, weekly from 
 | Step | 5-hour meter | Weekly meter |
 | --- | --- | --- |
 | Reading, web research (6 searches), loop fix, iPhone preparation, browser check | 20% | 5% |
-| Piano video measured, Piano flames, README, research notes, roadmap | see `.run/usage.log` | |
+| Piano video measured, Piano flames, README, research notes, roadmap | 19% | 4% |
+
+Run of 2026-11-16, fourth (the user joined it and lifted both meters' gates; 5-hour meter from 39%, weekly 87%):
+
+| Step | 5-hour meter | Weekly meter |
+| --- | --- | --- |
+| Remembering files, the "Keep a copy" switch, the last song's place | about 15% | |
+| Piano falling notes (late sound in the engine), timing measured with made-up notes | about 15% | |
+| Fullscreen on a phone, every mode upright and sideways | about 10% | |
+| Clock redrawn | Fable's own limit ran out here; the session moved to Opus 5.5 and an agent finished it | |
 
 So a run fits about three steps, and a step that starts above 60% is likely to cross 75%. Browser checks cost
 most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over

@@ -5,6 +5,23 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **The app remembers your songs.** Songs added one by one now come back next time like a folder does: one
+  tap on "Reconnect" (the browser asks for permission again after the app was closed). The last song and the
+  place it stopped come back too, paused.
+- **"Keep a copy of added songs inside the app"** (Music page): with it on, every song you add is also kept
+  inside the app, on this device only. It is there next time with no question asked, in every browser,
+  iPhone too. It takes space; the Music page shows how much, and "delete the copies" removes them. Off
+  unless you turn it on.
+- **Piano: notes fall onto the keys** and land as you hear them, like a piano tutorial video. To do that,
+  Piano mode plays the song about 2 seconds late (the picture hears it first). Pausing freezes the falling
+  notes where they are. "Notes fall onto the keys" in Piano's settings switches it off; with the microphone
+  the notes rise from the keys as before.
+- **Fullscreen on a phone**: the picture fills the whole screen; the mode buttons lie over its lower edge in
+  one line you can slide, and fade away after a few seconds (touch to bring them back). A phone held upright
+  turns the picture sideways, like a video.
+- **Clock redrawn**: a clean dial with slim hands, the sound as a crown of marks round it (small when the
+  music is calm, big when it is loud), a ring that fills as the song plays, and three slow orbits. Each code
+  gives it a form of its own.
 - **Piano: flames at the keys.** A note flashes white where it starts, a held key keeps a small flame going,
   and the whole key lights up in the note's colour. The roll moves a little faster. "Flames from the keys" in
   Piano's settings turns it down or off.

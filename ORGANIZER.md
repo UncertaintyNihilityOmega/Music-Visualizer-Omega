@@ -53,6 +53,9 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 
 ## User decisions (date, decision)
 - 2026-11-15: **No subagents for now.** Sessions do the work themselves until the user says otherwise.
+  **Lifted 2026-11-16** ("continue with agents", when the session moved from Fable to Opus 5.5): agents are
+  allowed within AGENT-RUN.md's limits. The scheduled task's stored prompt still says "no subagents"; it is
+  left as the user wrote it. 2026-11-17: an agent sees and edits only its own files and uses the preview server.
 - 2026-11-15: Title is "Music Visualiser Omega" (was "Our Playlist"). The old look is the theme code "Love".
 - 2026-11-15: Music is played from where it already is on the device; nothing is copied into the app.
 - 2026-11-15: The work of this plan, when the queue's release item is done, is snapshot **v0.1.0**.
@@ -97,6 +100,16 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
   background, and repeat and shuffle work. The Tessa looks are approved ("especially ... the nature section").
 - 2026-11-16: The app is prepared for iPhone and Safari too; the check on a real iPhone waits under "For the
   user" until the user can do it.
+- 2026-11-16 (fourth list): checked on the user's phone: "repeat one" and "repeat all" both keep playing; the
+  folder comes back with "Reconnect" (the browser asks for permission again, as expected).
+- 2026-11-16: **Keep a copy** of added songs inside the app is a switch the user turns on, in every browser,
+  not only on iPhone (useful later for the folders inside the app). Off by default, so the decision of
+  2026-11-15 ("nothing is copied") still holds until the user turns it on.
+- 2026-11-16: Piano should look like the piano video in behaviour: notes fall onto the keys and land as they
+  are heard. The colours stay Piano's own.
+- 2026-11-16: Every mode must look right in fullscreen on a phone. The Clock design was judged ugly and is
+  redrawn.
+- 2026-11-16: The app may go to the Play Store later (a native Android shell); not now.
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,
@@ -121,6 +134,19 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-16: "Repeat one" (and "repeat all" with one song) is the player's own loop (`el.loop`), not a restart
   from script when the song ends: with the screen off a phone may refuse or delay that restart. Every start of
   sound goes through `P.safePlay`; a start refused while the page is hidden is made up for when it is seen again.
+- 2026-11-16: **Remembered songs** (`js/player/library.js`): folders and single files are kept as handles in
+  IndexedDB where the browser has the File System Access API; with "Keep a copy" on, a song is kept as a copy
+  (a Blob) instead, which every browser supports. On start: copies and anything with permission still held
+  load at once; the rest wait for one tap on "Reconnect". The last song and its second come back paused.
+  `check.js` guards: the switch is off by default, copies only behind it, nothing from last time autoplays.
+- 2026-11-16: **Late sound** (`audio-engine.js`): while Piano is on screen the speakers get the song 2.3 s
+  after the analysis hears it, so a note can fall for 2.3 s and land as it is heard. Only Piano asks for it
+  (`check.js`); every other mode, and the microphone, get the sound at once. Pause holds the delayed sound
+  (the sound engine is suspended); a seek or a new song mutes what is still in the delay.
+- 2026-11-16: **Fullscreen**: one set of rules for real fullscreen and the iPhone stand-in (class "is-full").
+  The picture fills the screen; the buttons lie over its lower edge in one sliding line and fade out after
+  3.5 s without a touch; a phone held upright turns the picture sideways (setting "Fullscreen on a phone
+  turns the picture sideways", on by default; an iPhone cannot be turned by a page).
 - 2026-11-16: iPhone: the sound session is set to "playback" (the silent switch no longer mutes the music); the
   fullscreen button fills the window where a page element cannot go fullscreen; text boxes use 16 px letters
   there so tapping one does not zoom the page. `check.js` guards all three. Not tested on a device.

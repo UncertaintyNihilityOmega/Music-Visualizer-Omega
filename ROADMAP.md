@@ -3,18 +3,15 @@
 ## Now
 - The site is live: https://uncertaintynihilityomega.github.io/Music-Visualizer-Omega/ (GitHub Pages publishes
   the `main` branch on every push). Runs may push on their own (ORGANIZER.md).
-- All work is committed and pushed. No lock is left.
-- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` not run (the analysis did
-  not change), browser check with a real song at 1280 px and at phone width: no errors.
-- Run of 2026-11-16, third (the user joined it): a song on repeat is looped by the player itself; iPhone
-  preparation; Piano flames; the codes in the README; research on piano visualisers and on phone music apps;
-  the queue regrouped by version (the user's plan). Details under "Done".
-- The queue is grouped by version: v0.1.0 first. Items 9 and 16 were split by the user's plan: their mini-game
-  halves are v0.3.0, their complex-game halves wait for v1.x and v2.x.
-- Next steps that need no one: item 17 (custom modes pass, with the review that item 8 left), item 6 (song
-  map), item 7 (mapping selectors), item 11 (phone pass).
-- Not tested on a device: everything for iPhone, and the repeat fix (it loops in the desktop browser with no
-  "ended" event; only the user's phone can show that the stop is gone).
+- Run of 2026-11-16/17, fourth (the user joined it): songs added one by one are remembered; a "Keep a copy"
+  switch; the last song's place comes back; Piano's notes fall onto the keys; fullscreen on a phone fixed;
+  Clock redrawn (by an agent: agents are allowed again, ORGANIZER.md). Details under "Done".
+- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, `songtest.js` passed (5 songs; the
+  engine's sound path changed for Piano), browser checks at 1280 px, 375 px and phone fullscreen both ways.
+- Not tested on a device: Piano's late sound on a phone, fullscreen turning sideways, the remembered single
+  files after the app is closed (needs Chrome on Android), everything for iPhone.
+- Next steps that need no one: item 17 (custom modes pass: the review, then one mode per step; Clock is done),
+  item 6 (song map), item 7 (mapping selectors), item 11 (phone pass), item 19 (c) folders inside the app.
 
 ## Rules
 - After each step: `node engine/test.js`, `node engine/check.js`, `node engine/songtest.js` if sound changed,
@@ -41,6 +38,9 @@
     (Basic, String, Emoji, Fire, Rain, Nature, Clock, Liquid): two songs, every code, calm part against loud
     part measured, the weakest thing fixed. Done when: the review's notes are closed and each of the eight has
     a dated line in docs/MODES.md.
+    Clock is done (2026-11-17); notes left from its check for a later look: the time in figures is crowded
+    beside VIII and IV in the Roman skins, the hands can pass over it, Golden's sand covers the bottom of the
+    crown on a phone, Cyberpunk is busy, Heaven's wings are faint, Solarpunk's solar panels are left over.
 11. **Phone pass.** Measure the two heaviest modes first (Nature with a full tree, Fire's hearth style: about
     15 ms a frame on the desktop, see engine/README.md) and make them lighter if a phone drops frames. Every page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways
     scroll, microphone over https, folder fallback where the folder API is missing. iPhone and Safari are part
@@ -57,15 +57,13 @@
 **v0.2.0: special modes, remembering, folders inside the app**
 
 19. **Remember folders and songs; folders inside the app** (asked by the user, 2026-11-16; plan in
-    docs/RESEARCH.md section 7). (a) Several remembered folders, and files added one by one remembered through
-    file handles where the browser has them. (b) On start the remembered list is shown at once and one tap
-    reconnects all of it; the last song and its position come back. (c) Folders inside the app (playlists):
-    the app's own lists, nothing copied. (d) iPhone can only remember by keeping a copy: ask the user first.
+    docs/RESEARCH.md section 7). (a), (b) and (d) are built (see Done). Left: (c) folders inside the app
+    (playlists): the app's own lists of remembered songs, which work best with "Keep a copy" on (the user's
+    reason for the switch).
     Done when: on the user's phone the songs are back after closing and opening the app with at most one tap,
     and a song can be put into an in-app folder that is still there the next day.
 20. **Special modes pass: Ice, Aquatic, Piano.** They keep their own look (no theme codes). One step per mode.
-    Piano: notes that fall onto the keys before they sound, by the song map (item 6) or by playing the sound
-    2.3 s late (docs/RESEARCH.md section 6); this was item 8's P5. Done when: each of the three has a dated
+    Piano's falling notes are built (see Done); Ice and Aquatic are left. Done when: each of the three has a dated
     line in docs/MODES.md and Piano's notes land on the keys as they sound, at 375 px too.
 
 **v0.3.0: mini-games**
@@ -112,23 +110,24 @@
 - 10 More themes: withdrawn by the user (2026-11-16). Special modes (Ice, Aquatic, Piano) keep their own look and do not follow the codes.
 - 8 Modes in packages: P1 to P4 done (above). What was left moved: the review after P4 to item 17, P5 Piano falling notes to item 20 (2026-11-16).
 - User requests of 2026-11-16, third list: (a) a song on repeat sometimes stopped on the phone: "repeat one" is now the player's own loop, every start of sound goes through `P.safePlay`, and a start refused while the page is hidden is made up for when it is seen again; rules in `check.js`; in the browser a song looped with 0 "ended" events and the next song followed with repeat off; (b) iPhone and Safari: sound session "playback", Home Screen tags, a fill-the-window stand-in for fullscreen, 16 px text boxes, no folder button where no folder can be opened; not tested on a device; (c) Piano: glow where a note starts, flames from held keys, whole key lit, roll at 0.35 screen heights a second, taken from the piano video (measured in docs/RESEARCH.md section 6); colours unchanged at the user's word; 1.3 to 1.4 ms a frame; (d) README lists the nine codes without saying what they do; (e) research: how the InShot player finds songs (Android's media store, closed to web pages) and what the app can do instead (docs/RESEARCH.md section 7); (f) the user's version plan and the four kinds of mode recorded in ORGANIZER.md; queue regrouped.
+- User requests of 2026-11-16, fourth list: (a) item 19 (a, b, d): single files are remembered as handles like folders (`js/player/library.js` rewritten: folders, files and copies in one IndexedDB store; the old single folder moves over by itself); "Reconnect" brings back everything that waits for permission with one tap; a "Keep a copy of added songs inside the app" switch on the Music page, off by default, with the space used and "delete the copies"; the last song and its second come back paused. Checked in the browser: two songs kept as copies, reload: both back, the first cued at 0:42, paused, and playing on a tap; rules in `check.js`. (b) item 20, Piano: notes fall onto the keys and land as they are heard. The engine plays the song 2.3 s late while Piano is on screen ("late sound", `audio-engine.js`); pause holds the delayed sound; a seek or a new song mutes it. Measured with made-up notes of known times: every note lands within 0.01 s of the moment it is heard; overtones no longer draw ghost notes; 1.1 to 1.5 ms a frame. (c) Fullscreen on a phone: the picture fills the screen, the buttons lie over it in one sliding line and fade out, a phone held upright turns sideways; all eleven modes checked upright and sideways. (d) Clock redrawn (see docs/MODES.md "Clock"). (e) Decisions recorded in ORGANIZER.md: agents allowed again, "Keep a copy" for every browser, Play Store later.
 
 ## For the user
-- **Try the repeat again.** Open the site once with the network on so the new build arrives (close and reopen
-  the app). Put one song on repeat, lock the phone, and listen across the end of the song a few times. If it
-  still stops, say: was the screen off, was it "repeat one" or "repeat all", and did the lock screen still
-  show the song?
-- **After closing and opening the app**, look at the Music page: is there a "↻ Reconnect <folder>" button? One
-  tap on it should bring the folder's songs back today. Say whether it is there, and whether you add songs
-  with "Open a music folder" or with "Add files" (files added one by one are not remembered until v0.2.0).
-- **Piano.** Play a piano song in Piano mode: a glow and small flames where notes meet the keys. Say if the
-  flames are too much or too little (Settings > Piano > "Flames from the keys").
+- **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
+- **Piano on the phone.** Play a piano song in Piano mode: the notes should fall and land on the keys as you
+  hear them (the song starts about 2 seconds late in this mode; that is how it sees the future). Say whether
+  they land in time on your phone, and whether pause and play behave.
+- **Fullscreen on the phone.** Tap the fullscreen button with the phone held upright: the picture should turn
+  sideways and fill the screen, the buttons fade away and come back on a touch. Try two or three modes.
+- **Clock.** Say whether the new design looks right, in Omega and in one or two other codes.
+- **Remembering.** Add two songs with "Add files", close the app, open it: tap "Reconnect" (or, with "Keep a
+  copy" on, they are simply there). The last song should be ready at the place it stopped.
 - **iPhone / Safari check, whenever one is at hand.** Open the site in Safari. (1) Add a song with "Add files"
   and play it: is there sound with the ring/silent switch on silent? (2) Lock the phone: does the music go on,
   and does the lock screen show the song? (3) Share > "Add to Home Screen", open it from there, switch the
-  network off, open it again. (4) Tap the fullscreen button on the picture: it should fill the window. (5) Tap
-  the address box on the Music page: the page should not zoom.
+  network off, open it again. (4) Tap the fullscreen button: the picture should fill the window. (5) Turn on
+  "Keep a copy", add a song, close and reopen: is it still there?
 - **Google Search Console** comes at the end of v0.1.0 (item 18). It needs your Google account: nothing to do
   until a run asks for the verification file or tag.
-- **Decision for v0.2.0, no hurry:** on an iPhone a song can only be remembered by keeping a copy inside the
-  app (docs/RESEARCH.md section 7). Allow that on iPhone, or leave iPhone without remembering?
+- **The scheduled task** still says "no subagents" in its stored prompt. Say if it should be allowed agents
+  too; until then it stays as you wrote it.
