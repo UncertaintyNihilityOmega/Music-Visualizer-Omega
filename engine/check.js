@@ -152,8 +152,12 @@ try {
       for (const k of ['fill', 'rim', 'bg1', 'bg2']) if (!hex(Q[k])) err(`theme "${id}": look.liquid.${k} must be a #rrggbb colour`);
       if (!['ink', 'slime', 'mercury', 'plasma'].includes(Q.kind)) err(`theme "${id}": look.liquid.kind must be ink, slime, mercury or plasma`);
     }
+    // Clock: the code picks a design (DESIGNS in mode-clock.js) and always gives the palette and the forms
     const clockSrc = read('js/modes/mode-clock.js');
-    if (!t.look || !new RegExp('\\n    ' + t.look.clock + ': \\{').test(clockSrc)) err(`theme "${id}": look.clock "${t.look && t.look.clock}" is not a skin in mode-clock.js`);
+    const clockDesigns = JSON.parse(((/var DESIGNS = (\[[^\]]*\]);/.exec(clockSrc) || [])[1] || '[]').replace(/'/g, '"'));
+    if (!t.look || !clockDesigns.includes(t.look.clock)) err(`theme "${id}": look.clock "${t.look && t.look.clock}" is not a Clock design (${clockDesigns.join(', ')})`);
+    if (!new RegExp('\\n    ' + id + ': \\{ decor: \\{[^\\n]*pal: \\{').test(clockSrc)) err(`theme "${id}": mode-clock.js has no palette for it (PALETTES)`);
+    if (!new RegExp('\\n    ' + id + ': +\\{ marks:').test(clockSrc)) err(`theme "${id}": mode-clock.js has no forms for it (FORMS)`);
     if (!t.look || !t.look.fire) err(`theme "${id}": look.fire is missing (every theme, the default too, gives Fire a form)`);
     if (!t.codes || !t.codes.length) err(`theme "${id}": has no code word`);
     for (const c of t.codes || []){
@@ -201,6 +205,53 @@ const road = read('ROADMAP.md');
   if (!rK || !cK) err('mode-clock.js: the dial size (var R = Math.min(w, h) * …) or the crown length (ringEnv[j] * … * size) can no longer be found');
   else if (rK * (1.1 + (0.035 + cK) * 1.15) > 0.48) err(`mode-clock.js: the loudest crown reaches ${(rK * (1.1 + (0.035 + cK) * 1.15)).toFixed(2)} of the short side from the middle; it must stay under 0.48 or it is cut off`);
   if (!/if \(style !== lastStyle\)\{ orbit = \[\];/.test(ck)) err('mode-clock.js: a skin change must clear the drifting characters (orbit = [] when the style changes)');
+  // Clock (the user, 2026-11-17: "Clock styles are literally the codes, it should not be"): the style list holds
+  // the Clock's own designs and "theme", never a theme id; it is written out, so the icon check above sees each one
+  const ckDesigns = JSON.parse(((/var DESIGNS = (\[[^\]]*\]);/.exec(ck) || [])[1] || '[]').replace(/'/g, '"'));
+  const ckStyles = /\['style', 'Style', 'layout', \[([^\]]+)\]\]/.exec(ck);
+  if (!ckDesigns.length) err('mode-clock.js: the list of designs (var DESIGNS = [...];) can no longer be found');
+  if (!ckStyles) err("mode-clock.js: the style setting must list its options written out: ['style', 'Style', 'layout', ['theme', ...]]");
+  const themeIds = [...read('js/core/themes.js').matchAll(/\n    ([a-z]+): \{\n      codes:/g)].map(m => m[1]);
+  if (ckStyles) for (const o of ckStyles[1].replace(/['\s]/g, '').split(',')){
+    if (themeIds.includes(o) || ['golden', 'heaven'].includes(o)) err(`mode-clock.js: the style list holds "${o}", a theme code; it must hold designs only`);
+    else if (o !== 'theme' && !ckDesigns.includes(o)) err(`mode-clock.js: style "${o}" is not in DESIGNS`);
+  }
+  for (const d of ckDesigns) if (!ckStyles || !ckStyles[1].includes(`'${d}'`)) err(`mode-clock.js: design "${d}" cannot be picked in the style list`);
+  // an old saved style that is no longer a design (such as 'golden') must fall back to the code's design, not break the mode
+  if (!/if \(DESIGNS\.indexOf\(s\) === -1\)\{\s*s = App\.theme\.look/.test(ck)) err('mode-clock.js: designId() must fall back to the code\'s design for a style that is not a design');
+  // the gears mesh only if they share one tooth pitch: a radius set by hand breaks it
+  const gc = /var GEAR_CLUSTERS = \[([\s\S]*?)\n  \];/.exec(ck);
+  if (!gc || /\br: /.test(gc[1])) err('mode-clock.js: GEAR_CLUSTERS must give teeth only (the radius follows from GEAR_PITCH, so meshed gears interlock)');
+  // ... and their teeth must not cut into each other while they turn (found by hand, 2026-11-17: the first
+  // tooth shape overlapped by up to half a tooth). Every meshed pair is turned through two revolutions of the root.
+  try {
+    const part = (a, b) => { const i = ck.indexOf(a), j = ck.indexOf(b, i); if (i < 0 || j < 0) throw new Error(a); return ck.slice(i, j); };
+    const G = new Function(part('var GEAR_PITCH', 'var gearMasterAngle') + part('function layoutCluster', '  // everything about the gears') +
+      '; return { GEAR_CLUSTERS, GEAR_PITCH, TOOTH_TIP, TOOTH_ROOT, TOOTH_ADD, TOOTH_DED, layoutCluster, ratiosFor, phasesFor };')();
+    const W = 1280, H = 800, mod = G.GEAR_PITCH * Math.min(W, H) / Math.PI;
+    const radAt = (g, phi) => {   // the outline's distance from the centre at a world angle
+      let f = ((phi - g.ang) / (2 * Math.PI / g.teeth)) % 1; if (f < 0) f += 1; f = Math.abs(f >= 0.5 ? f - 1 : f);
+      const ro = g.r + G.TOOTH_ADD * mod, rr = g.r - G.TOOTH_DED * mod;
+      return f <= G.TOOTH_TIP ? ro : f >= G.TOOTH_ROOT ? rr : ro + (rr - ro) * (f - G.TOOTH_TIP) / (G.TOOTH_ROOT - G.TOOTH_TIP);
+    };
+    let worst = -1e9;
+    for (const cl of G.GEAR_CLUSTERS){
+      const laid = G.layoutCluster(cl, W, H), rat = G.ratiosFor(cl, laid), ph = G.phasesFor(cl);
+      for (let M = 0; M < 2 * Math.PI; M += 0.02){
+        laid.forEach((g, i) => { g.ang = M * rat[i] + ph[i]; });
+        for (let i = 1; i < cl.length; i++){
+          const c = laid[i], p = laid[cl[i].rel], toP = Math.atan2(p.y - c.y, p.x - c.x);
+          for (let s = -40; s <= 40; s++){   // the child's outline near the line between the centres
+            const a = toP + s / 40 * 0.5, rc = radAt(c, a), x = c.x + Math.cos(a) * rc, y = c.y + Math.sin(a) * rc;
+            worst = Math.max(worst, radAt(p, Math.atan2(y - p.y, x - p.x)) - Math.hypot(x - p.x, y - p.y));
+          }
+        }
+      }
+    }
+    if (worst > 0.25) err(`mode-clock.js: meshed gears cut into each other by up to ${worst.toFixed(1)} px at 1280x800 (tooth shape or phase)`);
+  } catch (e){ err('mode-clock.js: the gear train could not be checked: ' + e.message); }
+  const stv = read('js/core/settings.js'), cv = +((/var CFG_VERSION = (\d+);/.exec(stv) || [])[1]);
+  if (cv < 4 || !/4: \[[^\]]*'clock'/.test(stv)) err('settings.js: the Clock\'s old saved styles (theme ids) must be dropped once: DROP_BELOW needs 4: [... \'clock\']');
 }
 
 /* 11. every page, mode, game and code has a drawn icon (user, 2026-11-16) */

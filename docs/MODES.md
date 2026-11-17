@@ -136,20 +136,35 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
 - Ideas left: notes that **fall onto** the keys before they sound (ROADMAP 20). Two routes, written up in
   docs/RESEARCH.md section 6: read the whole file first (the song map), or play the sound 2.3 s late.
 
-## Clock (redrawn 2026-11-16, asked by the user: the old one "looks pretty ugly")
+## Clock (redrawn 2026-11-16, asked by the user: the old one "looks pretty ugly"; designs apart from the codes 2026-11-17)
 - Picture, from the middle out: a plain dial with a hairline rim, hour marks, slim hands and the time in small
   figures; a thin ring that fills as the song plays; a crown of 96 sound marks round the dial (bass at 12
   o'clock, treble at 6, the same on both sides); three faint orbits with one dot each (a minute, an hour,
   twelve hours). The heavy metal bezel, the sunburst and the crowd of letters are gone.
-- Listens to: the spectrum (the crown), `drive` (how far the crown opens, how many characters drift, rings of
-  light), `punch` (the rim glows), `kick` (second hand jumps, orbit dots swell), `level` and `beat` (gears, sand).
-- Calm against lively: in a calm passage the crown is short, like a watch's minute marks; in a loud one it
-  opens to about a third of the dial's radius beyond the rim.
-- Skins: every skin keeps its palette and background and gets a form (`FORMS` in the file): hour marks
-  (batons, dots, Roman, figures or hearts), crown (bars, dots, blocks, rays, a wave, or bars pointing inward)
-  and hands (round, needle or block). "theme" follows the theme code (`look.clock`).
+- Two choices, kept apart (the user: "Clock styles are literally the codes, it should not be"):
+  - the **theme code** always gives the palette (`PALETTES`) and the forms (`FORMS`: hour marks as batons, dots,
+    Roman, figures or hearts; crown as bars, dots, blocks, rays, a wave or bars pointing inward; hands round,
+    needle or block). Ascensus Ad Incertum is the rainbow code: a hue per crown mark, rainbow light behind the
+    dial, a rainbow rim and song ring, rainbow edges on the wings.
+  - the **design** (the Style bar): Classic (the dial with a few of the code's characters drifting by), Gears
+    (meshing clockwork and a sand pile fed like an hourglass), Garden (hills, two vines that grow and sway, leaves
+    and pollen), Grid (perspective grid, circuit traces, glitches), Sky (clouds, feathered wings, motes).
+    "theme" lets the code pick (`look.clock`). An old saved style that is no longer a design falls back to it.
+  Every design takes its colours from the palette; metal, sand and leaf green are mixed with it.
+- Gears: one tooth pitch for all, so the radius follows from the teeth; trapezoid teeth drawn as one path,
+  spokes cut out, a bevelled rim, metal tinted by the palette; each driven gear starts turned so a tooth meets a
+  gap (`engine/check.js` turns every meshed pair through two revolutions and fails if teeth cut into each other).
+- Sand: column heights; a thin stream (from under the dial in an upright picture, else two from the top either
+  side of the crown) feeds the pile; slopes steeper than sand holds slide down (small avalanches); a kick throws
+  a little spray. The pile's size follows the music's energy and settles over several seconds.
+- Listens to: the spectrum (the crown), `drive` (crown size, characters, rings of light, gear speed, the pile,
+  the vines' reach and sway, the wings' beat, the grid's speed), `punch` (the rim glows), `kick` (second hand
+  jumps, orbit dots swell, a wing beat, sand spray).
+- Calm against lively, measured 2026-11-17 ("Decensus Ad Nihilum" 11 s against 44 s): gears 0.06 against
+  0.33 rad/s; wing beat 0.03 against 0.30 rad; vine sway 0.016 against 0.058 of the short side. The pile sank
+  from 0.23 to 0.16 of the short side in about 5 s of a calm part of "Want Some Fun".
 - Size: the dial is 0.3 of the picture's short side, so the loudest crown still ends inside a wide, low
-  picture; `engine/check.js` fails if it would be cut off.
+  picture; `engine/check.js` fails if it would be cut off. The wings shrink to fit a narrow or low picture.
 - Ideas left: tick exactly on the beat once a tempo is known (needs the song map, ROADMAP 6).
 
 ## Liquid (added 2026-11-16, asked by the user; model: `inspiration/liquid-example.mp4`)
@@ -172,15 +187,18 @@ Every theme code gives these modes a form of their own, not only colours. The ta
 
 | Code | Rain | Nature | Clock | Fire |
 | --- | --- | --- | --- | --- |
-| Omega (default) | violet night rain | glowing violet tree at night | violet skin, Ω drifting | violet hearth |
-| Tessa | thunderstorm, forked bolts | lightning tree, sparks for leaves | electric skin, sparks from the rim | plasma globe |
-| New Year | snow | frosted tree, gold lights, snow | midnight and gold, snowflakes | fireworks |
-| Halloween | bats, leaves, spiders | dead tree, orange leaves | orange and purple, bats | cauldron |
-| Love | hearts | cherry tree shedding petals | cream and rose, hearts | candles |
-| Solarpunk | sun shower | green tree, yellow blossom | its own skin (leaves) | sun |
-| Cyberpunk | falling 1s and 0s | neon tree of straight lines, square leaves | its own skin (grid) | pixels |
-| Decensus Ad Nihilum | rain that rises | pale tree with embers | black face, dots spiral in | vortex |
-| Ascensus Ad Incertum | rainbow rain | rainbow tree | heaven skin | aurora |
+| Omega (default) | violet night rain | glowing violet tree at night | Classic: violet, Ω drifting | violet hearth |
+| Tessa | thunderstorm, forked bolts | lightning tree, sparks for leaves | Classic: electric, sparks from the rim | plasma globe |
+| New Year | snow | frosted tree, gold lights, snow | Classic: midnight and gold, snowflakes | fireworks |
+| Halloween | bats, leaves, spiders | dead tree, orange leaves | Classic: orange and purple, bats | cauldron |
+| Love | hearts | cherry tree shedding petals | Classic: cream and rose, hearts | candles |
+| Solarpunk | sun shower | green tree, yellow blossom | Garden: green and gold, vines | sun |
+| Cyberpunk | falling 1s and 0s | neon tree of straight lines, square leaves | Grid: neon grid, glitches | pixels |
+| Decensus Ad Nihilum | rain that rises | pale tree with embers | Classic: black dial, dots spiral in | vortex |
+| Ascensus Ad Incertum | rainbow rain | rainbow tree | Sky: rainbow, feathered wings | aurora |
+
+The Clock column is the design each code picks under the "theme" style; whatever design is chosen, the code
+still gives the Clock its palette and forms.
 
 ## Games (Undarum, Artificium, Dungeon of Echoes, Solarium; once Survivor, Defense, Cards, Sandbox)
 - Listen to: `level` (enemy health and speed), the spectrum (background), `punch`.

@@ -15,18 +15,38 @@
      the orbits   three faint circles with one dot each, going round once a
                   minute, once an hour and once in twelve hours
 
-   Every skin shares that and gives it a form of its own (FORMS): what the
-   hour marks are, how the crown is drawn, how the hands are cut; plus its
-   palette and its own background (gears and sand, vines, a grid, clouds
-   and wings, or a few of the theme's characters drifting by).
+   Two things are chosen apart (2026-11-17, the user: "Clock styles are
+   literally the codes, it should not be"):
+     the theme code   always picks the palette (PALETTES) and the forms
+                      (FORMS: what the hour marks are, how the crown is
+                      drawn, how the hands are cut). The rainbow code
+                      (Ascensus Ad Incertum) turns everything rainbow.
+     the design       the Clock's own style setting (DESIGNS): what is
+                      round the clock. "theme" lets the code pick it
+                      (look.clock in themes.js).
+                        classic  the dial alone, with a few of the code's
+                                 characters drifting by
+                        gears    clockwork that meshes, and a sand pile fed
+                                 by a thin stream, like an hourglass
+                        garden   hills and two vines that grow and sway
+                        grid     a perspective grid, circuit traces, glitches
+                        sky      clouds, a pair of feathered wings, motes
+   Every design takes its colours from the palette, so it reads in every
+   code; only materials (metal, sand, leaf green) are fixed colours, and
+   they are mixed with the palette.
 
-   Interlocking gears (Golden) rotate at speeds that are actually derived
-   from their radii, the way a real gear train works: for two meshed gears,
-   angular velocity is inversely proportional to radius and the rotation
-   direction alternates. Because that ratio between any two gears in a
-   chain never changes, only the ROOT gear's angle needs integrating every
-   frame (persistent state); every other gear's angle is just that root
-   angle times a fixed constant computed from the radii.
+   Calm against loud: in a quiet passage the gears all but stop, the vines
+   and wings are still, the pile settles; in a big one they move a lot.
+
+   Interlocking gears rotate at speeds that are actually derived from their
+   radii, the way a real gear train works: for two meshed gears, angular
+   velocity is inversely proportional to radius and the rotation direction
+   alternates. Because that ratio between any two gears in a chain never
+   changes, only the ROOT gear's angle needs integrating every frame
+   (persistent state); every other gear's angle is just that root angle
+   times a fixed constant computed from the radii. All gears share one
+   tooth pitch, and each driven gear starts turned so that a tooth of its
+   parent sits in one of its gaps: the teeth interlock.
    ========================================================================= */
 (function(){
   'use strict';
@@ -36,88 +56,64 @@
 
   var ROMAN = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
 
-  var THEMES = {
-    golden: { pal: {
-      accent: '#F0C866', faceCenter: '#3A3122', faceMid: '#241E15', faceEdge: '#100D08', rim: '#C99A3F',
-      numeral: '#F0D28A', numeralShadow: 'rgba(0,0,0,0.6)', tick: 'rgba(240,200,102,0.6)',
-      hourHand: '#F0D28A', minuteHand: '#E3C06A', secondHand: '#C7CAD3',
-      bezelOuter: '#4A3B22', bezelInner: '#8A6A34', bezelHighlight: '#F5DA96', bezelStud: '#F5DA96',
-      bg1: '#2C2417', bg2: '#0A0805'
-    }},
-    solarpunk: { pal: {
-      accent: '#FFC857', faceCenter: '#FBFEF2', faceMid: '#EAF6DE', faceEdge: '#C9E8BC', rim: '#3E7C4C',
-      numeral: '#1F5C3D', numeralShadow: 'rgba(31,92,61,0.3)', tick: 'rgba(31,92,61,0.55)',
-      hourHand: '#1F5C3D', minuteHand: '#3E7C4C', secondHand: '#E39A2E',
-      bezelOuter: '#2F5233', bezelInner: '#4A8A5C', bezelHighlight: '#C8EFD0', bezelStud: '#FFC857',
-      bg1: '#EAF7E3', bg2: '#FBF0D2'
-    }},
-    cyberpunk: { pal: {
-      accent: '#FF6FD4', faceCenter: '#1C1030', faceMid: '#130A20', faceEdge: '#04010A', rim: '#28E5FF',
-      numeral: '#4FEFFF', numeralShadow: 'rgba(255,46,154,0.55)', tick: 'rgba(255,46,154,0.55)',
-      hourHand: '#FF2E9A', minuteHand: '#28E5FF', secondHand: '#FFE94A',
-      bezelOuter: '#1A0E2E', bezelInner: '#3D1F5C', bezelHighlight: '#FF9FE4', bezelStud: '#28E5FF',
-      bg1: '#0A0714', bg2: '#170A28'
-    }},
-    heaven: { pal: {
-      accent: '#BFE3FF', faceCenter: '#FFFFFF', faceMid: '#EEF7FF', faceEdge: '#CBE6FF', rim: '#8FCFFF',
-      numeral: '#4A90C9', numeralShadow: 'rgba(74,144,201,0.25)', tick: 'rgba(143,207,255,0.6)',
-      hourHand: '#4A90C9', minuteHand: '#8FCFFF', secondHand: '#F2C879',
-      bezelOuter: '#A8CFEE', bezelInner: '#E8F4FF', bezelHighlight: '#FFFFFF', bezelStud: '#F2C879',
-      wing: 'rgba(255,255,255,0.92)', wingLine: 'rgba(170,215,255,0.75)',
-      bg1: '#DCEEFF', bg2: '#FFFFFF'
-    }},
-    // The skins below share one decoration (stepOrbit): a ring of sound bars
-    // round the face and the theme's own characters drifting past.
-    //   decor: glyphs = what drifts, move = 'rise' | 'fall' | 'inward' | 'arc'
+  // the Clock's own designs (the style setting); never theme ids (engine/check.js)
+  var DESIGNS = ['classic', 'gears', 'garden', 'grid', 'sky'];
+
+  // One palette per theme code (keyed by theme id).
+  //   decor  for the Classic design: glyphs = what drifts, move = 'rise' | 'fall' | 'inward', arcs = sparks from the rim
+  //   pal    light: true on a pale background (decorations then use dark ink); rainbow: true = a hue per mark
+  var PALETTES = {
     omega: { decor: { glyphs: ['Ω', '✦', '✧'], move: 'rise' }, pal: {
       accent: '#FF5FD2', faceCenter: '#2D1D58', faceMid: '#1A1036', faceEdge: '#0B0618', rim: '#B06BFF',
-      numeral: '#EFE9FF', numeralShadow: 'rgba(0,0,0,0.6)', tick: 'rgba(176,107,255,0.65)',
-      hourHand: '#EFE9FF', minuteHand: '#C9A6FF', secondHand: '#FF5FD2',
-      bezelOuter: '#2B1A55', bezelInner: '#6A45C8', bezelHighlight: '#E2CCFF', bezelStud: '#FF5FD2',
-      bg1: '#171033', bg2: '#06040E'
-    }},
-    newyear: { decor: { glyphs: ['✦', '❄', '✧'], move: 'fall' }, pal: {
-      accent: '#F2C55C', faceCenter: '#1B2B63', faceMid: '#101C46', faceEdge: '#060B22', rim: '#F2C55C',
-      numeral: '#F8E6B0', numeralShadow: 'rgba(0,0,0,0.6)', tick: 'rgba(143,184,255,0.65)',
-      hourHand: '#F8E6B0', minuteHand: '#F2C55C', secondHand: '#8FB8FF',
-      bezelOuter: '#16224F', bezelInner: '#8A6A2C', bezelHighlight: '#FFE9A8', bezelStud: '#8FB8FF',
-      bg1: '#0D1638', bg2: '#03050F'
-    }},
-    halloween: { decor: { glyphs: ['🦇', '👻', '🎃'], move: 'rise' }, pal: {
-      accent: '#FF7A1A', faceCenter: '#3A1C0C', faceMid: '#22100E', faceEdge: '#0B0508', rim: '#FF7A1A',
-      numeral: '#FFB870', numeralShadow: 'rgba(0,0,0,0.7)', tick: 'rgba(155,93,229,0.7)',
-      hourHand: '#FFB870', minuteHand: '#FF7A1A', secondHand: '#7CE04A',
-      bezelOuter: '#24102B', bezelInner: '#5B2E8A', bezelHighlight: '#C9A0F5', bezelStud: '#FF7A1A',
-      bg1: '#1C0F24', bg2: '#050308'
-    }},
-    love: { decor: { glyphs: ['♥'], move: 'rise' }, pal: {
-      accent: '#C2626F', faceCenter: '#FFFFFF', faceMid: '#FDF3EE', faceEdge: '#F3DCD9', rim: '#BD9257',
-      numeral: '#6E1E2E', numeralShadow: 'rgba(110,30,46,0.22)', tick: 'rgba(189,146,87,0.7)',
-      hourHand: '#6E1E2E', minuteHand: '#9B3A4B', secondHand: '#C2626F',
-      bezelOuter: '#BD9257', bezelInner: '#E6C99A', bezelHighlight: '#FFF6E2', bezelStud: '#C2626F',
-      bg1: '#FFF8F3', bg2: '#F1D8D5'
+      numeral: '#EFE9FF', tick: 'rgba(176,107,255,0.65)',
+      hourHand: '#EFE9FF', minuteHand: '#C9A6FF', secondHand: '#FF5FD2', bg1: '#171033', bg2: '#06040E'
     }},
     tessa: { decor: { glyphs: ['ϟ', '✦'], move: 'rise', arcs: true }, pal: {
       accent: '#9FE4FF', faceCenter: '#12264F', faceMid: '#0A1733', faceEdge: '#030814', rim: '#4FC3FF',
-      numeral: '#E6F6FF', numeralShadow: 'rgba(79,195,255,0.55)', tick: 'rgba(138,123,255,0.7)',
-      hourHand: '#E6F6FF', minuteHand: '#9FE4FF', secondHand: '#B9A8FF',
-      bezelOuter: '#0C1C40', bezelInner: '#2E5FB8', bezelHighlight: '#D6F3FF', bezelStud: '#8A7BFF',
-      bg1: '#081226', bg2: '#01030A'
+      numeral: '#E6F6FF', tick: 'rgba(138,123,255,0.7)',
+      hourHand: '#E6F6FF', minuteHand: '#9FE4FF', secondHand: '#B9A8FF', bg1: '#081226', bg2: '#01030A'
+    }},
+    newyear: { decor: { glyphs: ['✦', '❄', '✧'], move: 'fall' }, pal: {
+      accent: '#F2C55C', faceCenter: '#1B2B63', faceMid: '#101C46', faceEdge: '#060B22', rim: '#F2C55C',
+      numeral: '#F8E6B0', tick: 'rgba(143,184,255,0.65)',
+      hourHand: '#F8E6B0', minuteHand: '#F2C55C', secondHand: '#8FB8FF', bg1: '#0D1638', bg2: '#03050F'
+    }},
+    halloween: { decor: { glyphs: ['🦇', '👻', '🎃'], move: 'rise' }, pal: {
+      accent: '#FF7A1A', faceCenter: '#3A1C0C', faceMid: '#22100E', faceEdge: '#0B0508', rim: '#FF7A1A',
+      numeral: '#FFB870', tick: 'rgba(155,93,229,0.7)',
+      hourHand: '#FFB870', minuteHand: '#FF7A1A', secondHand: '#7CE04A', bg1: '#1C0F24', bg2: '#050308'
+    }},
+    love: { decor: { glyphs: ['♥'], move: 'rise' }, pal: {
+      accent: '#C2626F', faceCenter: '#FFFFFF', faceMid: '#FDF3EE', faceEdge: '#F3DCD9', rim: '#A8783E',
+      numeral: '#6E1E2E', tick: 'rgba(168,120,62,0.7)',
+      hourHand: '#6E1E2E', minuteHand: '#9B3A4B', secondHand: '#C2626F', bg1: '#FFF8F3', bg2: '#F1D8D5', light: true
+    }},
+    solarpunk: { decor: { glyphs: ['❀', '✿', '☀'], move: 'rise' }, pal: {
+      accent: '#E39A2E', faceCenter: '#FBFEF2', faceMid: '#EAF6DE', faceEdge: '#C9E8BC', rim: '#3E7C4C',
+      numeral: '#1F5C3D', tick: 'rgba(31,92,61,0.55)',
+      hourHand: '#1F5C3D', minuteHand: '#3E7C4C', secondHand: '#E39A2E', bg1: '#EAF7E3', bg2: '#FBF0D2', light: true
+    }},
+    cyberpunk: { decor: { glyphs: ['1', '0', '▮'], move: 'fall' }, pal: {
+      accent: '#FF6FD4', faceCenter: '#1C1030', faceMid: '#130A20', faceEdge: '#04010A', rim: '#28E5FF',
+      numeral: '#4FEFFF', tick: 'rgba(255,46,154,0.55)',
+      hourHand: '#FF2E9A', minuteHand: '#28E5FF', secondHand: '#FFE94A', bg1: '#0A0714', bg2: '#170A28'
     }},
     nihilum: { decor: { glyphs: ['●', '·'], move: 'inward' }, pal: {
       accent: '#FF9A4A', faceCenter: '#000000', faceMid: '#030204', faceEdge: '#0B0810', rim: '#FF9A4A',
-      numeral: '#D9D4E2', numeralShadow: 'rgba(255,154,74,0.4)', tick: 'rgba(142,124,168,0.6)',
-      hourHand: '#D9D4E2', minuteHand: '#8E7CA8', secondHand: '#FF9A4A',
-      bezelOuter: '#08060B', bezelInner: '#3B2A14', bezelHighlight: '#FFD9A8', bezelStud: '#FF9A4A',
-      bg1: '#06040A', bg2: '#000000'
+      numeral: '#D9D4E2', tick: 'rgba(142,124,168,0.6)',
+      hourHand: '#D9D4E2', minuteHand: '#8E7CA8', secondHand: '#FF9A4A', bg1: '#06040A', bg2: '#000000'
+    }},
+    incertum: { decor: { glyphs: ['✦', '✧', '∞'], move: 'rise' }, pal: {
+      accent: '#FF6FB5', faceCenter: '#FFFFFF', faceMid: '#F4F7FF', faceEdge: '#DCE4FF', rim: '#4A58E0',
+      numeral: '#262B63', tick: 'rgba(74,88,224,0.5)',
+      hourHand: '#262B63', minuteHand: '#4A58E0', secondHand: '#FF6FB5', bg1: '#E6F0FF', bg2: '#FFFFFF', light: true, rainbow: true
     }}
   };
 
-  // How each skin draws the shared clock.
+  // How each code draws the shared clock (keyed by theme id).
   //   marks  the twelve hour marks: 'baton' | 'dots' | 'roman' | 'digits' | 'glyph' (with glyph: the character)
   //   ring   the crown of sound: 'bars' | 'dots' | 'blocks' | 'rays' | 'wave' | 'inward' (jag: a restless wave)
   //   hands  'round' | 'needle' | 'block'
-  //   ink    the crown's line colour when the rim colour is too pale to read on the background
   var FORMS = {
     omega:     { marks: 'baton',  ring: 'bars',   hands: 'round' },
     tessa:     { marks: 'baton',  ring: 'wave',   hands: 'needle', jag: true },
@@ -127,15 +123,79 @@
     solarpunk: { marks: 'baton',  ring: 'rays',   hands: 'round' },
     cyberpunk: { marks: 'digits', ring: 'blocks', hands: 'block' },
     nihilum:   { marks: 'dots',   ring: 'inward', hands: 'needle' },
-    golden:    { marks: 'roman',  ring: 'bars',   hands: 'needle' },
-    heaven:    { marks: 'baton',  ring: 'wave',   hands: 'round', ink: '#5FA3DA' }
+    incertum:  { marks: 'baton',  ring: 'rays',   hands: 'round' }
   };
+
+  /* ---------- colours ---------- */
+  var rgbCache = {}, mixCache = {};
+  function rgbOf(c){ return rgbCache[c] || (rgbCache[c] = U.hexRGB(c)); }
+  // a colour between two #rrggbb colours (t = 0: a, 1: b), as #rrggbb
+  function mix(a, b, t){
+    var key = a + b + t, v = mixCache[key];
+    if (v) return v;
+    var x = rgbOf(a), y = rgbOf(b), n = 0;
+    for (var i = 0; i < 3; i++) n = n * 256 + Math.round(x[i] + (y[i] - x[i]) * t);
+    return (mixCache[key] = '#' + (0x1000000 + n).toString(16).slice(1));
+  }
+  function rgba(c, a){ return U.rgba(rgbOf(c), a.toFixed(3)); }
+  // hue in degrees, s and l from 0 to 1, as #rrggbb
+  function hslHex(hh, s, l){
+    var h = (((hh % 360) + 360) % 360) / 30, a = s * Math.min(l, 1 - l), n = 0;
+    [0, 8, 4].forEach(function(o){
+      var k = (o + h) % 12;
+      n = n * 256 + Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+    });
+    return '#' + (0x1000000 + n).toString(16).slice(1);
+  }
+  // the rainbow, 96 hues from 12 o'clock round; darker on a pale background so it reads
+  var RAINBOW = { light: [], dark: [] };
+  for (var rh = 0; rh < 96; rh++){ RAINBOW.light.push(hslHex(rh * 3.75, 0.85, 0.5)); RAINBOW.dark.push(hslHex(rh * 3.75, 0.9, 0.66)); }
+  function rbCol(f, pal){ var arr = pal.light ? RAINBOW.light : RAINBOW.dark; return arr[Math.floor((((f % 1) + 1) % 1) * 96) % 96]; }
+  function conicRainbow(cx, cy, pal){
+    if (!ctx.createConicGradient) return pal.accent;
+    var g = ctx.createConicGradient(-Math.PI / 2, cx, cy);
+    for (var i = 0; i <= 12; i++) g.addColorStop(i / 12, rbCol(i / 12, pal));
+    return g;
+  }
+  // a soft round light, drawn once per colour
+  var dotCache = {};
+  function glowDot(color){
+    var s = dotCache[color];
+    if (s) return s;
+    s = document.createElement('canvas');
+    s.width = s.height = 32;
+    var c = s.getContext('2d'), g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
+    g.addColorStop(0, rgba(color, 1)); g.addColorStop(0.3, rgba(color, 0.8)); g.addColorStop(1, rgba(color, 0));
+    c.fillStyle = g;
+    c.fillRect(0, 0, 32, 32);
+    return (dotCache[color] = s);
+  }
+  // the rainbow light behind the dial (rainbow code), drawn once
+  var rbGlow = null;
+  function rainbowGlow(){
+    if (rbGlow) return rbGlow;
+    var n = 256, cv = document.createElement('canvas');
+    cv.width = cv.height = n;
+    var c = cv.getContext('2d');
+    if (c.createConicGradient){
+      var g = c.createConicGradient(-Math.PI / 2, n / 2, n / 2);
+      for (var i = 0; i <= 12; i++) g.addColorStop(i / 12, hslHex(i * 30, 0.95, 0.62));
+      c.fillStyle = g;
+    } else c.fillStyle = '#9FB4FF';
+    c.fillRect(0, 0, n, n);
+    c.globalCompositeOperation = 'destination-in';
+    var m = c.createRadialGradient(n / 2, n / 2, n * 0.16, n / 2, n / 2, n / 2);
+    m.addColorStop(0, 'rgba(0,0,0,0)'); m.addColorStop(0.28, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = m;
+    c.fillRect(0, 0, n, n);
+    return (rbGlow = cv);
+  }
 
   /* ---------- the crown of sound ---------- */
   var RING_N = 96, ringEnv = new Float32Array(RING_N);
   function hash(n){ var x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); }
   function drawRing(cx, cy, R, pal, form, cfg, k, dt){
-    var half = RING_N / 2, i;
+    var half = RING_N / 2, i, rb = pal.rainbow;
     for (i = 0; i <= half; i++){
       var e = ringEnv[i] = U.env(ringEnv[i], Aud.specAt(0.04 + (i / half) * 0.8), 30, 7, dt);
       if (i > 0 && i < half) ringEnv[RING_N - i] = e;
@@ -158,10 +218,10 @@
       ctx.moveTo(cx + r0 * 0.985, cy);
       ctx.arc(cx, cy, r0 * 0.985, 0, 6.283, true);
       ctx.globalAlpha = 0.14 + 0.16 * A.drive;
-      ctx.fillStyle = pal.accent;
+      ctx.fillStyle = rb ? conicRainbow(cx, cy, pal) : pal.accent;
       ctx.fill('evenodd');
       ctx.globalAlpha = 0.9;
-      ctx.strokeStyle = form.ink || pal.rim;
+      ctx.strokeStyle = rb ? ctx.fillStyle : pal.rim;
       ctx.lineJoin = 'round';
       ctx.lineWidth = Math.max(1.2 * k, R * 0.012);
       ctx.shadowColor = pal.accent;
@@ -183,10 +243,12 @@
       a = -Math.PI / 2 + i / RING_N * 6.283; ca = Math.cos(a); sa = Math.sin(a);
       len = lenOf(i);
       var ev = ringEnv[i], al = 0.3 + ev * 0.7;
+      // rainbow code: a hue per mark; otherwise the body in the rim colour, the tip in the accent
+      var bodyC = rb ? rbCol(i / RING_N, pal) : pal.rim, tipC = rb ? bodyC : pal.accent;
       if (kind === 'rays'){
         var da = 3.1416 / RING_N * 0.85;
         ctx.globalAlpha = al * 0.85;
-        ctx.fillStyle = i % 2 ? pal.accent : pal.rim;
+        ctx.fillStyle = rb ? bodyC : (i % 2 ? pal.accent : pal.rim);
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(a - da) * r0, cy + Math.sin(a - da) * r0);
         ctx.lineTo(cx + ca * (r0 + len * 1.15), cy + sa * (r0 + len * 1.15));
@@ -198,7 +260,7 @@
         ctx.lineWidth = Math.max(2 * k, arcW * 0.66);
         for (var b = 0; b < n; b++){
           ctx.globalAlpha = al;
-          ctx.strokeStyle = b === n - 1 ? pal.accent : pal.rim;
+          ctx.strokeStyle = b === n - 1 ? tipC : bodyC;
           ctx.beginPath();
           ctx.moveTo(cx + ca * (r0 + b * unit), cy + sa * (r0 + b * unit));
           ctx.lineTo(cx + ca * (r0 + b * unit + unit * 0.62), cy + sa * (r0 + b * unit + unit * 0.62));
@@ -206,29 +268,29 @@
         }
       } else if (kind === 'dots'){
         ctx.globalAlpha = al * 0.3;
-        ctx.strokeStyle = pal.rim;
+        ctx.strokeStyle = bodyC;
         ctx.lineWidth = Math.max(1, k);
         ctx.beginPath();
         ctx.moveTo(cx + ca * r0, cy + sa * r0);
         ctx.lineTo(cx + ca * (r0 + len), cy + sa * (r0 + len));
         ctx.stroke();
         ctx.globalAlpha = al;
-        ctx.fillStyle = i % 2 ? pal.accent : pal.rim;
+        ctx.fillStyle = rb ? bodyC : (i % 2 ? pal.accent : pal.rim);
         ctx.beginPath();
         ctx.arc(cx + ca * (r0 + len), cy + sa * (r0 + len), Math.max(1.4 * k, arcW * 0.3), 0, 6.283);
         ctx.fill();
       } else {
-        // bars (and inward bars): the body in the rim colour, the tip in the accent
+        // bars (and inward bars)
         var from = kind === 'inward' ? R * 1.5 : r0, dir = kind === 'inward' ? -1 : 1;
         if (kind === 'inward') len = Math.min(len, R * 0.33);
         ctx.lineWidth = Math.max(1.5 * k, arcW * 0.42);
         ctx.globalAlpha = al;
-        ctx.strokeStyle = pal.rim;
+        ctx.strokeStyle = bodyC;
         ctx.beginPath();
         ctx.moveTo(cx + ca * from, cy + sa * from);
         ctx.lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
         ctx.stroke();
-        ctx.strokeStyle = pal.accent;
+        ctx.strokeStyle = tipC;
         ctx.beginPath();
         ctx.moveTo(cx + ca * (from + dir * len * 0.72), cy + sa * (from + dir * len * 0.72));
         ctx.lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
@@ -253,7 +315,7 @@
       ctx.arc(cx, cy, r, 0, 6.283);
       ctx.stroke();
       ctx.globalAlpha = 0.75;
-      ctx.fillStyle = pal.accent;
+      ctx.fillStyle = pal.rainbow ? rbCol(fr[i], pal) : pal.accent;
       ctx.beginPath();
       ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, (3.2 - i * 0.5) * k * (1 + A.kick * 0.4), 0, 6.283);
       ctx.fill();
@@ -274,22 +336,22 @@
     ctx.arc(cx, cy, r, 0, 6.283);
     ctx.stroke();
     ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = pal.accent;
+    ctx.strokeStyle = pal.rainbow ? conicRainbow(cx, cy, pal) : pal.accent;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.arc(cx, cy, r, a0, a1);
     ctx.stroke();
-    ctx.fillStyle = pal.accent;
+    ctx.fillStyle = pal.rainbow ? rbCol(f, pal) : pal.accent;
     ctx.beginPath();
     ctx.arc(cx + Math.cos(a1) * r, cy + Math.sin(a1) * r, Math.max(2.2 * k, R * 0.026), 0, 6.283);
     ctx.fill();
     ctx.restore();
   }
 
-  /* ---------- the shared decoration of the theme skins ---------- */
+  /* ---------- Classic: a few of the code's characters drifting by ---------- */
   var orbit = [], lastStyle = null;
   function spawnOrbit(w, h, cx, cy, R, dec, x, y){
-    var p = { g: Math.floor(Math.random() * dec.glyphs.length), age: 0, life: 4 + Math.random() * 4,
+    var p = { g: Math.floor(Math.random() * dec.glyphs.length), hue: Math.floor(Math.random() * 12) / 12, age: 0, life: 4 + Math.random() * 4,
               size: 0.7 + Math.random() * 0.9, ph: Math.random() * 6.283, rot: (Math.random() - 0.5) * 0.6 };
     if (dec.move === 'inward'){
       p.a = Math.random() * 6.283; p.r = R * (2.2 + Math.random() * 1.2);
@@ -300,7 +362,7 @@
     orbit.push(p);
   }
   function stepOrbit(w, h, cx, cy, R, k, dt, cfg, pal, dec){
-    // electric skin: sparks jump from the rim outward, more of them and longer when the music is big
+    // electric code: sparks jump from the rim outward, more of them and longer when the music is big
     if (dec.arcs){
       var nArc = 1 + Math.round(A.drive * 5) + (A.kick > 0.5 ? 2 : 0), step = Math.floor(A.t * 14);
       ctx.save();
@@ -324,7 +386,7 @@
       ctx.restore();
     }
 
-    // the theme's characters: few when calm, many when the music is big; a hi-hat adds one
+    // the code's characters: few when calm, many when the music is big; a hi-hat adds one
     var max = Math.round((2 + A.drive * 12) * cfg.density);
     if (orbit.length < max && Math.random() < (0.3 + A.drive * 3.5) * dt * cfg.density) spawnOrbit(w, h, cx, cy, R, dec);
     if (A.hatHit > 0.6 && orbit.length < max + 2) spawnOrbit(w, h, cx, cy, R, dec);
@@ -347,21 +409,26 @@
       if (p.age > p.life * 3){ orbit.splice(j, 1); continue; }
       var s = (9 + 9 * p.size) * k * (1 + A.kick * 0.35);
       ctx.save();
-      ctx.globalAlpha = Math.min(1, p.age * 1.5) * (0.22 + 0.2 * p.size) * (0.6 + cfg.glow * 0.4);
+      ctx.globalAlpha = Math.min(1, p.age * 1.5) * (0.22 + 0.2 * p.size) * (0.6 + cfg.glow * 0.4) * (pal.light ? 1.6 : 1);
       ctx.translate(x, y);
       ctx.rotate(p.rot + Math.sin(A.t + p.ph) * 0.25);
-      ctx.drawImage(Can.glyphSprite(dec.glyphs[p.g % dec.glyphs.length], pal.accent), -s / 2, -s / 2, s, s);
+      ctx.drawImage(Can.glyphSprite(dec.glyphs[p.g % dec.glyphs.length], pal.rainbow ? rbCol(p.hue, pal) : pal.accent), -s / 2, -s / 2, s, s);
       ctx.restore();
     }
   }
-  // which skin is on: the user's pick, or with "theme" the one
-  // the active theme code asks for (look.clock in themes.js)
-  function styleId(){
+
+  // which design is on: the user's pick, or with "theme" (or an old saved
+  // choice that is no longer a design, such as 'golden') the one the code asks for
+  function designId(){
     var s = Cfg.CFG.clock.style;
-    if (s === 'theme') s = (App.theme.look && App.theme.look.clock) || 'omega';
-    return THEMES[s] ? s : 'omega';
+    if (DESIGNS.indexOf(s) === -1){
+      s = App.theme.look && App.theme.look.clock;
+      if (DESIGNS.indexOf(s) === -1) s = 'classic';
+    }
+    return s;
   }
-  function theme(){ return THEMES[styleId()]; }
+  // which palette and forms: always the theme code's
+  function paletteId(){ var id = App.theme.current; return PALETTES[id] ? id : 'omega'; }
 
   // kick drum: the second hand jumps forward a little and settles back
   var tickKick = 0;
@@ -380,7 +447,7 @@
       if (c.age > c.life){ chimes.splice(i, 1); continue; }
       var f = c.age / c.life, rad = R * (1.2 + f * 1.9);
       ctx.save();
-      ctx.strokeStyle = pal.accent;
+      ctx.strokeStyle = pal.rainbow ? conicRainbow(cx, cy, pal) : pal.accent;
       ctx.shadowColor = pal.accent;
       ctx.shadowBlur = 14 * k * Cfg.CFG.clock.glow;
       ctx.globalAlpha = (1 - f) * 0.55;
@@ -411,7 +478,7 @@
 
     // the dial: a plain disc that throws a soft shadow, and a hairline rim that glows with the beat
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowColor = pal.light ? 'rgba(40,40,80,0.25)' : 'rgba(0,0,0,0.45)';
     ctx.shadowBlur = R * 0.22;
     ctx.shadowOffsetY = R * 0.04;
     var face = ctx.createRadialGradient(cx, cy - R * 0.25, 0, cx, cy, R);
@@ -424,7 +491,7 @@
     ctx.fill();
     ctx.restore();
     ctx.save();
-    ctx.strokeStyle = pal.rim;
+    ctx.strokeStyle = pal.rainbow ? conicRainbow(cx, cy, pal) : pal.rim;
     ctx.lineWidth = Math.max(1.5 * k, R * 0.02);
     ctx.shadowColor = pal.accent;
     ctx.shadowBlur = (4 + A.punch * 20) * cfg.glow * k;
@@ -442,7 +509,7 @@
       ctx.arc(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9, Math.max(0.8 * k, R * 0.008), 0, 6.283);
       ctx.fill();
     }
-    // hour marks, in the skin's own form
+    // hour marks, in the code's own form
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (i = 0; i < 12; i++){
@@ -465,7 +532,7 @@
         ctx.arc(cx + ca * R * 0.82, cy + sa * R * 0.82, R * (quarter ? 0.04 : 0.024), 0, 6.283);
         ctx.fill();
       } else {
-        ctx.strokeStyle = pal.numeral;
+        ctx.strokeStyle = pal.rainbow ? rbCol(i / 12, pal) : pal.numeral;
         ctx.lineCap = 'round';
         ctx.lineWidth = Math.max(1.4 * k, R * (quarter ? 0.034 : 0.018));
         ctx.beginPath();
@@ -492,7 +559,7 @@
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(a2);
-      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowColor = pal.light ? 'rgba(40,40,80,0.3)' : 'rgba(0,0,0,0.45)';
       ctx.shadowBlur = R * 0.03;
       ctx.shadowOffsetX = R * 0.01;
       ctx.shadowOffsetY = R * 0.014;
@@ -548,36 +615,41 @@
     ctx.restore();
   }
 
-  /* ---------- Golden: interlocking gears + a bed of sand ---------- */
-  // Four corner clusters (two large, two small) frame the face without
-  // crowding it, since the face itself sits centred with a radius well
-  // under 0.4 of the canvas's short side.
+  /* ---------- Gears: clockwork that meshes ---------- */
+  // Four corner clusters frame the dial. Every gear has the same tooth pitch
+  // (GEAR_PITCH of the short side along the pitch circle), so its radius
+  // follows from its number of teeth and meshed gears fit tooth into gap.
+  var GEAR_PITCH = 0.0275;
+  // a tooth, in parts of the tooth spacing: half its width at the tip and at the root; its height above and
+  // below the pitch circle in modules. Narrow enough that meshed teeth never cut into each other while
+  // they turn (engine/check.js turns every pair through two revolutions to make sure)
+  var TOOTH_TIP = 0.12, TOOTH_ROOT = 0.27, TOOTH_ADD = 0.9, TOOTH_DED = 1.25;
   var GEAR_CLUSTERS = [
     [
-      { cx: 0.11, cy: 0.15, r: 0.125, teeth: 14 },
-      { rel: 0, ang: 2.4, r: 0.075, teeth: 8 },
-      { rel: 1, ang: -0.5, r: 0.09, teeth: 10 },
-      { rel: 0, ang: 0.65, r: 0.06, teeth: 6 }
+      { cx: 0.11, cy: 0.15, teeth: 28 },
+      { rel: 0, ang: 2.4, teeth: 16 },
+      { rel: 1, ang: 1.6, teeth: 20 },
+      { rel: 0, ang: 0.65, teeth: 14 }
     ],
     [
-      { cx: 0.89, cy: 0.87, r: 0.105, teeth: 12 },
-      { rel: 0, ang: -1.0, r: 0.065, teeth: 6 },
-      { rel: 1, ang: 2.1, r: 0.08, teeth: 9 }
+      { cx: 0.89, cy: 0.87, teeth: 24 },
+      { rel: 0, ang: -1.0, teeth: 14 },
+      { rel: 1, ang: -2.2, teeth: 18 }
     ],
     [
-      { cx: 0.92, cy: 0.14, r: 0.07, teeth: 8 },
-      { rel: 0, ang: 2.6, r: 0.05, teeth: 6 }
+      { cx: 0.92, cy: 0.14, teeth: 16 },
+      { rel: 0, ang: 2.6, teeth: 12 }
     ],
     [
-      { cx: 0.09, cy: 0.88, r: 0.065, teeth: 7 },
-      { rel: 0, ang: 0.9, r: 0.045, teeth: 5 }
+      { cx: 0.09, cy: 0.88, teeth: 16 },
+      { rel: 0, ang: 0.9, teeth: 12 }
     ]
   ];
   var gearMasterAngle = [0, 0, 0, 0];
   function layoutCluster(cluster, w, h){
     var m = Math.min(w, h), out = [];
     for (var i = 0; i < cluster.length; i++){
-      var def = cluster[i], g = { r: def.r * m, teeth: def.teeth };
+      var def = cluster[i], g = { r: def.teeth * GEAR_PITCH * m / 6.2832, teeth: def.teeth };
       if (def.cx !== undefined){ g.x = def.cx * w; g.y = def.cy * h; }
       else {
         var p = out[def.rel], d = p.r + g.r;
@@ -596,177 +668,462 @@
     }
     return out;
   }
-  function drawGear(x, y, r, teeth, angle, pal, k){
+  // How far each gear starts turned so its teeth interlock with its parent's.
+  // On the line between the two centres, the parent's tooth phase and the
+  // child's add up to a constant while they turn (the ratio above keeps it
+  // so); set it to half a tooth: where the parent has a tooth, the child has a gap.
+  function phasesFor(cluster){
+    var out = [0];
+    for (var i = 1; i < cluster.length; i++){
+      var def = cluster[i], tp = 6.2832 / cluster[def.rel].teeth, tc = 6.2832 / def.teeth;
+      out.push(def.ang + Math.PI - tc * (0.5 - (def.ang - out[def.rel]) / tp));
+    }
+    return out;
+  }
+  // everything about the gears that only changes with the picture's size or the code
+  var gearCache = null, gearKey = '';
+  function gearLayout(w, h, pal, pid){
+    var key = w + 'x' + h + pid;
+    if (gearCache && gearKey === key) return gearCache;
+    var m = Math.min(w, h), mod = GEAR_PITCH * m / Math.PI, out = [], n = 0;
+    for (var ci = 0; ci < GEAR_CLUSTERS.length; ci++){
+      var cluster = GEAR_CLUSTERS[ci], laid = layoutCluster(cluster, w, h), ratios = ratiosFor(cluster, laid), ph = phasesFor(cluster);
+      for (var i = 0; i < laid.length; i++){
+        var g = laid[i], r = g.r;
+        g.ratio = ratios[i]; g.phase = ph[i]; g.mod = mod; g.cluster = ci;
+        // metal, tinted by the palette (by a hue of its own under the rainbow code)
+        var tint = pal.rainbow ? hslHex(n++ * 47, 0.7, 0.6) : pal.accent, tint2 = pal.rainbow ? tint : pal.rim;
+        var lightC = mix(pal.light ? '#F4F4F2' : '#D6D6D2', tint, 0.25), midC = mix(pal.light ? '#8E9099' : '#6E7079', tint2, 0.38), darkC = mix('#2C2D34', pal.bg2, 0.35);
+        var body = ctx.createRadialGradient(-r * 0.45, -r * 0.55, r * 0.05, 0, 0, r * 1.2);
+        body.addColorStop(0, lightC); body.addColorStop(0.5, midC); body.addColorStop(1, darkC);
+        var bev = ctx.createLinearGradient(-r, -r, r, r);
+        bev.addColorStop(0, 'rgba(255,255,255,0.55)'); bev.addColorStop(0.5, 'rgba(255,255,255,0)'); bev.addColorStop(1, 'rgba(0,0,0,0.4)');
+        var bevIn = ctx.createLinearGradient(-r, -r, r, r);
+        bevIn.addColorStop(0, 'rgba(0,0,0,0.45)'); bevIn.addColorStop(0.5, 'rgba(0,0,0,0)'); bevIn.addColorStop(1, 'rgba(255,255,255,0.45)');
+        var hub = ctx.createRadialGradient(-r * 0.08, -r * 0.08, 0, 0, 0, r * 0.22);
+        hub.addColorStop(0, lightC); hub.addColorStop(1, midC);
+        g.body = body; g.bev = bev; g.bevIn = bevIn; g.hub = hub; g.edge = rgba(darkC, 0.75); g.axle = darkC;
+        out.push(g);
+      }
+    }
+    gearKey = key;
+    return (gearCache = out);
+  }
+  // one gear's outline as one path: trapezoid teeth on the root circle, and the
+  // cut-outs between the spokes (filled even-odd, so they are holes)
+  function gearPath(g, angle){
+    var r = g.r, N = g.teeth, mod = g.mod, ro = r + TOOTH_ADD * mod, rr = r - TOOTH_DED * mod, th = 6.2832 / N, j, a, tt = TOOTH_TIP * th, tr = TOOTH_ROOT * th;
+    ctx.beginPath();
+    for (j = 0; j < N; j++){
+      a = angle + j * th;
+      if (j === 0) ctx.moveTo(Math.cos(a - tr) * rr, Math.sin(a - tr) * rr);
+      else ctx.lineTo(Math.cos(a - tr) * rr, Math.sin(a - tr) * rr);
+      ctx.lineTo(Math.cos(a - tt) * ro, Math.sin(a - tt) * ro);
+      ctx.lineTo(Math.cos(a + tt) * ro, Math.sin(a + tt) * ro);
+      ctx.lineTo(Math.cos(a + tr) * rr, Math.sin(a + tr) * rr);
+      ctx.arc(0, 0, rr, a + tr, a + th - tr);
+    }
+    ctx.closePath();
+    var rimIn = rr - mod * 2.2, hubR = r * 0.34, S = N >= 20 ? 5 : N >= 14 ? 4 : 3, sw = r * 0.085;
+    if (rimIn - hubR > r * 0.16){
+      for (var s = 0; s < S; s++){
+        var a0 = angle + s * 6.2832 / S + 0.3, a1 = a0 + 6.2832 / S, po = sw / rimIn, pin = sw / hubR;
+        ctx.moveTo(Math.cos(a0 + po) * rimIn, Math.sin(a0 + po) * rimIn);
+        ctx.arc(0, 0, rimIn, a0 + po, a1 - po);
+        ctx.arc(0, 0, hubR, a1 - pin, a0 + pin, true);
+        ctx.closePath();
+      }
+    }
+    return rimIn;
+  }
+  function drawGear(g, angle, pal, k){
+    var r = g.r, rr = r - TOOTH_DED * g.mod;
+    // a hard shadow, offset down and right
     ctx.save();
-    ctx.translate(x, y);
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = r * 0.18;
-    ctx.shadowOffsetX = r * 0.05;
-    ctx.shadowOffsetY = r * 0.05;
-    ctx.rotate(angle);
-    var body = ctx.createRadialGradient(-r * 0.25, -r * 0.25, r * 0.1, 0, 0, r);
-    body.addColorStop(0, '#9A9DA6');
-    body.addColorStop(0.55, '#6E7179');
-    body.addColorStop(1, '#454750');
-    ctx.fillStyle = body;
-    for (var i = 0; i < teeth; i++){
-      ctx.save();
-      ctx.rotate((i / teeth) * 6.283);
-      ctx.fillRect(r * 0.86, -r * 0.13, r * 0.28, r * 0.26);
-      ctx.restore();
-    }
+    ctx.translate(g.x + r * 0.05, g.y + r * 0.08);
+    gearPath(g, angle);
+    ctx.fillStyle = pal.light ? 'rgba(40,30,20,0.18)' : 'rgba(0,0,0,0.35)';
+    ctx.fill('evenodd');
+    ctx.restore();
+    // the gear: lit from the top left whichever way it has turned
+    ctx.save();
+    ctx.translate(g.x, g.y);
+    var rimIn = gearPath(g, angle);
+    ctx.fillStyle = g.body;
+    ctx.fill('evenodd');
+    ctx.strokeStyle = g.edge;
+    ctx.lineWidth = Math.max(0.8 * k, r * 0.012);
+    ctx.stroke();
+    // the bevelled rim: its face catches the light top left, the inner cut edge bottom right
+    ctx.lineWidth = g.mod * 0.9;
+    ctx.strokeStyle = g.bev;
     ctx.beginPath();
-    ctx.arc(0, 0, r * 0.9, 0, 6.283);
+    ctx.arc(0, 0, rr - g.mod * 0.6, 0, 6.2832);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(0.8 * k, g.mod * 0.45);
+    ctx.strokeStyle = g.bevIn;
+    ctx.beginPath();
+    ctx.arc(0, 0, rimIn + g.mod * 0.2, 0, 6.2832);
+    ctx.stroke();
+    // the hub and its axle
+    ctx.fillStyle = g.hub;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.2, 0, 6.2832);
     ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = pal.rim;
-    ctx.lineWidth = Math.max(1 * k, r * 0.05);
+    ctx.strokeStyle = g.bev;
     ctx.stroke();
-    // bright rim highlight, upper-left, for a lit-metal look
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = Math.max(0.8 * k, r * 0.025);
+    ctx.fillStyle = g.axle;
     ctx.beginPath();
-    ctx.arc(0, 0, r * 0.9, Math.PI * 1.05, Math.PI * 1.7);
-    ctx.stroke();
-    for (var s = 0; s < 5; s++){
-      var sa = (s / 5) * 6.283;
-      ctx.strokeStyle = pal.rim;
-      ctx.lineWidth = Math.max(1 * k, r * 0.05);
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(sa) * r * 0.22, Math.sin(sa) * r * 0.22);
-      ctx.lineTo(Math.cos(sa) * r * 0.66, Math.sin(sa) * r * 0.66);
-      ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.22, 0, 6.283);
-    ctx.fillStyle = 'rgba(21,17,11,0.9)';
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(-r * 0.06, -r * 0.06, r * 0.06, 0, 6.283);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.arc(0, 0, r * 0.065, 0, 6.2832);
     ctx.fill();
     ctx.restore();
   }
-  function stepGears(w, h, k, dt, cfg, pal){
+  var gearDrive = 0, gearKick = 0, gearOmegaNow = 0;
+  function stepGears(w, h, k, dt, cfg, pal, pid){
+    var gears = gearLayout(w, h, pal, pid);
+    // speed follows the music: all but still in a calm passage, a busy clockwork in a big one
+    gearDrive = U.env(gearDrive, A.drive, 2.5, 1.2, dt);
+    gearKick = Math.max(gearKick * Math.exp(-5 * dt), A.kickHit > 0.4 ? A.kickHit * A.drive * A.drive : 0);
+    var pace = cfg.handSpeed * (0.04 + 0.15 * gearDrive + 1.4 * gearDrive * gearDrive + 0.6 * gearKick);
+    gearOmegaNow = 0.32 * pace;
     for (var ci = 0; ci < GEAR_CLUSTERS.length; ci++){
-      var cluster = GEAR_CLUSTERS[ci];
-      var laid = layoutCluster(cluster, w, h);
-      var ratios = ratiosFor(cluster, laid);
-      var masterOmega = (ci % 2 === 0 ? 1 : -1) * (0.32 + ci * 0.05) * cfg.handSpeed * (1 + A.level * 0.7 + A.punch * 0.5);
-      gearMasterAngle[ci] += masterOmega * dt;
-      for (var i = 0; i < laid.length; i++){
-        drawGear(laid[i].x, laid[i].y, laid[i].r, cluster[i].teeth, gearMasterAngle[ci] * ratios[i], pal, k);
-      }
+      gearMasterAngle[ci] += (ci % 2 === 0 ? 1 : -1) * (0.32 + ci * 0.05) * pace * dt;
+    }
+    for (var i = 0; i < gears.length; i++){
+      var g = gears[i];
+      drawGear(g, gearMasterAngle[g.cluster] * g.ratio + g.phase, pal, k);
     }
   }
-  // A warm glow low in the frame, so the sand pile reads as lit rather
-  // than floating on flat black, plus fine radiating engraved arcs that
-  // fill the empty space between the gears and the face with texture.
-  function paintGoldenAmbience(w, h, k){
-    var glow = ctx.createRadialGradient(w / 2, h * 0.98, 0, w / 2, h * 0.98, w * 0.6);
-    glow.addColorStop(0, 'rgba(240,200,102,0.16)');
-    glow.addColorStop(1, 'rgba(240,200,102,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(240,200,102,0.05)';
-    ctx.lineWidth = Math.max(1 * k, w * 0.0015);
+  // a warm light low in the frame, so the sand pile reads as lit, and fine engraved arcs
+  function paintGearsBG(c, w, h, k, pal){
+    var glow = c.createRadialGradient(w / 2, h * 0.98, 0, w / 2, h * 0.98, w * 0.6);
+    glow.addColorStop(0, rgba(pal.accent, pal.light ? 0.2 : 0.16));
+    glow.addColorStop(1, rgba(pal.accent, 0));
+    c.fillStyle = glow;
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = rgba(pal.rim, 0.07);
+    c.lineWidth = Math.max(1 * k, w * 0.0015);
     for (var i = 0; i < 3; i++){
-      var r = w * (0.5 + i * 0.16);
-      ctx.beginPath();
-      ctx.arc(w / 2, h * 0.98, r, Math.PI * 1.08, Math.PI * 1.92);
-      ctx.stroke();
+      c.beginPath();
+      c.arc(w / 2, h * 0.98, w * (0.5 + i * 0.16), Math.PI * 1.08, Math.PI * 1.92);
+      c.stroke();
     }
-  }
-  var SAND_N = 320, sand = [], sandReady = false;
-  function ensureSand(){
-    if (sandReady) return;
-    sand = [];
-    for (var i = 0; i < SAND_N; i++){
-      sand.push({ bandF: Math.random(), stack: Math.random(), jitterPhase: Math.random() * 6.283,
-                  y: 0, vy: 0, size: 1.3 + Math.random() * 2.1, tone: Math.random() });
-    }
-    sandReady = true;
-  }
-  function stepSand(w, h, k, dt, cfg){
-    ensureSand();
-    var baseY = h - 3 * k;
-    for (var i = 0; i < sand.length; i++){
-      var g = sand[i];
-      var v = Aud.specAt(g.bandF);
-      var pileH = (10 + v * h * 0.26) * cfg.density;
-      var targetY = baseY - g.stack * pileH;
-      if (!g.y) g.y = targetY;
-      g.vy += 150 * k * dt;
-      g.y += g.vy * dt;
-      if (g.y > targetY){ g.y = targetY; g.vy = 0; }
-      if (A.beat && Math.random() < 0.02 * cfg.density) g.vy -= (50 + Math.random() * 90) * k;
-      var x = g.bandF * w + Math.sin(A.t * 1.4 * cfg.handSpeed + g.jitterPhase) * 3 * k;
-      ctx.globalAlpha = 0.55 + v * 0.4;
-      ctx.fillStyle = g.tone < 0.5 ? '#C9A66B' : '#E7CE94';
-      ctx.beginPath();
-      ctx.arc(x, g.y, g.size * k, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
   }
 
-  /* ---------- Solarpunk: hills + climbing vines + solar glints, leaf/pollen drift ---------- */
-  function paintSolarBG(c, w, h){
-    c.fillStyle = 'rgba(76,175,109,0.30)';
+  /* ---------- Gears: the sand pile, fed like an hourglass ----------
+     The pile is a row of column heights. A thin stream pours from under the
+     dial onto it; where the slope gets steeper than sand can hold, the
+     column slides down to the gentler slope it rests at (small avalanches);
+     a kick throws a little spray up that falls back. How much sand there
+     is follows the energy of the music, and the pile settles slowly. */
+  var SAND_N = 120, sandH = new Float32Array(SAND_N), sandW = 0, sandHh = 0, sandBits = [];
+  var sandEnergy = 0, sandFeed = 0, sprayCd = 0, sandPeak = 0, sandFlip = 0;
+  var REST = 0.42, SLIP = 0.62;   // height over width: the slope sand rests at, and the one it slides at
+  var SAND_RAMP = ['#F3E1B4', '#E2C48A', '#CDA264', '#A87E47', '#7C5933'];
+  function sandTone(j, pal){ return mix(mix(SAND_RAMP[j], pal.accent, 0.16), pal.bg2, pal.light ? 0 : 0.18); }
+  var sandPat = null, sandPatKey = '';
+  function sandPattern(pal, k){
+    var key = pal.accent + pal.bg2 + k;
+    if (sandPat && sandPatKey === key) return sandPat;
+    var n = 96, cv = document.createElement('canvas');
+    cv.width = cv.height = n;
+    var c = cv.getContext('2d');
+    for (var i = 0; i < 900; i++){
+      c.fillStyle = pal.rainbow && Math.random() < 0.22 ? hslHex(Math.random() * 360, 0.8, 0.6) : sandTone(Math.floor(Math.random() * 5), pal);
+      c.globalAlpha = 0.35 + Math.random() * 0.55;
+      var s = (0.6 + Math.random() * 1.1) * Math.max(1, k * 0.8);
+      c.fillRect(Math.random() * n, Math.random() * n, s, s);
+    }
+    sandPatKey = key;
+    return (sandPat = ctx.createPattern(cv, 'repeat'));
+  }
+  function surfaceAt(x, cw){
+    var f = x / cw, i = Math.max(0, Math.min(SAND_N - 2, Math.floor(f))), t = Math.max(0, Math.min(1, f - i));
+    return sandH[i] + (sandH[i + 1] - sandH[i]) * t;
+  }
+  // Where the sand pours from: from under the dial when there is room below it
+  // (an upright picture), else two thin streams from the top, either side of the crown
+  function sandStreams(w, h, cx, cy, R){
+    var m = Math.min(w, h);
+    if (h - (cy + R * 1.55) > m * 0.15) return [{ x: cx, y: cy + R * 1.08, hMax: Math.min(m * 0.2, (h - cy - R * 1.55) * 0.8) }];
+    var side = Math.max(w * 0.06, (cx - R * 1.6) * 0.55);
+    return [{ x: side, y: 0, hMax: m * 0.2 }, { x: w - side, y: 0, hMax: m * 0.2 }];
+  }
+  var sandDisp = new Float32Array(SAND_N), sandTmp = new Float32Array(SAND_N), sandStreamsNow = [];
+  function stepSand(w, h, k, dt, cfg, pal, cx, cy, R){
+    var m = Math.min(w, h), cw = w / (SAND_N - 1), i, st, streams = sandStreamsNow = sandStreams(w, h, cx, cy, R), nSt = streams.length;
+    if (sandW !== w || sandHh !== h){
+      // a new size: start from a small heap under each stream, so the design never opens on a bare floor
+      sandW = w; sandHh = h; sandBits = [];
+      for (i = 0; i < SAND_N; i++){
+        sandH[i] = 0;
+        for (st = 0; st < nSt; st++) sandH[i] = Math.max(sandH[i], m * 0.04 - Math.abs(i - streams[st].x / cw) * cw * REST);
+      }
+    }
+    // how big the pile wants to be: from the music's energy, never up to the stream's mouth
+    sandEnergy = U.env(sandEnergy, A.drive, 0.6, 0.25, dt);
+    var Hpk = Math.min(Math.max(m * 0.04, streams[0].hMax), m * (0.045 + 0.17 * sandEnergy) * (0.7 + 0.3 * cfg.density));
+    var target = nSt * Hpk * Hpk / ((REST + SLIP) / 2), area = 0;
+    for (i = 0; i < SAND_N; i++) area += sandH[i] * cw;
+    // the streams: a dribble always, a pour while the pile is short of what the music asks
+    sandFeed = Math.max(0, target - area) * 0.5 + target * 0.03;
+    for (st = 0; st < nSt; st++){
+      var ci = Math.max(1, Math.min(SAND_N - 2, Math.round(streams[st].x / cw))), add = sandFeed / nSt * dt / cw;
+      sandH[ci - 1] += add * 0.25; sandH[ci] += add * 0.5; sandH[ci + 1] += add * 0.25;
+      streams[st].col = ci;
+    }
+    // settling: a pile bigger than the music asks sinks slowly
+    if (area > target){
+      var keep = 1 - Math.min(0.2, 0.3 * dt * (area - target) / area);
+      for (i = 0; i < SAND_N; i++) sandH[i] *= keep;
+    }
+    // avalanches: a slope steeper than sand holds slides down to the slope it rests at
+    var slip = SLIP * cw, rest = REST * cw;
+    sandFlip ^= 1;
+    for (var pass = 0; pass < 2; pass++){
+      var fwd = (pass ^ sandFlip) === 0;
+      for (var q = 0; q < SAND_N - 1; q++){
+        i = fwd ? q : SAND_N - 2 - q;
+        var d = sandH[i] - sandH[i + 1];
+        if (d > slip || d < -slip){
+          var mv = (Math.abs(d) - rest) * 0.5, from = d > 0 ? i : i + 1, to = d > 0 ? i + 1 : i;
+          sandH[from] -= mv; sandH[to] += mv;
+          if (mv > cw * 0.05 && sandBits.length < 150 && Math.random() < 0.2)
+            sandBits.push({ t: 2, x: from * cw, y: 0, vx: (to > from ? 1 : -1) * (25 + Math.random() * 45) * k, vy: 0,
+                            life: 0.4 + Math.random() * 0.6, c: Math.floor(Math.random() * 4), s: (1 + Math.random()) * k });
+        }
+      }
+    }
+    // a kick throws a little spray up off the top of a pile
+    sprayCd -= dt;
+    if (A.kickHit > 0.5 && A.drive > 0.15 && sprayCd <= 0){
+      sprayCd = 0.18;
+      var nS = Math.round(6 + 18 * A.kickHit * A.drive);
+      for (var s = 0; s < nS && sandBits.length < 170; s++){
+        var sc = streams[s % nSt].col, col = Math.max(1, Math.min(SAND_N - 2, sc + Math.round((Math.random() - 0.5) * 16))), vol = 4 * k * k;
+        if (sandH[col] * cw < vol * 3) continue;
+        sandH[col] -= vol / cw;
+        sandBits.push({ t: 1, x: col * cw, y: h - sandH[col], vx: (Math.random() - 0.5) * 140 * k,
+                        vy: -(90 + Math.random() * 220) * k * (0.5 + A.kickHit * 0.7), vol: vol,
+                        c: Math.floor(Math.random() * 4), s: (1.2 + Math.random()) * k });
+      }
+    }
+    // grains of the streams (only for the eye: the sand they bring is added above)
+    var want = Math.min(2 * nSt, sandFeed * dt / (5 * k * k)), nStream = 0;
+    for (i = 0; i < sandBits.length; i++) if (sandBits[i].t === 0) nStream++;
+    while (want > 0 && nStream < 90 && sandBits.length < 200){
+      if (Math.random() < Math.min(1, want)){
+        var so = streams[Math.floor(Math.random() * nSt)];
+        sandBits.push({ t: 0, x: so.x + (Math.random() - 0.5) * 3 * k, y: so.y, vx: (Math.random() - 0.5) * 6 * k, vy: (so.y > 0 ? 25 : 160) * k * (1 + Math.random()),
+                        c: Math.floor(Math.random() * 3), s: (1 + Math.random() * 0.8) * k });
+        nStream++;
+      }
+      want -= 1;
+    }
+
+    // the pile: one smooth filled curve through the column tops (drawn a little smoothed, so crests are round)
+    var top = h, src = sandH;
+    for (var sm = 0; sm < 2; sm++){
+      var dst = sm ? sandDisp : sandTmp;
+      for (i = 0; i < SAND_N; i++){
+        var a2 = src[Math.max(0, i - 2)], a1 = src[Math.max(0, i - 1)], b1 = src[Math.min(SAND_N - 1, i + 1)], b2 = src[Math.min(SAND_N - 1, i + 2)];
+        dst[i] = (a2 + 4 * a1 + 6 * src[i] + 4 * b1 + b2) / 16;
+      }
+      src = dst;
+    }
+    for (i = 0; i < SAND_N; i++) if (h - sandDisp[i] < top) top = h - sandDisp[i];
+    sandPeak = h - top;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, h + 2);
+    ctx.lineTo(0, h - sandDisp[0]);
+    for (i = 0; i < SAND_N - 1; i++) ctx.quadraticCurveTo(i * cw, h - sandDisp[i], (i + 0.5) * cw, h - (sandDisp[i] + sandDisp[i + 1]) / 2);
+    ctx.lineTo(w, h - sandDisp[SAND_N - 1]);
+    ctx.lineTo(w, h + 2);
+    ctx.closePath();
+    var fill = ctx.createLinearGradient(0, top, 0, h);
+    fill.addColorStop(0, sandTone(1, pal)); fill.addColorStop(0.5, sandTone(2, pal)); fill.addColorStop(1, sandTone(4, pal));
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    // grain texture
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = sandPattern(pal, k);
+    ctx.fillRect(0, top, w, h - top);
+    // shading: faces turned to the light (top left) are brighter, the others darker; soft at the crests
+    ctx.globalAlpha = 1;
+    for (i = 0; i < SAND_N - 1; i++){
+      if (sandDisp[i] < 1 && sandDisp[i + 1] < 1) continue;
+      var sl = (sandDisp[i + 1] - sandDisp[i]) / cw, al = Math.round(Math.min(0.13, Math.abs(sl) * 0.22) * 100) / 100;
+      if (al < 0.02) continue;
+      ctx.fillStyle = sl > 0 ? 'rgba(255,248,230,' + al + ')' : 'rgba(70,40,12,' + al + ')';
+      ctx.fillRect(i * cw + cw * 0.5, top, cw + 0.6, h - top);
+    }
+    ctx.restore();
+    // the lit edge of the surface
+    ctx.strokeStyle = rgba(sandTone(0, pal), 0.75);
+    ctx.lineWidth = 1.2 * k;
+    ctx.stroke();
+    ctx.restore();
+
+    // grains: the streams (drawn behind the gears, by drawSandStreams), the spray and the ones rolling down a slope
+    var gr = 900 * k;
+    for (var b = sandBits.length - 1; b >= 0; b--){
+      var p = sandBits[b];
+      if (p.t === 2){
+        p.life -= dt;
+        p.x += p.vx * dt;
+        if (p.life <= 0 || p.x < 0 || p.x > w){ sandBits.splice(b, 1); continue; }
+        p.y = h - surfaceAt(p.x, cw) - p.s * 0.6;
+      } else {
+        p.vy += gr * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.x < -10 * k || p.x > w + 10 * k){ sandBits.splice(b, 1); continue; }
+        if (p.vy > 0 && p.y >= h - surfaceAt(p.x, cw)){
+          if (p.t === 1){ var lc = Math.max(0, Math.min(SAND_N - 1, Math.round(p.x / cw))); sandH[lc] += p.vol / cw; }
+          sandBits.splice(b, 1);
+          continue;
+        }
+        if (p.t === 0) continue;
+      }
+      ctx.fillStyle = sandTone(p.c, pal);
+      ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+    }
+  }
+  // the streams themselves: a thin line of falling sand, thicker when it pours, and its grains
+  function drawSandStreams(w, h, k, pal){
+    if (!sandW) return;
+    var cw = w / (SAND_N - 1), target = Math.max(1, sandPeak * sandPeak / ((REST + SLIP) / 2) * sandStreamsNow.length);
+    ctx.save();
+    ctx.strokeStyle = rgba(sandTone(1, pal), 0.55);
+    ctx.lineWidth = (0.6 + Math.min(2, sandFeed / target * 4)) * k;
+    ctx.beginPath();
+    for (var st = 0; st < sandStreamsNow.length; st++){
+      var so = sandStreamsNow[st], surf = h - surfaceAt(so.x, cw);
+      if (surf > so.y){ ctx.moveTo(so.x, so.y); ctx.lineTo(so.x, surf); }
+    }
+    ctx.stroke();
+    for (var b = 0; b < sandBits.length; b++){
+      var p = sandBits[b];
+      if (p.t !== 0) continue;
+      ctx.fillStyle = sandTone(p.c, pal);
+      ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+    }
+    ctx.restore();
+  }
+
+  /* ---------- Garden: hills, two vines that grow and sway, leaves and pollen ---------- */
+  function paintGardenBG(c, w, h, pal){
+    c.fillStyle = rgba(mix(pal.rim, pal.bg2, 0.55), pal.light ? 0.3 : 0.4);
+    c.beginPath();
+    c.moveTo(0, h * 0.8);
+    c.quadraticCurveTo(w * 0.3, h * 0.66, w * 0.62, h * 0.8);
+    c.quadraticCurveTo(w * 0.85, h * 0.88, w, h * 0.74);
+    c.lineTo(w, h);
+    c.lineTo(0, h);
+    c.closePath();
+    c.fill();
+    c.fillStyle = rgba(mix(pal.rim, pal.bg2, 0.3), pal.light ? 0.32 : 0.5);
     c.beginPath();
     c.moveTo(0, h * 0.86);
-    c.quadraticCurveTo(w * 0.25, h * 0.7, w * 0.5, h * 0.84);
-    c.quadraticCurveTo(w * 0.78, h * 0.95, w, h * 0.8);
+    c.quadraticCurveTo(w * 0.25, h * 0.74, w * 0.5, h * 0.86);
+    c.quadraticCurveTo(w * 0.78, h * 0.96, w, h * 0.84);
     c.lineTo(w, h);
     c.lineTo(0, h);
     c.closePath();
     c.fill();
   }
-  function stepSolarLive(w, h, k, dt, cfg){
-    ctx.strokeStyle = 'rgba(31,92,61,0.55)';
-    ctx.lineWidth = Math.max(1.4 * k, w * 0.0035);
-    [0, w].forEach(function(edgeX, i){
-      var dir = i === 0 ? 1 : -1, x = edgeX, y = h;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      for (var s = 0; s < 7; s++){
-        var ny = y - h * 0.11;
-        var nx = x + dir * (12 + (s % 3) * 12) * k;
-        ctx.quadraticCurveTo(edgeX + dir * 26 * k, y - h * 0.05, nx, ny);
-        if (s % 2 === 0){
+  var VINE_N = 16, vineGrow = 0.4, vineSway = 0, vinePhase = 0, vineAmpNow = 0;
+  function leafColour(pal, j){
+    return pal.rainbow ? rbCol(j / VINE_N, pal) : pal.light ? mix('#3F8A47', pal.rim, 0.35) : mix('#5FB86A', pal.accent, 0.45);
+  }
+  function stepVines(w, h, k, dt, cfg, pal){
+    var m = Math.min(w, h);
+    // reach grows with a big passage and shrinks back slowly; the sway is nothing when calm
+    vineGrow = U.env(vineGrow, 0.4 + 0.6 * A.drive, 0.5, 0.05, dt);
+    vineSway = U.env(vineSway, A.drive, 2, 0.6, dt);
+    vinePhase += dt * (0.3 + 2.8 * vineSway) * cfg.handSpeed;
+    var amp = m * 0.07 * Math.max(0, vineSway - 0.12) / 0.88 + m * 0.012 * A.kick * vineSway;
+    vineAmpNow = amp / m;
+    var seg = h * 0.85 / VINE_N, shown = vineGrow * VINE_N;
+    var stem = pal.light ? mix(pal.rim, '#2F5A2C', 0.3) : mix(pal.rim, pal.bg1, 0.3);
+    for (var side = 0; side < 2; side++){
+      var dir = side === 0 ? 1 : -1, edgeX = side === 0 ? 0 : w, xs = [], ys = [], j;
+      var nn = Math.min(VINE_N, Math.ceil(shown));
+      for (j = 0; j <= nn; j++){
+        var t = j / VINE_N, jj = Math.min(j, shown);
+        xs.push(edgeX + dir * (m * 0.035 + m * 0.03 * Math.sin(t * 5.5 + side * 1.3) + amp * Math.pow(jj / VINE_N, 1.6) * Math.sin(vinePhase - t * 2.4 + side * 0.9)));
+        ys.push(h - jj * seg);
+      }
+      // the stem, thinner towards its tip
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = stem;
+      for (j = 0; j < nn; j++){
+        ctx.lineWidth = Math.max(1 * k, m * 0.009 * (1 - j / VINE_N * 0.75));
+        ctx.beginPath();
+        ctx.moveTo(j === 0 ? xs[0] : (xs[j - 1] + xs[j]) / 2, j === 0 ? ys[0] : (ys[j - 1] + ys[j]) / 2);
+        ctx.quadraticCurveTo(xs[j], ys[j], (xs[j] + xs[j + 1]) / 2, (ys[j] + ys[j + 1]) / 2);
+        ctx.stroke();
+      }
+      // leaves at the nodes, on alternate sides, unfolding as the vine reaches them; they flutter with the music
+      for (j = 1; j < nn; j++){
+        var grown = Math.max(0, Math.min(1, shown - j)), ls0 = m * (0.045 + 0.02 * hash(j * 3.7 + side)) * grown;
+        if (ls0 < 1 * k) continue;
+        var alt = j % 2 ? 1 : -1;
+        // two leaves a node: a big one to one side, a smaller one to the other
+        for (var lf = 0; lf < 2; lf++){
+          var ls = ls0 * (lf ? 0.62 : 1), sideA = lf ? -alt : alt;
+          var la = -Math.PI / 2 + dir * sideA * (0.85 + 0.25 * lf) + (amp / m) * 6 * Math.sin(vinePhase * 1.7 + j * 1.1 + side + lf * 2);
           ctx.save();
-          ctx.fillStyle = 'hsl(' + (95 + s * 6) + ',50%,42%)';
+          ctx.translate(xs[j], ys[j]);
+          ctx.rotate(la);
+          ctx.fillStyle = leafColour(pal, j + lf * 5);
           ctx.beginPath();
-          ctx.ellipse(nx, ny, 4.5 * k, 2.4 * k, dir * 0.6, 0, 6.283);
+          ctx.moveTo(0, 0);
+          ctx.quadraticCurveTo(ls * 0.45, -ls * 0.4, ls, 0);
+          ctx.quadraticCurveTo(ls * 0.45, ls * 0.4, 0, 0);
           ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.12)';
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(ls, 0);
+          ctx.quadraticCurveTo(ls * 0.45, ls * 0.4, 0, 0);
+          ctx.fill();
+          ctx.strokeStyle = rgba(stem, 0.7);
+          ctx.lineWidth = Math.max(0.6 * k, ls * 0.04);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(ls * 0.85, 0);
+          ctx.stroke();
           ctx.restore();
         }
-        x = nx; y = ny;
       }
-      ctx.stroke();
-    });
-    var glint = 0.4 + 0.3 * Math.sin(A.t * 1.6 * cfg.handSpeed);
-    for (var p = 0; p < 3; p++){
-      ctx.save();
-      ctx.translate(w * 0.12 + p * w * 0.045, h * 0.07 + p * h * 0.02);
-      ctx.rotate(-0.22);
-      ctx.fillStyle = 'rgba(18,38,56,0.55)';
-      ctx.fillRect(0, 0, w * 0.048, h * 0.028);
-      ctx.strokeStyle = 'rgba(255,200,87,' + glint.toFixed(2) + ')';
-      ctx.lineWidth = 1.2 * k;
-      ctx.strokeRect(0, 0, w * 0.048, h * 0.028);
-      ctx.restore();
+      // a flower at the tip, open when the music is big
+      var fr = m * (0.006 + 0.014 * A.drive) * Math.min(1, shown / 3), tx = xs[nn], ty = ys[nn];
+      ctx.fillStyle = pal.rainbow ? rbCol(vinePhase * 0.05 + side * 0.5, pal) : pal.accent;
+      for (var pt = 0; pt < 5; pt++){
+        var pa = pt / 5 * 6.283 + vinePhase * 0.2;
+        ctx.beginPath();
+        ctx.arc(tx + Math.cos(pa) * fr, ty + Math.sin(pa) * fr, fr * 0.75, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.fillStyle = pal.numeral;
+      ctx.beginPath();
+      ctx.arc(tx, ty, fr * 0.55, 0, 6.283);
+      ctx.fill();
     }
   }
   var leafParts = [];
   function spawnLeaf(x, y){
     leafParts.push({ x: x, y: y, vy: -(16 + Math.random() * 34) * Can.dpr(), vx: (Math.random() - 0.5) * 26 * Can.dpr(),
                       ph: Math.random() * 6.283, life: 0, maxLife: 5 + Math.random() * 5,
-                      leaf: Math.random() < 0.65, hue: 90 + Math.random() * 44 });
+                      leaf: Math.random() < 0.55, j: Math.floor(Math.random() * VINE_N) });
   }
-  function stepSolarParticles(w, h, k, dt, cfg){
-    if (leafParts.length < 150 && Math.random() < (0.3 + A.level * 1.6) * cfg.density * dt * 10) spawnLeaf(Math.random() * w, h + 6 * k);
+  function stepLeaves(w, h, k, dt, cfg, pal){
+    if (leafParts.length < 120 && Math.random() < (0.05 + A.drive * 2.2) * cfg.density * dt * 8) spawnLeaf(Math.random() * w, h + 6 * k);
+    var pollen = pal.rainbow ? null : pal.light ? '#E3A92E' : pal.accent;
     for (var i = leafParts.length - 1; i >= 0; i--){
       var p = leafParts[i];
       p.life += dt;
@@ -774,90 +1131,118 @@
       p.x += (p.vx + Math.sin(A.t * 1.3 + p.ph) * 14 * k) * dt;
       p.y += p.vy * dt;
       var fade = Math.min(1, p.life / 0.5) * Math.min(1, (p.maxLife - p.life) / 0.7);
-      ctx.save();
-      ctx.globalAlpha = fade * 0.85;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(A.t * 0.6 + p.ph);
       if (p.leaf){
-        ctx.fillStyle = 'hsl(' + p.hue + ',55%,42%)';
+        ctx.save();
+        ctx.globalAlpha = fade * 0.85;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.ph + Math.sin(A.t * 1.6 + p.ph) * 0.8);
+        ctx.fillStyle = leafColour(pal, p.j);
         ctx.beginPath();
-        ctx.ellipse(0, 0, 4 * k, 2 * k, 0, 0, 6.283);
+        ctx.moveTo(-4 * k, 0);
+        ctx.quadraticCurveTo(0, -2.4 * k, 4 * k, 0);
+        ctx.quadraticCurveTo(0, 2.4 * k, -4 * k, 0);
         ctx.fill();
+        ctx.restore();
       } else {
-        ctx.fillStyle = 'rgba(255,213,110,0.9)';
-        ctx.beginPath();
-        ctx.arc(0, 0, 1.3 * k, 0, 6.283);
-        ctx.fill();
+        var s = 7 * k;
+        ctx.globalAlpha = fade * 0.9;
+        ctx.drawImage(glowDot(pollen || rbCol(p.ph / 6.283, pal)), p.x - s / 2, p.y - s / 2, s, s);
       }
-      ctx.restore();
     }
+    ctx.globalAlpha = 1;
   }
 
-  /* ---------- Cyberpunk: scrolling perspective grid + circuit pulses, glitch particles ---------- */
-  var gridScroll = 0;
-  function stepCyberLive(w, h, k, dt, cfg){
-    gridScroll += dt * 40 * k * cfg.handSpeed;
-    var horizon = h * 0.6, vanishX = w / 2;
-    ctx.strokeStyle = 'rgba(40,229,255,0.20)';
-    ctx.lineWidth = 1 * k;
-    for (var i = -7; i <= 7; i++){
-      ctx.beginPath();
-      ctx.moveTo(vanishX, horizon);
-      ctx.lineTo(vanishX + i * w * 0.2, h);
-      ctx.stroke();
+  /* ---------- Grid: a perspective grid, circuit traces, glitches ---------- */
+  var gridScroll = 0, gridDrive = 0;
+  function stepGrid(w, h, k, dt, cfg, pal){
+    gridDrive = U.env(gridDrive, A.drive, 3, 0.8, dt);
+    gridScroll += dt * (6 + 120 * gridDrive * gridDrive) * k * cfg.handSpeed;
+    var horizon = h * 0.6, vanishX = w / 2, rb = pal.rainbow, i;
+    ctx.save();
+    // a band of light on the horizon
+    var hg = ctx.createLinearGradient(0, horizon - h * 0.1, 0, horizon + h * 0.03);
+    hg.addColorStop(0, rgba(pal.accent, 0));
+    hg.addColorStop(0.75, rgba(pal.accent, 0.1 + 0.2 * gridDrive));
+    hg.addColorStop(1, rgba(pal.accent, 0));
+    ctx.fillStyle = hg;
+    ctx.fillRect(0, horizon - h * 0.1, w, h * 0.13);
+    ctx.lineWidth = Math.max(1, k);
+    ctx.globalAlpha = pal.light ? 0.3 : 0.22;
+    ctx.strokeStyle = pal.rim;
+    if (!rb) ctx.beginPath();
+    for (i = -8; i <= 8; i++){
+      if (rb){ ctx.strokeStyle = rbCol((i + 8) / 17, pal); ctx.beginPath(); }
+      ctx.moveTo(vanishX + i * w * 0.01, horizon);
+      ctx.lineTo(vanishX + i * w * 0.16, h);
+      if (rb) ctx.stroke();
     }
-    var rows = 7;
+    if (!rb) ctx.stroke();
+    var rows = 8;
     for (var j = 0; j < rows; j++){
-      var f = ((j + (gridScroll / (h * 0.12)) % 1) / rows);
-      var yy = horizon + (h - horizon) * (f * f);
-      ctx.globalAlpha = 0.15 + f * 0.35;
+      var f = (j + (gridScroll / (h * 0.12)) % 1) / rows, yy = horizon + (h - horizon) * (f * f);
+      ctx.globalAlpha = (0.12 + f * 0.4) * (pal.light ? 1.2 : 1);
+      ctx.strokeStyle = rb ? rbCol(j / rows + A.t * 0.05, pal) : pal.rim;
       ctx.beginPath();
       ctx.moveTo(0, yy);
       ctx.lineTo(w, yy);
       ctx.stroke();
     }
-    ctx.globalAlpha = 1;
-    var pulse = 0.5 + 0.5 * Math.sin(A.t * 3 * cfg.handSpeed);
-    ctx.strokeStyle = 'rgba(255,46,154,' + (0.18 + pulse * 0.22 + A.punch * 0.3).toFixed(2) + ')';
+    // circuit traces in the sky; pulses run along them when the music is big
     ctx.lineWidth = 1.4 * k;
-    for (var c = 0; c < 5; c++){
-      var sx = (c * 197) % w, sy = h * 0.05 + (c * 83) % (horizon * 0.75);
+    for (var c = 0; c < 6; c++){
+      var sx = hash(c * 3.1 + 1) * w * 0.9, sy = h * 0.05 + hash(c * 7.7 + 2) * horizon * 0.75;
+      var l1 = (30 + hash(c * 5.3) * 60) * k, l2 = (18 + hash(c * 2.9) * 30) * k * (c % 2 ? 1 : -1), l3 = (30 + hash(c * 9.1) * 60) * k;
+      var col = rb ? rbCol(c / 6, pal) : pal.accent;
+      ctx.globalAlpha = Math.min(0.9, 0.18 + 0.35 * gridDrive + A.punch * 0.3);
+      ctx.strokeStyle = col;
       ctx.beginPath();
       ctx.moveTo(sx, sy);
-      ctx.lineTo(sx + 42 * k, sy);
-      ctx.lineTo(sx + 42 * k, sy + 26 * k);
-      ctx.lineTo(sx + 92 * k, sy + 26 * k);
+      ctx.lineTo(sx + l1, sy);
+      ctx.lineTo(sx + l1, sy + l2);
+      ctx.lineTo(sx + l1 + l3, sy + l2);
       ctx.stroke();
-      ctx.fillStyle = '#28E5FF';
+      ctx.fillStyle = pal.rim;
       ctx.beginPath();
       ctx.arc(sx, sy, 2 * k, 0, 6.283);
+      ctx.arc(sx + l1 + l3, sy + l2, 2 * k, 0, 6.283);
       ctx.fill();
+      if (gridDrive > 0.15){
+        var tot = l1 + Math.abs(l2) + l3, d = ((A.t * (0.2 + 1.4 * gridDrive) + hash(c * 4.4)) % 1) * tot, px, py;
+        if (d < l1){ px = sx + d; py = sy; }
+        else if (d < l1 + Math.abs(l2)){ px = sx + l1; py = sy + (d - l1) * (l2 < 0 ? -1 : 1); }
+        else { px = sx + l1 + (d - l1 - Math.abs(l2)); py = sy + l2; }
+        var ps = 9 * k;
+        ctx.globalAlpha = Math.min(1, (gridDrive - 0.15) * 3);
+        ctx.drawImage(glowDot(col), px - ps / 2, py - ps / 2, ps, ps);
+      }
     }
+    ctx.restore();
   }
   var glitches = [];
-  function spawnGlitch(x, y){
+  function spawnGlitch(x, y, pal){
     glitches.push({ x: x, y: y, w: (6 + Math.random() * 26) * Can.dpr(), h: (2 + Math.random() * 6) * Can.dpr(),
-                    life: 0.06 + Math.random() * 0.12, age: 0, col: Math.random() < 0.5 ? '#28E5FF' : '#FF2E9A' });
+                    life: 0.06 + Math.random() * 0.12, age: 0,
+                    col: pal.rainbow ? rbCol(Math.random(), pal) : Math.random() < 0.5 ? pal.rim : pal.accent });
   }
-  function stepCyberParticles(w, h, k, dt, cfg){
-    var want = (0.4 + A.level * 3 + (A.beat ? 6 : 0)) * cfg.density * dt * 8;
+  function stepGlitches(w, h, k, dt, cfg, pal){
+    var want = (0.05 + 4 * gridDrive * gridDrive + (A.beat ? 6 * gridDrive : 0)) * cfg.density * dt * 8;
     while (want > 0 && glitches.length < 130){
-      if (Math.random() < Math.min(1, want)) spawnGlitch(Math.random() * w, Math.random() * h);
+      if (Math.random() < Math.min(1, want)) spawnGlitch(Math.random() * w, Math.random() * h, pal);
       want -= 1;
     }
     for (var i = glitches.length - 1; i >= 0; i--){
       var g = glitches[i];
       g.age += dt;
       if (g.age > g.life){ glitches.splice(i, 1); continue; }
-      ctx.globalAlpha = 1 - g.age / g.life;
+      ctx.globalAlpha = (1 - g.age / g.life) * (pal.light ? 0.8 : 1);
       ctx.fillStyle = g.col;
       ctx.fillRect(g.x, g.y, g.w, g.h);
     }
     ctx.globalAlpha = 1;
   }
 
-  /* ---------- Heaven: drifting clouds + flapping wings, feather/light-mote drift ---------- */
-  var clouds = [], cloudsReady = false;
+  /* ---------- Sky: clouds, a pair of feathered wings, feathers and motes ---------- */
+  var clouds = [], cloudsReady = false, skyDrive = 0;
   function ensureClouds(w, h){
     if (cloudsReady) return;
     clouds = [];
@@ -875,49 +1260,114 @@
     ctx.arc(x + 15 * r, y + 6 * r, 15 * r, 0, 6.283);
     ctx.fill();
   }
-  function stepClouds(w, h, k, dt, cfg){
+  function stepClouds(w, h, k, dt, cfg, pal){
     ensureClouds(w, h);
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    skyDrive = U.env(skyDrive, A.drive, 2, 0.6, dt);
+    ctx.fillStyle = pal.light ? 'rgba(255,255,255,0.7)' : rgba(mix(pal.bg1, pal.numeral, 0.3), 0.35);
     for (var i = 0; i < clouds.length; i++){
       var c = clouds[i];
-      c.x += c.sp * k * dt * cfg.handSpeed;
+      c.x += c.sp * k * dt * cfg.handSpeed * (0.3 + 1.6 * skyDrive);
       if (c.x > w + 60 * k) c.x = -60 * k;
       drawCloud(c.x, c.y, c.scale, k);
     }
   }
-  function drawWings(cx, cy, R, pal, k){
-    var flap = Math.sin(A.t * 2.2) * 0.1 + A.punch * 0.4 + (A.beat ? 0.18 : 0);
-    [-1, 1].forEach(function(side){
+  // The wing, in units of the dial's radius, x outward, y down: a leading edge
+  // from the shoulder through the elbow and the wrist to the tip of the hand,
+  // and four layers of feathers drawn back to front: long primaries fanning
+  // from the hand, secondaries along the arm, then two rows of coverts.
+  var ARM = [[0, 0], [0.5, -0.3], [0.95, -0.42], [1.3, -0.36]];
+  function armAt(u){
+    var i = Math.min(2, Math.floor(u)), t = u - i, a = ARM[i], b = ARM[i + 1];
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  }
+  var FEATHERS = (function(){
+    var out = [], i;
+    for (i = 0; i < 10; i++) out.push({ layer: 0, n: i, u: 3 - i / 9, ang: -0.3 + i * 0.12, len: 0.95 - i * 0.03, wid: 0.1 });
+    for (i = 0; i < 11; i++) out.push({ layer: 1, n: i, u: 2 - i * 0.17, ang: 0.95 + i * 0.05, len: 0.66 - i * 0.02, wid: 0.12 });
+    for (i = 0; i < 12; i++) out.push({ layer: 2, n: i, u: 2.6 - i * 0.21, ang: 0.7 + i * 0.06, len: 0.34, wid: 0.11 });
+    for (i = 0; i < 10; i++) out.push({ layer: 3, n: i, u: 2.3 - i * 0.23, ang: 0.9 + i * 0.04, len: 0.18, wid: 0.09 });
+    return out;
+  })();
+  var flapEnv = 0, flapPhase = 0, flapBeat = 0, flapAmpNow = 0;
+  function drawWings(cx, cy, R, w, pal, k, dt){
+    // a breath when calm; a real beat of the wings in a big passage, a fast strong one on a kick
+    flapEnv = U.env(flapEnv, A.drive, 1.5, 0.5, dt);
+    if (A.kickHit > 0.5 && A.drive > 0.2) flapBeat = Math.max(flapBeat, A.kickHit * A.drive);
+    flapBeat *= Math.exp(-3 * dt);
+    flapPhase += dt * (0.7 + 3 * flapEnv + 5 * flapBeat);
+    var amp = 0.015 + 0.32 * flapEnv * flapEnv + 0.25 * flapBeat;
+    flapAmpNow = amp;
+    var lift = amp * Math.sin(flapPhase);
+    // the wings fit the picture: across a narrow one, and up to the top of a low one when raised
+    var ws = Math.min(1, (w * 0.5 - 4 * k) / (R * 2.3), (cy - R * 0.2) / (R * 1.75)), unit = R * ws, lw = Math.max(0.9 * k / unit, 0.004);
+    var wA = pal.light ? '#FFFFFF' : mix(pal.numeral, '#FFFFFF', 0.3);
+    var layerC = [mix(wA, pal.rim, 0.2), mix(wA, pal.rim, 0.11), mix(wA, pal.rim, 0.04), wA];
+    var shade = rgba(pal.rim, pal.light ? 0.16 : 0.22), edgeC = rgba(pal.rim, pal.light ? 0.5 : 0.4), shaft = rgba(pal.rim, 0.35);
+    for (var sd = -1; sd <= 1; sd += 2){
       ctx.save();
-      ctx.translate(cx + side * R * 0.98, cy - R * 0.08);
-      ctx.scale(side, 1);
-      ctx.rotate(-0.18 - flap);
-      ctx.fillStyle = pal.wing;
-      ctx.strokeStyle = pal.wingLine;
-      ctx.lineWidth = Math.max(1 * k, R * 0.01);
-      for (var i = 0; i < 6; i++){
-        var fa = -0.32 + i * 0.17;
-        var flen = R * (0.55 + (i % 2 ? 0.16 : 0));
+      ctx.translate(cx + sd * R * 0.45, cy - R * 0.2);
+      ctx.scale(sd * unit, unit);
+      ctx.rotate(-0.12 - lift);
+      ctx.globalAlpha = 0.96;
+      ctx.lineJoin = 'round';
+      for (var f = 0; f < FEATHERS.length; f++){
+        var F = FEATHERS[f], at = armAt(F.u), len = F.len * (F.layer === 0 ? 1 + 0.06 * flapEnv : 1), wid = F.wid;
+        var ang = F.ang + (F.layer === 0 ? lift * 0.5 : F.layer === 1 ? lift * 0.25 : 0);
         ctx.save();
-        ctx.rotate(fa);
+        ctx.translate(at[0], at[1] + (F.layer === 3 ? -0.02 : 0));
+        ctx.rotate(ang);
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(flen * 0.5, -R * 0.09, flen, -R * 0.02);
-        ctx.quadraticCurveTo(flen * 0.5, R * 0.05, 0, 0);
+        ctx.quadraticCurveTo(len * 0.45, -wid, len, -wid * 0.15);
+        ctx.quadraticCurveTo(len * 1.03, wid * 0.25, len * 0.9, wid * 0.45);
+        ctx.quadraticCurveTo(len * 0.45, wid * 0.9, 0, 0);
+        ctx.fillStyle = layerC[F.layer];
         ctx.fill();
+        // the rainbow code: each feather edged in its own hue
+        if (pal.rainbow){
+          ctx.strokeStyle = rbCol(F.n / (F.layer === 0 ? 10 : F.layer === 1 ? 11 : 12) * 0.9 + F.layer * 0.07, pal);
+          ctx.lineWidth = lw * (F.layer < 2 ? 2.4 : 1.6);
+        } else {
+          ctx.strokeStyle = edgeC;
+          ctx.lineWidth = lw;
+        }
         ctx.stroke();
+        // soft shading: the half behind the shaft is a little darker
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(len * 0.5, wid * 0.08, len * 0.95, wid * 0.12);
+        ctx.quadraticCurveTo(len * 0.45, wid * 0.85, 0, 0);
+        ctx.fillStyle = shade;
+        ctx.fill();
+        if (F.layer < 2){
+          ctx.strokeStyle = shaft;
+          ctx.lineWidth = lw * 0.8;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.quadraticCurveTo(len * 0.5, wid * 0.08, len * 0.95, wid * 0.12);
+          ctx.stroke();
+        }
         ctx.restore();
       }
+      // the leading edge, smooth over the roots of the feathers
+      ctx.strokeStyle = wA;
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 0.08;
+      ctx.beginPath();
+      ctx.moveTo(ARM[0][0] + 0.05, ARM[0][1] - 0.02);
+      for (var q = 1; q < ARM.length; q++) ctx.lineTo(ARM[q][0], ARM[q][1] - 0.02);
+      ctx.stroke();
       ctx.restore();
-    });
+    }
   }
   var motes = [];
   function spawnMote(x, y){
     motes.push({ x: x, y: y, vy: (8 + Math.random() * 16) * Can.dpr(), vx: (Math.random() - 0.5) * 22 * Can.dpr(),
-                 ph: Math.random() * 6.283, life: 0, maxLife: 6 + Math.random() * 6, feather: Math.random() < 0.4 });
+                 ph: Math.random() * 6.283, life: 0, maxLife: 6 + Math.random() * 6, feather: Math.random() < 0.4, hue: Math.random() });
   }
-  function stepHeavenParticles(w, h, k, dt, cfg){
-    if (motes.length < 130 && Math.random() < (0.25 + A.level * 1.4) * cfg.density * dt * 10) spawnMote(Math.random() * w, -8 * k);
+  function stepMotes(w, h, k, dt, cfg, pal){
+    if (motes.length < 120 && Math.random() < (0.06 + A.drive * 1.6) * cfg.density * dt * 8) spawnMote(Math.random() * w, -8 * k);
+    var wA = pal.light ? '#FFFFFF' : mix(pal.numeral, '#FFFFFF', 0.3);
     for (var i = motes.length - 1; i >= 0; i--){
       var m = motes[i];
       m.life += dt;
@@ -925,96 +1375,115 @@
       m.x += (m.vx + Math.sin(A.t + m.ph) * 10 * k) * dt;
       m.y += m.vy * dt;
       var fade = Math.min(1, m.life / 0.6) * Math.min(1, (m.maxLife - m.life) / 0.8);
-      ctx.save();
-      ctx.globalAlpha = fade * 0.85;
-      ctx.translate(m.x, m.y);
       if (m.feather){
-        ctx.rotate(Math.sin(A.t * 1.2 + m.ph) * 0.4);
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.save();
+        ctx.globalAlpha = fade * 0.9;
+        ctx.translate(m.x, m.y);
+        ctx.rotate(m.ph + Math.sin(A.t * 1.2 + m.ph) * 0.5);
+        ctx.fillStyle = wA;
         ctx.beginPath();
-        ctx.ellipse(0, 0, 5 * k, 1.6 * k, 0, 0, 6.283);
+        ctx.ellipse(0, 0, 6 * k, 1.8 * k, 0, 0, 6.283);
         ctx.fill();
+        ctx.strokeStyle = pal.rainbow ? rbCol(m.hue, pal) : rgba(pal.rim, 0.6);
+        ctx.lineWidth = 0.8 * k;
+        ctx.stroke();
+        ctx.restore();
       } else {
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 6 * k;
-        ctx.fillStyle = '#FFF8DE';
-        ctx.beginPath();
-        ctx.arc(0, 0, 1.4 * k, 0, 6.283);
-        ctx.fill();
+        var s = 8 * k;
+        ctx.globalAlpha = fade * 0.85;
+        ctx.drawImage(glowDot(pal.rainbow ? rbCol(m.hue, pal) : pal.light ? mix(pal.accent, '#FFFFFF', 0.2) : mix(pal.accent, '#FFFFFF', 0.5)), m.x - s / 2, m.y - s / 2, s, s);
       }
-      ctx.restore();
     }
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- dispatch ---------- */
-  function paintBG(c, w, h){
-    if (styleId() === 'solarpunk') paintSolarBG(c, w, h);
+  function paintBG(c, w, h, k){
+    var d = designId(), pal = PALETTES[paletteId()].pal;
+    if (d === 'garden') paintGardenBG(c, w, h, pal);
+    else if (d === 'gears') paintGearsBG(c, w, h, k || 1, pal);
   }
   function bgColors(){
-    var pal = theme().pal;
+    var pal = PALETTES[paletteId()].pal;
     return { bg1: pal.bg1, bg2: pal.bg2 };
   }
   function draw(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.clock;
-    var t = theme();
+    var design = designId(), pid = paletteId(), P = PALETTES[pid], pal = P.pal;
+    var style = design + '|' + pid;
+    // a new design or code starts with no drifting characters: the old ones carry the old glyphs and way of moving
+    if (style !== lastStyle){ orbit = []; lastStyle = style; Can.invalidateBG(); }
     Can.backdrop(1);
-    var style = styleId();
-    // a new skin starts with no drifting characters: the old ones carry the old skin's glyphs and way of moving
-    if (style !== lastStyle){ orbit = []; lastStyle = style; }
     // the dial is 0.3 of the short side, so the loudest crown (1.52 radii) still ends inside the picture
     var R = Math.min(w, h) * 0.3, cx = w / 2, cy = h * 0.5;
-    var form = FORMS[style] || FORMS.omega;
-    // a soft light behind the clock: brighter in a big part of the song
-    var halo = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 2.4);
-    halo.addColorStop(0, U.rgba(U.hexRGB(t.pal.accent), ((0.08 + 0.2 * A.drive) * (0.4 + cfg.glow)).toFixed(3)));
-    halo.addColorStop(1, U.rgba(U.hexRGB(t.pal.accent), '0'));
-    ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, w, h);
+    var form = FORMS[pid] || FORMS.omega;
+    // a soft light behind the clock, brighter in a big part of the song; the rainbow code: rainbow light
+    var hA = (0.08 + 0.2 * A.drive) * (0.4 + cfg.glow);
+    if (pal.rainbow){
+      var gs = R * 5;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, 0.4 + 1.2 * hA);
+      ctx.translate(cx, cy);
+      ctx.rotate(A.t * 0.05);
+      ctx.drawImage(rainbowGlow(), -gs / 2, -gs / 2, gs, gs);
+      ctx.restore();
+    } else {
+      var halo = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 2.4);
+      halo.addColorStop(0, rgba(pal.accent, hA));
+      halo.addColorStop(1, rgba(pal.accent, 0));
+      ctx.fillStyle = halo;
+      ctx.fillRect(0, 0, w, h);
+    }
 
-    if (t.decor) stepOrbit(w, h, cx, cy, R, k, dt, cfg, t.pal, t.decor);
-    else if (style === 'golden'){ paintGoldenAmbience(w, h, k); stepGears(w, h, k, dt, cfg, t.pal); stepSand(w, h, k, dt, cfg); }
-    else if (style === 'solarpunk'){ stepSolarLive(w, h, k, dt, cfg); stepSolarParticles(w, h, k, dt, cfg); }
-    else if (style === 'cyberpunk'){ stepCyberLive(w, h, k, dt, cfg); stepCyberParticles(w, h, k, dt, cfg); }
-    else { stepClouds(w, h, k, dt, cfg); stepHeavenParticles(w, h, k, dt, cfg); }
+    if (design === 'classic') stepOrbit(w, h, cx, cy, R, k, dt, cfg, pal, P.decor);
+    else if (design === 'gears'){ drawSandStreams(w, h, k, pal); stepGears(w, h, k, dt, cfg, pal, pid); stepSand(w, h, k, dt, cfg, pal, cx, cy, R); }
+    else if (design === 'garden'){ stepVines(w, h, k, dt, cfg, pal); stepLeaves(w, h, k, dt, cfg, pal); }
+    else if (design === 'grid'){ stepGrid(w, h, k, dt, cfg, pal); stepGlitches(w, h, k, dt, cfg, pal); }
+    else { stepClouds(w, h, k, dt, cfg, pal); stepMotes(w, h, k, dt, cfg, pal); }
 
-    if (cfg.orbits) drawOrbits(cx, cy, R, t.pal, k);
-    stepChimes(cx, cy, R, t.pal, k, dt);
-    if (style === 'heaven') drawWings(cx, cy, R, t.pal, k);
-    drawRing(cx, cy, R, t.pal, form, cfg, k, dt);
-    if (cfg.songRing) drawSongRing(cx, cy, R, t.pal, k);
-    drawFace(cx, cy, R, t.pal, form, cfg, k);
+    if (cfg.orbits) drawOrbits(cx, cy, R, pal, k);
+    stepChimes(cx, cy, R, pal, k, dt);
+    if (design === 'sky') drawWings(cx, cy, R, w, pal, k, dt);
+    drawRing(cx, cy, R, pal, form, cfg, k, dt);
+    if (cfg.songRing) drawSongRing(cx, cy, R, pal, k);
+    drawFace(cx, cy, R, pal, form, cfg, k);
   }
   function onTap(x, y){
-    var style = styleId();
-    var ringColor = { golden: '#D4AF37', solarpunk: '#3E7C4C', cyberpunk: '#FF2E9A', heaven: '#8FCFFF' }[style] || theme().pal.accent;
-    App.taps.spawnRing(x, y, ringColor);
-    var k = Can.dpr();
-    if (theme().decor){
-      for (var o = 0; o < 4; o++) spawnOrbit(canvas.width, canvas.height, canvas.width / 2, canvas.height * 0.5, 1, theme().decor,
+    var design = designId(), P = PALETTES[paletteId()], pal = P.pal, k = Can.dpr();
+    App.taps.spawnRing(x, y, pal.rainbow ? rbCol(Math.random(), pal) : pal.accent);
+    if (design === 'classic'){
+      for (var o = 0; o < 4; o++) spawnOrbit(canvas.width, canvas.height, canvas.width / 2, canvas.height * 0.5, 1, P.decor,
                                              x + (Math.random() - 0.5) * 40 * k, y + (Math.random() - 0.5) * 40 * k);
-      return;
-    }
-    if (style === 'golden'){
-      for (var i = 0; i < sand.length; i++){
-        var g = sand[i];
-        if (Math.abs(g.bandF * canvas.width - x) < 40 * k) g.vy -= (50 + Math.random() * 90) * k;
+    } else if (design === 'gears'){
+      // a tap on the floor throws sand up there
+      var cw = canvas.width / (SAND_N - 1);
+      for (var s = 0; s < 14; s++){
+        var col = Math.max(0, Math.min(SAND_N - 1, Math.round(x / cw + (Math.random() - 0.5) * 6)));
+        sandBits.push({ t: 1, x: col * cw, y: canvas.height - sandH[col], vx: (Math.random() - 0.5) * 120 * k, vy: -(120 + Math.random() * 200) * k,
+                        vol: 0, c: Math.floor(Math.random() * 4), s: (1.2 + Math.random()) * k });
       }
-    } else if (style === 'solarpunk'){
+    } else if (design === 'garden'){
       for (var l = 0; l < 8; l++) spawnLeaf(x, y);
-    } else if (style === 'cyberpunk'){
-      for (var c = 0; c < 10; c++) spawnGlitch(x + (Math.random() - 0.5) * 30 * k, y + (Math.random() - 0.5) * 30 * k);
+    } else if (design === 'grid'){
+      for (var c = 0; c < 10; c++) spawnGlitch(x + (Math.random() - 0.5) * 30 * k, y + (Math.random() - 0.5) * 30 * k, pal);
     } else {
       for (var m = 0; m < 10; m++) spawnMote(x, y);
     }
   }
-  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; tickKick = 0; }
-  Can.addResizeHook(function(){ sandReady = false; cloudsReady = false; });
+  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; sandBits = []; tickKick = 0; }
+  Can.addResizeHook(function(){ cloudsReady = false; });
+  // what the motion is doing now, for measuring calm against loud (engine/probe.js, by hand)
+  function stats(){
+    var m = Math.min(canvas.width, canvas.height);
+    return { design: designId(), palette: paletteId(), drive: A.drive, gearSpeed: gearOmegaNow, pile: sandPeak / m,
+             flap: flapAmpNow, vineSway: vineAmpNow, vineReach: vineGrow, gridSpeed: 6 + 120 * gridDrive * gridDrive };
+  }
 
-  App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, fx: 0.4 });
+  App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, stats: stats, fx: 0.4 });
 
   App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true, digital: true, songRing: true, orbits: true });
   App.cfg.registerSchema({ id: 'clock', label: 'Clock', fields: [
-    ['style', 'Style', 'layout', ['theme'].concat(Object.keys(THEMES))],
+    ['style', 'Style', 'layout', ['theme', 'classic', 'gears', 'garden', 'grid', 'sky']],
     ['kickTick', 'Second hand jumps on the kick', 'bool'],
     ['chimes', 'Rings of light when the music swells', 'bool'],
     ['songRing', 'A ring round the dial fills as the song plays', 'bool'],

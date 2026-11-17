@@ -40,8 +40,9 @@
   // silence everything; Basic gained new options with a new default look.
   // v3: String was rebuilt (its numbers mean different things), Fire's blue
   // now follows drive, and Clock's default style became "theme".
-  var CFG_VERSION = 3;
-  var DROP_BELOW = { 2: ['audio', 'basic'], 3: ['strings', 'fire', 'clock'] };
+  // v4: Clock's styles became its own designs (classic, gears...), no longer the codes.
+  var CFG_VERSION = 4;
+  var DROP_BELOW = { 2: ['audio', 'basic'], 3: ['strings', 'fire', 'clock'], 4: ['clock'] };
   // Removes from a saved or imported set of settings every group whose
   // numbers changed meaning after version `had`. Returns the names removed.
   function dropOld(stored, had){

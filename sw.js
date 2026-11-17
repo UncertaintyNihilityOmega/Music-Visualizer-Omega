@@ -8,7 +8,7 @@
    The list and version are written by  node engine/sw-build.js .
    ========================================================================= */
 /* BUILD:START (written by engine/sw-build.js; do not edit by hand) */
-var VERSION = '0.1.0-dev-e3c5b3fe42';
+var VERSION = '0.1.0-dev-e62517d0cd';
 var FILES = [
   'css/styles.css',
   'icons/icon-180.png',
@@ -53,6 +53,7 @@ var FILES = [
   'js/pages/page-settings.js',
   'js/pages/pages-mount.js',
   'js/player/background.js',
+  'js/player/folders.js',
   'js/player/library.js',
   'js/player/playlist.js',
   'js/player/transport.js',
