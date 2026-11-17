@@ -5,6 +5,9 @@ What someone using the app would notice. Newest first.
 ## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
 
 ### New
+- **Folders inside the app.** Over the playlist: "All songs", your own folders and "+ New folder". The small
+  folder button on each song puts it in a folder or takes it out. Open a folder and only its songs play. A
+  folder holds no copies: it lists songs, and with "Keep a copy" on they are all there the next time.
 - **The app remembers your songs.** Songs added one by one now come back next time like a folder does: one
   tap on "Reconnect" (the browser asks for permission again after the app was closed). The last song and the
   place it stopped come back too, paused.

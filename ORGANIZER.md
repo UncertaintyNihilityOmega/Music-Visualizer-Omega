@@ -110,6 +110,15 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - 2026-11-16: Every mode must look right in fullscreen on a phone. The Clock design was judged ugly and is
   redrawn.
 - 2026-11-16: The app may go to the Play Store later (a native Android shell); not now.
+- 2026-11-17: Checked by the user: fullscreen on the phone turns sideways and looks right; "Keep a copy" works.
+  Piano still differs from a real piano video, "okay for now".
+- 2026-11-17: **Clock designs are not the codes.** The Clock's style list holds its own designs (Classic, Gears,
+  Garden, Grid, Sky); the theme code sets the palette and forms of whichever design is on. Under the rainbow
+  code it must be rainbow. Leftovers that look random (Solarpunk's panels, still leaves) go.
+- 2026-11-17: The scheduled task may use agents (its prompt was updated to match AGENT-RUN.md).
+- 2026-11-17: Runs keep going through the queue with the preview server until a limit stops them.
+- 2026-11-17: **Version by version.** Every v0.1.0 item before any v0.2.0 item, and so on. (Item 19 c, a v0.2.0
+  item, was built out of order on 2026-11-17 before this was said; it was finished and kept.)
 
 ## Decisions the Organizer made (the user can reverse any of them)
 - 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,

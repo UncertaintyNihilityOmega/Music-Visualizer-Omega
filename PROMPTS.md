@@ -5,7 +5,7 @@ Copy one into a new session opened in this folder.
 ## Organizer (next step, by hand)
 ```
 Music Visualiser Omega: Organizer session. Read ORGANIZER.md and ROADMAP.md, then do the next queue step the
-way AGENT-RUN.md describes. Do not use subagents.
+way AGENT-RUN.md describes. Agents are allowed within AGENT-RUN.md's limits.
 ```
 
 ## Scheduled run
@@ -13,14 +13,14 @@ way AGENT-RUN.md describes. Do not use subagents.
 Music Visualiser Omega: automatic run. Follow AGENT-RUN.md exactly: check the lock, read ORGANIZER.md and
 ROADMAP.md, then loop: check usage, do one queue step that is not waiting on the user, run the gates, commit
 that step's files (push only with a standing approval in ORGANIZER.md), update ROADMAP.md. Stop when the usage
-gate says so or every step left needs the user; then remove the lock. Do not use subagents.
+gate says so or every step left needs the user; then remove the lock. Agents are allowed within AGENT-RUN.md's limits.
 ```
 The scheduled task `music-visualiser-omega-next-step` stores a longer version of this prompt.
 
 ## A specific item
 ```
 Music Visualiser Omega: Organizer session. Read ORGANIZER.md and ROADMAP.md, then do queue item <n>
-(<package, if it has several>). Follow AGENT-RUN.md. Do not use subagents.
+(<package, if it has several>). Follow AGENT-RUN.md. Agents are allowed within AGENT-RUN.md's limits.
 ```
 
 ## Mode package (Writer)
