@@ -206,9 +206,78 @@ still gives the Clock its palette and forms.
   `kick` gives every tower or spell a small damage pulse; Sandbox's square visualiser offered as a Basic layout.
 
 ## Review
-- [ ] Emoji: a quiet passage still changes 13 to 19 a frame (the table above), more than any other mode's loud
-  passage bar String. In the "line" layout, scale the column wobble and the size swing by `drive` so a calm
-  passage holds nearly still.
-- [ ] Basic, song 2: quiet reads 5.13 against 8.95 loud. Check by eye whether that verse looks calm enough.
+Review of 2026-11-17 (ROADMAP item 17), by a session that wrote none of the modes. **Cut short**: the user asked
+for everything to be tied up before the weekly limit, so only the motion and speed numbers below were taken.
+No contact sheets were made and nothing was judged by eye.
 
-The review after P4 (ROADMAP item 17) is still to do, by a session that did not write the modes.
+How it was measured: preview at a 1280 px window (picture 1200 x 320), frames stepped by hand every 16 ms,
+"Want Some Fun", change per frame as in `Probe.motion` (0 = still, 255 = every pixel flips). Quiet: seconds 8 to
+11 (`drive` 0.00 to 0.01). Loud: seconds 58 to 61 (`drive` 0.49 to 0.63). Each window comes after 3 to 4 s of
+settling, because `drive` needs about 3 s to follow a seek. Ratio = loud / quiet; ms = mean ms per frame, the
+higher of the two windows. No console errors.
+
+| Mode | Code | Quiet | Loud | Ratio | ms at 1280 | ms at 375 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Basic | Omega | 4.67 | 10.64 | 2.3 | 1.35 | not measured |
+| Basic | Love | 0.76 | 1.66 | 2.2 | 2.13 | not measured |
+| String | Omega | 6.69 | 10.17 | 1.5 | 0.95 | not measured |
+| String | Love | 3.78 | 5.85 | 1.5 | 0.72 | not measured |
+| Emoji | Omega | 12.42 | 18.05 | 1.5 | 1.47 | not measured |
+| Emoji | Love | 23.06 | 26.99 | 1.2 | 0.59 | not measured |
+| Fire | Omega | 0.71 | 2.23 | 3.1 | 1.29 | not measured |
+| Fire | Love | 0.11 | 1.27 | 11.5 | 0.65 | not measured |
+| Rain | Omega | 0.30 | 2.07 | 6.9 | 1.01 | not measured |
+| Rain | Love | 0.26 | 0.80 | 3.1 | 0.62 | not measured |
+| Nature | Omega | 0.17 | 0.63 | 3.7 | 1.44 | not measured |
+| Nature | Love | 0.30 | 0.40 | 1.3 | 1.84 | not measured |
+| Clock | Omega | 0.07 | 0.49 | 7.0 | 0.79 | not measured |
+| Liquid | Omega | 1.75 | 1.76 | 1.0 | 0.60 | not measured |
+
+Speed: every measured pair is under 2.2 ms a frame at 1280 px, far below the 6 ms limit.
+
+Judged fine on these numbers (calm against lively only; looks not checked): **Fire**, **Rain**, **Clock** under
+Omega, and Fire and Rain under Love. Their quiet passage changes 0.07 to 0.71 a frame and the loud one 3 to 12
+times more.
+
+### Liquid
+- [ ] Quiet and loud move the same: 1.75 against 1.76 under Omega (ratio 1.0), the only mode with no difference
+  at all. Likely causes, read from the code and not confirmed by eye: the whirlpool turns at 0.12 rad/s even at
+  `drive` 0 (`spin` in `mode-liquid.js`), and the edge keeps a quarter of its swing at `drive` 0 (`big = 0.25 +
+  0.75 * drive`). Fixed when the quiet window changes a third or less of the loud one (ratio 3 or more), with
+  the loud number not lower than now.
+
+### Emoji
+- [ ] The old note still holds and is worse under Love: quiet 12.42 (Omega) and 23.06 (Love), against loud 18.05
+  and 26.99 (ratio 1.5 and 1.2). Love's quiet passage changes more than any other mode's loud one. In the "line"
+  layout, scale the column wobble and the size swing by `drive` so a calm passage holds nearly still. Fixed when
+  quiet is under 4 under every code and the ratio is 3 or more.
+
+### String
+- [ ] Moves a lot when quiet: 6.69 under Omega (the second-highest quiet number), ratio 1.5; 3.78 against 5.85
+  under Love. The doc says calm music gives nearly straight strings; the numbers say the picture still changes
+  a lot. Check by eye what moves at `drive` 0 (glow, beads, the reflection) and tie it to `drive`. Fixed when
+  the ratio is 3 or more under Omega and Love.
+
+### Basic
+- [ ] Quiet 4.67 against loud 10.64 under Omega (ratio 2.3); 0.76 against 1.66 under Love (ratio 2.2). The bars
+  follow the spectrum, so some motion in a quiet verse is right, but a ratio of 3 would match Fire and Rain.
+  Low priority.
+- [ ] Old note, song 2 ("Decensus Ad Nihilum", quiet 5.13 against loud 8.95 in the 2026-11-16 table): **not
+  re-checked** in this review. Still open.
+- [ ] Under Love Basic costs 2.0 to 2.1 ms a frame against 0.8 to 1.4 ms under Omega (the heart glyphs). Under the
+  limit; only a note.
+
+### Nature
+- [ ] Under Love: quiet 0.30 against loud 0.40 (ratio 1.3); under Omega 0.17 against 0.63 (ratio 3.7). A 3 s
+  window is short for Nature, which needs about 10 s to grow or die back, so this needs a longer measurement
+  (10 s windows) before it counts as a fault. The petals shed by the cherry tree may keep the quiet picture busy.
+
+### Not done in this review (still to do)
+- Codes not measured: Tessa, New Year, Halloween, Solarpunk, Cyberpunk, Decensus Ad Nihilum, and the rainbow
+  code (`incertum`). Clock and Liquid were not measured under Love.
+- Song 2 ("Decensus Ad Nihilum") not measured.
+- Point 2 (does each code change more than the colours), point 3 (looks: leftovers, clutter, edges, text over
+  text, burnt-out white, readability on the light codes) and the comparison with Nature under Tessa: not done,
+  no pictures were looked at.
+- Point 4 (phone): nothing at 375 px or in phone fullscreen held sideways (812 x 375).
+- Speed at 375 px.
