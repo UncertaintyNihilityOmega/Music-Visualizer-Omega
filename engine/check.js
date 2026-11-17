@@ -316,6 +316,19 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!/addTracks\(singles, \{ quiet: true \}\)/.test(lib) || !/opts && opts\.quiet/.test(pl)) err('songs remembered from last time must be added quietly (no autoplay): library.js restore, playlist.js addTracks');
   const cueBody = (pl.match(/function cue\(i, t\)\{[\s\S]*?\n  \}\n/) || [''])[0];
   if (!cueBody || /play\(/i.test(cueBody)) err('playlist.js: cue() must put the last song on the player without starting it');
+  // folders inside the app hold songs' keys only: taking a song out of a folder or deleting a folder never
+  // removes the song from the app or the device (folders.js), and the playlist shows only the open folder
+  const fo = read('js/player/folders.js');
+  if (/removeTrack|forgetTrack|L\.forget\(|library\.forget\(/.test(fo)) err('folders.js: a folder must never remove or forget a song itself, only its key in the folder');
+  if (!/P\.inView/.test(pl) || !/P\.removeFromView/.test(pl)) err('playlist.js: the order and the list must follow the open folder (P.inView), and the ✕ in a folder must only take the song out of it (P.removeFromView)');
+}
+
+/* 10. every script the offline list (sw.js) caches is tracked by git, so the published site can install it
+       (found 2026-11-17: sw.js was pushed listing js/player/folders.js before that file was committed) */
+{
+  let tracked = null;
+  try { tracked = new Set(require('child_process').execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).split('\n')); } catch (e) {}
+  if (tracked) for (const f of require('./sw-build.js').appFiles()) if (!tracked.has(f)) err(`sw.js caches ${f}, which git does not track yet: commit it in the same commit as sw.js`);
 }
 
 notes.push(`${appJs.length} app scripts, ${buttons.length} modes, version ${appVer}`);

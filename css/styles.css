@@ -262,6 +262,22 @@ input[type=range]::-moz-range-thumb{ width:14px; height:14px; border-radius:50%;
 .track-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .track-remove{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:.8rem; padding:4px 6px; }
 .track-remove:hover{ color:var(--accent2); }
+/* folders inside the app (js/player/folders.js) */
+.folder-bar{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px; }
+.folder-chip{ font-size:.76rem; padding:7px 12px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.folder-new{ border-style:dashed; }
+.folder-name{ font-size:.8rem; padding:7px 12px; border-radius:999px; border:1px solid var(--accent); background:var(--field); color:var(--ink); min-width:0; width:160px; }
+.folder-note{ margin:0 4px 8px; }
+.folder-note[hidden]{ display:none; }
+.track-folder{ background:none; border:none; color:var(--muted); cursor:pointer; padding:0; display:inline-flex; align-items:center; justify-content:center; min-width:36px; min-height:36px; }
+.track-folder .ico{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.track-row .track-remove{ min-width:36px; min-height:36px; }
+.track-folder:hover{ color:var(--accent); }
+.folder-menu{ margin:2px 6px 8px 34px; padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--card); display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.folder-menu-head{ width:100%; margin:0 0 2px; font-size:.74rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.folder-menu-item{ font-size:.78rem; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:var(--field); color:var(--ink); cursor:pointer; min-height:36px; }
+.folder-menu-item.on{ border-color:var(--accent); background:rgba(var(--accent-rgb),.22); font-weight:700; }
+.folder-menu-note{ width:100%; margin:4px 0 0; font-size:.72rem; color:var(--muted); line-height:1.45; }
 .playlist-empty{ text-align:center; color:var(--muted); font-style:italic; font-size:.85rem; padding:18px 0; margin:0; }
 
 #file-input, #folder-input{ display:none; }

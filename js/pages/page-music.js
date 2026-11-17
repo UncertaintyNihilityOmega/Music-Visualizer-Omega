@@ -41,6 +41,8 @@ App.pages.define('music', {
       '</p>' +
     '</div>' +
     '<div class="card">' +
+      '<div class="folder-bar" id="folderBar" role="group" aria-label="Folders"></div>' +
+      '<p class="source-note folder-note" id="folderNote" hidden></p>' +
       '<div class="playlist-title"><span>Playlist</span><span id="trackCount">0 tracks</span></div>' +
       '<div class="playlist" id="playlistEl"></div>' +
       '<p class="playlist-empty" id="playlistEmpty">Your songs will show up here once you add them</p>' +

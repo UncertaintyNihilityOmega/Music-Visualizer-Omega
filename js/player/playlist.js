@@ -9,7 +9,9 @@
 
   /* ---------- Order / shuffle / repeat ---------- */
   function rebuildOrder(){
-    var indices = S.playlist.map(function(_, i){ return i; });
+    // only the songs in the open folder (js/player/folders.js); all of them when no folder is open
+    var indices = [];
+    S.playlist.forEach(function(t, i){ if (!P.inView || P.inView(t)) indices.push(i); });
     if (S.shuffleEnabled){
       for (var i = indices.length - 1; i > 0; i--){
         var j = Math.floor(Math.random() * (i + 1));
@@ -21,7 +23,7 @@
       }
     }
     S.order = indices;
-    S.orderPos = S.currentIndex === -1 ? 0 : S.order.indexOf(S.currentIndex);
+    S.orderPos = S.currentIndex === -1 ? 0 : Math.max(0, S.order.indexOf(S.currentIndex));
     applyLoop();
   }
   P.rebuildOrder = rebuildOrder;
@@ -199,16 +201,21 @@
   /* ---------- Playlist rendering ---------- */
   function renderPlaylist(){
     S.playlistEl.innerHTML = '';
-    S.trackCountEl.textContent = S.playlist.length + (S.playlist.length === 1 ? ' track' : ' tracks');
-    S.playlistEmpty.hidden = S.playlist.length > 0;
+    var shown = 0;
+    S.playlist.forEach(function(t){ if (!P.inView || P.inView(t)) shown++; });
+    S.trackCountEl.textContent = shown + (shown === 1 ? ' track' : ' tracks');
+    S.playlistEmpty.hidden = shown > 0;
+    var num = 0;
     S.playlist.forEach(function(t, i){
+      if (P.inView && !P.inView(t)) return;
+      num++;
       var row = document.createElement('div');
       row.className = 'track-row' + (i === S.currentIndex ? ' active' : '');
       row.tabIndex = 0;
       row.setAttribute('role', 'button');
       row.setAttribute('aria-label', 'Play track ' + (i + 1) + ': ' + t.name);
       row.innerHTML =
-        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-num">' + num + '</span>' +
         '<span class="track-name">' + U.escapeHtml(t.name) + '</span>' +
         '<button class="track-remove" type="button" aria-label="Remove track">✕</button>';
       row.addEventListener('click', function(){ playIndex(i); });
@@ -217,10 +224,14 @@
       });
       row.querySelector('.track-remove').addEventListener('click', function(e){
         e.stopPropagation();
+        // inside a folder the ✕ only takes the song out of that folder
+        if (P.removeFromView && P.removeFromView(t)) return;
         removeTrack(i);
       });
+      if (P.decorateRow) P.decorateRow(row, t, i);
       S.playlistEl.appendChild(row);
     });
+    if (App.folders) App.folders.paint();
   }
   P.renderPlaylist = renderPlaylist;
   function removeTrack(i){
@@ -254,15 +265,18 @@
   function addTracks(tracks, opts){
     var have = {};
     S.playlist.forEach(function(t){ if (t.path) have[t.path] = 1; });
-    var startIndex = S.playlist.length, added = 0;
+    var startIndex = S.playlist.length, added = 0, fresh = [];
     tracks.forEach(function(t){
       if (t.path && have[t.path]) return;
       if (t.path) have[t.path] = 1;
       if (t.retried === undefined) t.retried = false;
       S.playlist.push(t);
+      fresh.push(t);
       added++;
     });
     if (!added) return 0;
+    // songs the user adds while a folder is open go into that folder (folders.js); songs brought back from last time do not
+    if (!(opts && opts.quiet) && P.onAdded) P.onAdded(fresh);
     rebuildOrder();
     renderPlaylist();
     if (S.currentIndex === -1 && Aud.source !== 'mic' && !(opts && opts.quiet)) playIndex(startIndex);
@@ -370,7 +384,7 @@
     if (!url) return;
     var name = 'Track from URL';
     try { name = decodeURIComponent(url.split('/').pop().split('?')[0]) || name; } catch (e) {}
-    addTracks([{ name: name, url: url, isLocal: false }]);
+    addTracks([{ name: name, url: url, isLocal: false, path: url }]);
     urlInput.value = '';
   }
   loadUrlBtn.addEventListener('click', addUrlTrack);
