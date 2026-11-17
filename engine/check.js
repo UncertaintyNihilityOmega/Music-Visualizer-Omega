@@ -194,6 +194,13 @@ const road = read('ROADMAP.md');
   if (!/cfgVersion:\s*CFG_VERSION/.test(st) || !/importCfg\(incoming,\s*parsed/.test(st)) err('settings.js: export must write cfgVersion and import must pass it to importCfg');
   // a web address that blocks reading is played on the plain player, never through the analysis
   if (!read('js/core/state.js').includes('S.plainAudio') || !read('js/player/playlist.js').includes('track.noRead')) err('the plain player for addresses that block reading (state.js, playlist.js) is missing');
+  // Clock (found by hand, 2026-11-17): the loudest crown ran off the top and bottom of a wide, low picture, and a
+  // skin change left the old skin's characters drifting (drawn as the word "undefined")
+  const ck = read('js/modes/mode-clock.js');
+  const rK = +((/var R = Math\.min\(w, h\) \* ([\d.]+)/.exec(ck) || [])[1]), cK = +((/ringEnv\[j\] \* ([\d.]+) \* size/.exec(ck) || [])[1]);
+  if (!rK || !cK) err('mode-clock.js: the dial size (var R = Math.min(w, h) * …) or the crown length (ringEnv[j] * … * size) can no longer be found');
+  else if (rK * (1.1 + (0.035 + cK) * 1.15) > 0.48) err(`mode-clock.js: the loudest crown reaches ${(rK * (1.1 + (0.035 + cK) * 1.15)).toFixed(2)} of the short side from the middle; it must stay under 0.48 or it is cut off`);
+  if (!/if \(style !== lastStyle\)\{ orbit = \[\];/.test(ck)) err('mode-clock.js: a skin change must clear the drifting characters (orbit = [] when the style changes)');
 }
 
 /* 11. every page, mode, game and code has a drawn icon (user, 2026-11-16) */

@@ -1,9 +1,24 @@
 /* ---------- Clock ----------
-   A roman-numeral analog clock driven by the device's real time, restyled
-   completely by four "style" skins (Golden/Solarpunk/Cyberpunk/Heaven) that
-   each supply a palette, their own decorations, and their own take on
-   "the music visualizer" as an ambient particle system. The face + hands
-   renderer is shared; only paintFace's palette argument changes per style.
+   A clock that shows the device's real time, with the music round it.
+   Redrawn on 2026-11-16 (the user: "the Clock mode design needs rework"):
+   the heavy metal bezel, the sunburst and the crowd of drifting letters
+   are gone. What is there now, from the middle out:
+
+     the dial     a plain disc with a hairline rim, hour marks, slim hands,
+                  and the time in small figures
+     the song     a thin ring just outside the rim that fills as the song
+                  plays
+     the crown    the sound itself: 96 marks round the dial, bass at 12
+                  o'clock, treble at 6, the same on both sides. In a calm
+                  passage they are the short minute marks of a watch; in a
+                  big one they open into a crown
+     the orbits   three faint circles with one dot each, going round once a
+                  minute, once an hour and once in twelve hours
+
+   Every skin shares that and gives it a form of its own (FORMS): what the
+   hour marks are, how the crown is drawn, how the hands are cut; plus its
+   palette and its own background (gears and sand, vines, a grid, clouds
+   and wings, or a few of the theme's characters drifting by).
 
    Interlocking gears (Golden) rotate at speeds that are actually derived
    from their radii, the way a real gear train works: for two meshed gears,
@@ -98,8 +113,181 @@
     }}
   };
 
+  // How each skin draws the shared clock.
+  //   marks  the twelve hour marks: 'baton' | 'dots' | 'roman' | 'digits' | 'glyph' (with glyph: the character)
+  //   ring   the crown of sound: 'bars' | 'dots' | 'blocks' | 'rays' | 'wave' | 'inward' (jag: a restless wave)
+  //   hands  'round' | 'needle' | 'block'
+  //   ink    the crown's line colour when the rim colour is too pale to read on the background
+  var FORMS = {
+    omega:     { marks: 'baton',  ring: 'bars',   hands: 'round' },
+    tessa:     { marks: 'baton',  ring: 'wave',   hands: 'needle', jag: true },
+    newyear:   { marks: 'dots',   ring: 'dots',   hands: 'round' },
+    halloween: { marks: 'roman',  ring: 'bars',   hands: 'needle' },
+    love:      { marks: 'glyph',  ring: 'bars',   hands: 'round', glyph: '♥' },
+    solarpunk: { marks: 'baton',  ring: 'rays',   hands: 'round' },
+    cyberpunk: { marks: 'digits', ring: 'blocks', hands: 'block' },
+    nihilum:   { marks: 'dots',   ring: 'inward', hands: 'needle' },
+    golden:    { marks: 'roman',  ring: 'bars',   hands: 'needle' },
+    heaven:    { marks: 'baton',  ring: 'wave',   hands: 'round', ink: '#5FA3DA' }
+  };
+
+  /* ---------- the crown of sound ---------- */
+  var RING_N = 96, ringEnv = new Float32Array(RING_N);
+  function hash(n){ var x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); }
+  function drawRing(cx, cy, R, pal, form, cfg, k, dt){
+    var half = RING_N / 2, i;
+    for (i = 0; i <= half; i++){
+      var e = ringEnv[i] = U.env(ringEnv[i], Aud.specAt(0.04 + (i / half) * 0.8), 30, 7, dt);
+      if (i > 0 && i < half) ringEnv[RING_N - i] = e;
+    }
+    var size = 0.3 + 0.7 * A.drive;                 // a calm part: short marks; a big part: a full crown
+    var r0 = R * 1.1, kind = form.ring, a, len, ca, sa;
+    var arcW = 6.283 * r0 / RING_N;                 // room one mark has along the rim
+    function lenOf(j){ return R * (0.035 + ringEnv[j] * 0.33 * size); }
+    ctx.save();
+    if (kind === 'wave'){
+      var step = Math.floor(A.t * 14);
+      ctx.beginPath();
+      for (i = 0; i <= RING_N; i++){
+        var j = i % RING_N, rr = r0 + lenOf(j);
+        if (form.jag) rr += (hash(j * 7.31 + step * 3.7) - 0.5) * R * 0.09 * (0.25 + A.drive);
+        a = -Math.PI / 2 + j / RING_N * 6.283;
+        if (i === 0) ctx.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); else ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.moveTo(cx + r0 * 0.985, cy);
+      ctx.arc(cx, cy, r0 * 0.985, 0, 6.283, true);
+      ctx.globalAlpha = 0.14 + 0.16 * A.drive;
+      ctx.fillStyle = pal.accent;
+      ctx.fill('evenodd');
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = form.ink || pal.rim;
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(1.2 * k, R * 0.012);
+      ctx.shadowColor = pal.accent;
+      ctx.shadowBlur = 8 * k * cfg.glow;
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (kind === 'inward'){
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = pal.rim;
+      ctx.lineWidth = Math.max(1, k);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 1.5, 0, 6.283);
+      ctx.stroke();
+    }
+    ctx.lineCap = kind === 'blocks' ? 'butt' : 'round';
+    for (i = 0; i < RING_N; i++){
+      a = -Math.PI / 2 + i / RING_N * 6.283; ca = Math.cos(a); sa = Math.sin(a);
+      len = lenOf(i);
+      var ev = ringEnv[i], al = 0.3 + ev * 0.7;
+      if (kind === 'rays'){
+        var da = 3.1416 / RING_N * 0.85;
+        ctx.globalAlpha = al * 0.85;
+        ctx.fillStyle = i % 2 ? pal.accent : pal.rim;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a - da) * r0, cy + Math.sin(a - da) * r0);
+        ctx.lineTo(cx + ca * (r0 + len * 1.15), cy + sa * (r0 + len * 1.15));
+        ctx.lineTo(cx + Math.cos(a + da) * r0, cy + Math.sin(a + da) * r0);
+        ctx.closePath();
+        ctx.fill();
+      } else if (kind === 'blocks'){
+        var unit = R * 0.058, n = Math.max(1, Math.round(len / unit));
+        ctx.lineWidth = Math.max(2 * k, arcW * 0.66);
+        for (var b = 0; b < n; b++){
+          ctx.globalAlpha = al;
+          ctx.strokeStyle = b === n - 1 ? pal.accent : pal.rim;
+          ctx.beginPath();
+          ctx.moveTo(cx + ca * (r0 + b * unit), cy + sa * (r0 + b * unit));
+          ctx.lineTo(cx + ca * (r0 + b * unit + unit * 0.62), cy + sa * (r0 + b * unit + unit * 0.62));
+          ctx.stroke();
+        }
+      } else if (kind === 'dots'){
+        ctx.globalAlpha = al * 0.3;
+        ctx.strokeStyle = pal.rim;
+        ctx.lineWidth = Math.max(1, k);
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * r0, cy + sa * r0);
+        ctx.lineTo(cx + ca * (r0 + len), cy + sa * (r0 + len));
+        ctx.stroke();
+        ctx.globalAlpha = al;
+        ctx.fillStyle = i % 2 ? pal.accent : pal.rim;
+        ctx.beginPath();
+        ctx.arc(cx + ca * (r0 + len), cy + sa * (r0 + len), Math.max(1.4 * k, arcW * 0.3), 0, 6.283);
+        ctx.fill();
+      } else {
+        // bars (and inward bars): the body in the rim colour, the tip in the accent
+        var from = kind === 'inward' ? R * 1.5 : r0, dir = kind === 'inward' ? -1 : 1;
+        if (kind === 'inward') len = Math.min(len, R * 0.33);
+        ctx.lineWidth = Math.max(1.5 * k, arcW * 0.42);
+        ctx.globalAlpha = al;
+        ctx.strokeStyle = pal.rim;
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * from, cy + sa * from);
+        ctx.lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
+        ctx.stroke();
+        ctx.strokeStyle = pal.accent;
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * (from + dir * len * 0.72), cy + sa * (from + dir * len * 0.72));
+        ctx.lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ---------- the orbits: once a minute, once an hour, once in twelve hours ---------- */
+  function drawOrbits(cx, cy, R, pal, k){
+    var now = new Date();
+    var sec = now.getSeconds() + now.getMilliseconds() / 1000, min = now.getMinutes() + sec / 60, hr = (now.getHours() % 12) + min / 60;
+    var fr = [sec / 60, min / 60, hr / 12], rad = [1.95, 2.75, 3.7];
+    ctx.save();
+    for (var i = 0; i < 3; i++){
+      var r = R * rad[i], a = fr[i] * 6.283 - Math.PI / 2;
+      ctx.globalAlpha = 0.16 - i * 0.03;
+      ctx.strokeStyle = pal.rim;
+      ctx.lineWidth = Math.max(1, k);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, (3.2 - i * 0.5) * k * (1 + A.kick * 0.4), 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ---------- how far the song is: a thin ring that fills ---------- */
+  function drawSongRing(cx, cy, R, pal, k){
+    var el = App.state.player(), d = el.duration;
+    if (!d || !isFinite(d) || App.state.currentIndex === -1) return;
+    var f = Math.max(0, Math.min(1, el.currentTime / d)), r = R * 1.045, a0 = -Math.PI / 2, a1 = a0 + f * 6.283;
+    ctx.save();
+    ctx.lineWidth = Math.max(1.5 * k, R * 0.016);
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = pal.rim;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, 6.283);
+    ctx.stroke();
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = pal.accent;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.stroke();
+    ctx.fillStyle = pal.accent;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a1) * r, cy + Math.sin(a1) * r, Math.max(2.2 * k, R * 0.026), 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+
   /* ---------- the shared decoration of the theme skins ---------- */
-  var orbit = [];
+  var orbit = [], lastStyle = null;
   function spawnOrbit(w, h, cx, cy, R, dec, x, y){
     var p = { g: Math.floor(Math.random() * dec.glyphs.length), age: 0, life: 4 + Math.random() * 4,
               size: 0.7 + Math.random() * 0.9, ph: Math.random() * 6.283, rot: (Math.random() - 0.5) * 0.6 };
@@ -112,26 +300,6 @@
     orbit.push(p);
   }
   function stepOrbit(w, h, cx, cy, R, k, dt, cfg, pal, dec){
-    // ring of sound bars: bass at the top, treble at the bottom, the same on both sides
-    var bands = [A.sub, A.bass, A.lowMid, A.mid, A.high, A.air], N = 72;
-    ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineWidth = Math.max(1.5 * k, R * 0.03);
-    for (var i = 0; i < N; i++){
-      var half = i < N / 2 ? i / (N / 2) : (N - i) / (N / 2);        // 0 at the top, 1 at the bottom
-      var bf = half * (bands.length - 1), b0 = Math.floor(bf), b1 = Math.min(bands.length - 1, b0 + 1);
-      var v = bands[b0] + (bands[b1] - bands[b0]) * (bf - b0);
-      v = v * (0.75 + 0.25 * Math.sin(i * 2.4 + A.t * 3));
-      var ang = -Math.PI / 2 + i / N * 6.283, r0 = R * 1.2, r1 = r0 + R * (0.03 + v * 0.5);
-      ctx.strokeStyle = i % 2 ? pal.rim : pal.accent;
-      ctx.globalAlpha = 0.25 + v * 0.6;
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(ang) * r0, cy + Math.sin(ang) * r0);
-      ctx.lineTo(cx + Math.cos(ang) * r1, cy + Math.sin(ang) * r1);
-      ctx.stroke();
-    }
-    ctx.restore();
-
     // electric skin: sparks jump from the rim outward, more of them and longer when the music is big
     if (dec.arcs){
       var nArc = 1 + Math.round(A.drive * 5) + (A.kick > 0.5 ? 2 : 0), step = Math.floor(A.t * 14);
@@ -147,7 +315,7 @@
         ctx.globalAlpha = 0.45 + 0.5 * Math.abs(Math.sin(sd * 1.7));
         ctx.beginPath();
         for (var sg = 0; sg <= 5; sg++){
-          var rr = R * 1.14 + len * sg / 5, off = sg === 0 ? 0 : Math.sin(sd * (sg + 1) * 5.3) * 0.11;
+          var rr = R * 1.1 + len * sg / 5, off = sg === 0 ? 0 : Math.sin(sd * (sg + 1) * 5.3) * 0.11;
           var ax = cx + Math.cos(aa + off) * rr, ay = cy + Math.sin(aa + off) * rr;
           if (sg === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
         }
@@ -157,9 +325,9 @@
     }
 
     // the theme's characters: few when calm, many when the music is big; a hi-hat adds one
-    var max = Math.round((8 + A.drive * 34) * cfg.density);
-    if (orbit.length < max && Math.random() < (0.6 + A.drive * 9) * dt * cfg.density) spawnOrbit(w, h, cx, cy, R, dec);
-    if (A.hatHit > 0.35 && orbit.length < max + 6) spawnOrbit(w, h, cx, cy, R, dec);
+    var max = Math.round((2 + A.drive * 12) * cfg.density);
+    if (orbit.length < max && Math.random() < (0.3 + A.drive * 3.5) * dt * cfg.density) spawnOrbit(w, h, cx, cy, R, dec);
+    if (A.hatHit > 0.6 && orbit.length < max + 2) spawnOrbit(w, h, cx, cy, R, dec);
     var speed = (16 + A.drive * 60) * k * cfg.handSpeed;
     for (var j = orbit.length - 1; j >= 0; j--){
       var p = orbit[j];
@@ -177,21 +345,21 @@
         if (y < -0.1 * h || y > 1.1 * h){ orbit.splice(j, 1); continue; }
       }
       if (p.age > p.life * 3){ orbit.splice(j, 1); continue; }
-      var s = (12 + 12 * p.size) * k * (1 + A.kick * 0.35);
+      var s = (9 + 9 * p.size) * k * (1 + A.kick * 0.35);
       ctx.save();
-      ctx.globalAlpha = Math.min(1, p.age * 1.5) * (0.35 + 0.4 * p.size * 0.6) * (0.6 + cfg.glow * 0.4);
+      ctx.globalAlpha = Math.min(1, p.age * 1.5) * (0.22 + 0.2 * p.size) * (0.6 + cfg.glow * 0.4);
       ctx.translate(x, y);
       ctx.rotate(p.rot + Math.sin(A.t + p.ph) * 0.25);
-      ctx.drawImage(Can.glyphSprite(dec.glyphs[p.g], pal.accent), -s / 2, -s / 2, s, s);
+      ctx.drawImage(Can.glyphSprite(dec.glyphs[p.g % dec.glyphs.length], pal.accent), -s / 2, -s / 2, s, s);
       ctx.restore();
     }
   }
-  // which of the four skins is on: the user's pick, or with "theme" the one
+  // which skin is on: the user's pick, or with "theme" the one
   // the active theme code asks for (look.clock in themes.js)
   function styleId(){
     var s = Cfg.CFG.clock.style;
     if (s === 'theme') s = (App.theme.look && App.theme.look.clock) || 'omega';
-    return THEMES[s] ? s : 'golden';
+    return THEMES[s] ? s : 'omega';
   }
   function theme(){ return THEMES[styleId()]; }
 
@@ -233,168 +401,151 @@
     }
   }
 
-  /* ---------- shared face + hands: a beveled bezel, an embossed dial, and
-     properly tapered counterweighted hands, all reskinned per palette ---------- */
-  function drawFace(cx, cy, R, pal, cfg, k){
+  /* ---------- the dial and its hands ---------- */
+  function drawFace(cx, cy, R, pal, form, cfg, k){
     var now = new Date();
     var secF = now.getSeconds() + now.getMilliseconds() / 1000;
     var minF = now.getMinutes() + secF / 60;
     var hourF = (now.getHours() % 12) + minF / 60;
+    var i, a;
 
-    // ambient drop shadow lifts the whole clock off the background
+    // the dial: a plain disc that throws a soft shadow, and a hairline rim that glows with the beat
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = R * 0.26;
-    ctx.shadowOffsetY = R * 0.05;
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = R * 0.22;
+    ctx.shadowOffsetY = R * 0.04;
+    var face = ctx.createRadialGradient(cx, cy - R * 0.25, 0, cx, cy, R);
+    face.addColorStop(0, pal.faceCenter);
+    face.addColorStop(0.7, pal.faceMid || pal.faceCenter);
+    face.addColorStop(1, pal.faceEdge);
+    ctx.fillStyle = face;
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 1.14, 0, 6.283);
-    ctx.fillStyle = pal.bezelOuter;
+    ctx.arc(cx, cy, R, 0, 6.283);
     ctx.fill();
     ctx.restore();
-
-    // audio-reactive glow, just outside the bezel
     ctx.save();
-    ctx.strokeStyle = pal.accent;
-    ctx.globalAlpha = 0.3 + A.level * 0.45;
-    ctx.lineWidth = (2 + A.punch * 5) * k * (0.4 + cfg.glow);
+    ctx.strokeStyle = pal.rim;
+    ctx.lineWidth = Math.max(1.5 * k, R * 0.02);
     ctx.shadowColor = pal.accent;
-    ctx.shadowBlur = (6 + A.punch * 24) * cfg.glow * k;
+    ctx.shadowBlur = (4 + A.punch * 20) * cfg.glow * k;
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 1.19, 0, 6.283);
+    ctx.arc(cx, cy, R, 0, 6.283);
     ctx.stroke();
     ctx.restore();
 
-    // beveled metal bezel ring with a sweeping highlight, plus hour studs
-    var bezel = ctx.createRadialGradient(cx, cy, R * 0.97, cx, cy, R * 1.14);
-    bezel.addColorStop(0, pal.bezelInner);
-    bezel.addColorStop(0.55, pal.bezelHighlight);
-    bezel.addColorStop(1, pal.bezelOuter);
-    ctx.beginPath();
-    ctx.arc(cx, cy, R * 1.14, 0, 6.283);
-    ctx.arc(cx, cy, R * 0.99, 0, 6.283, true);
-    ctx.fillStyle = bezel;
-    ctx.fill();
-    for (var bs = 0; bs < 12; bs++){
-      var bsa = (bs / 12) * 6.283 - Math.PI / 2;
+    // minute dots
+    ctx.fillStyle = pal.tick;
+    for (i = 0; i < 60; i++){
+      if (i % 5 === 0) continue;
+      a = (i / 60) * 6.283 - Math.PI / 2;
       ctx.beginPath();
-      ctx.arc(cx + Math.cos(bsa) * R * 1.065, cy + Math.sin(bsa) * R * 1.065, Math.max(1 * k, R * 0.014), 0, 6.283);
-      ctx.fillStyle = pal.bezelStud;
+      ctx.arc(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9, Math.max(0.8 * k, R * 0.008), 0, 6.283);
       ctx.fill();
     }
-
-    // dial plate: a richer 3-stop gradient plus a faint engraved sunburst
-    var face = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-    face.addColorStop(0, pal.faceCenter);
-    face.addColorStop(0.68, pal.faceMid || pal.faceCenter);
-    face.addColorStop(1, pal.faceEdge);
-    ctx.beginPath();
-    ctx.arc(cx, cy, R * 0.99, 0, 6.283);
-    ctx.fillStyle = face;
-    ctx.fill();
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, R * 0.99, 0, 6.283);
-    ctx.clip();
-    ctx.globalAlpha = 0.06;
-    ctx.strokeStyle = pal.numeral;
-    ctx.lineWidth = Math.max(1 * k, R * 0.006);
-    for (var sb = 0; sb < 48; sb++){
-      var sba = (sb / 48) * 6.283;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(sba) * R * 1.1, cy + Math.sin(sba) * R * 1.1);
-      ctx.stroke();
-    }
-    // inner shadow near the rim, for depth
-    var innerShadow = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 0.99);
-    innerShadow.addColorStop(0, 'rgba(0,0,0,0)');
-    innerShadow.addColorStop(1, 'rgba(0,0,0,0.3)');
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = innerShadow;
-    ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-    ctx.restore();
-
+    // hour marks, in the skin's own form
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (var mm = 0; mm < 60; mm++){
-      var ma = (mm / 60) * 6.283 - Math.PI / 2;
-      var major = mm % 5 === 0;
-      var r1 = R * (major ? 0.85 : 0.91), r2 = R * 0.955;
-      ctx.strokeStyle = pal.tick;
-      ctx.lineWidth = Math.max(1 * k, R * (major ? 0.017 : 0.006));
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(ma) * r1, cy + Math.sin(ma) * r1);
-      ctx.lineTo(cx + Math.cos(ma) * r2, cy + Math.sin(ma) * r2);
-      ctx.stroke();
-    }
-    var numFont = 'bold ' + Math.max(10, Math.round(R * 0.16)) + 'px "Playfair Display", Georgia, serif';
-    for (var i = 0; i < 12; i++){
-      var a = (i / 12) * 6.283 - Math.PI / 2;
-      var nx = cx + Math.cos(a) * R * 0.7, ny = cy + Math.sin(a) * R * 0.7;
-      ctx.font = numFont;
-      ctx.fillStyle = pal.numeralShadow;
-      ctx.fillText(ROMAN[i], nx + R * 0.014, ny + R * 0.016);
-      ctx.fillStyle = pal.numeral;
-      ctx.fillText(ROMAN[i], nx, ny);
+    for (i = 0; i < 12; i++){
+      a = (i / 12) * 6.283 - Math.PI / 2;
+      var quarter = i % 3 === 0, ca = Math.cos(a), sa = Math.sin(a);
+      if (form.marks === 'roman' || form.marks === 'digits'){
+        ctx.font = form.marks === 'roman'
+          ? 'bold ' + Math.max(9, Math.round(R * (quarter ? 0.17 : 0.13))) + 'px Georgia, "Times New Roman", serif'
+          : '600 ' + Math.max(9, Math.round(R * (quarter ? 0.17 : 0.13))) + 'px Consolas, "Courier New", monospace';
+        ctx.fillStyle = pal.numeral;
+        ctx.globalAlpha = quarter ? 1 : 0.7;
+        ctx.fillText(form.marks === 'roman' ? ROMAN[i] : String(i === 0 ? 12 : i), cx + ca * R * 0.75, cy + sa * R * 0.75 + R * 0.01);
+        ctx.globalAlpha = 1;
+      } else if (form.marks === 'glyph'){
+        var gs = R * (quarter ? 0.2 : 0.14);
+        ctx.drawImage(Can.glyphSprite(form.glyph, pal.accent), cx + ca * R * 0.8 - gs / 2, cy + sa * R * 0.8 - gs / 2, gs, gs);
+      } else if (form.marks === 'dots'){
+        ctx.fillStyle = pal.numeral;
+        ctx.beginPath();
+        ctx.arc(cx + ca * R * 0.82, cy + sa * R * 0.82, R * (quarter ? 0.04 : 0.024), 0, 6.283);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = pal.numeral;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = Math.max(1.4 * k, R * (quarter ? 0.034 : 0.018));
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * R * (quarter ? 0.7 : 0.78), cy + sa * R * (quarter ? 0.7 : 0.78));
+        ctx.lineTo(cx + ca * R * 0.88, cy + sa * R * 0.88);
+        ctx.stroke();
+      }
     }
 
-    // hour/minute hands: a tapered diamond-tipped shape with a short
-    // counterweight tail, the way a real clock hand is cut
+    // the time in figures, small, in the lower half
+    if (cfg.digital && R > 40 * k){
+      var hh = now.getHours(), mi = now.getMinutes();
+      ctx.font = '500 ' + Math.round(R * 0.15) + 'px "Segoe UI", system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = pal.numeral;
+      ctx.globalAlpha = 0.5;
+      ctx.fillText((hh < 10 ? '0' : '') + hh + ':' + (mi < 10 ? '0' : '') + mi, cx, cy + R * 0.4);
+      ctx.globalAlpha = 1;
+    }
+
+    // hour and minute hands
     function hand(frac, lenMul, widMul, color, tailMul){
       var a2 = frac * 6.283 - Math.PI / 2;
-      var len = R * lenMul, wid = Math.max(1.6 * k, R * widMul), tail = R * tailMul;
+      var len = R * lenMul, wid = Math.max(1.8 * k, R * widMul), tail = R * tailMul;
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(a2);
-      ctx.shadowColor = 'rgba(0,0,0,0.4)';
-      ctx.shadowBlur = R * 0.02;
-      ctx.shadowOffsetX = R * 0.012;
-      ctx.shadowOffsetY = R * 0.012;
-      ctx.beginPath();
-      ctx.moveTo(-tail, wid * 0.55);
-      ctx.lineTo(len * 0.7, wid * 0.55);
-      ctx.lineTo(len, 0);
-      ctx.lineTo(len * 0.7, -wid * 0.55);
-      ctx.lineTo(-tail, -wid * 0.55);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = R * 0.03;
+      ctx.shadowOffsetX = R * 0.01;
+      ctx.shadowOffsetY = R * 0.014;
+      if (form.hands === 'needle'){
+        // a tapered blade with a short counterweight
+        ctx.beginPath();
+        ctx.moveTo(-tail, wid * 0.5);
+        ctx.lineTo(len * 0.62, wid * 0.5);
+        ctx.lineTo(len, 0);
+        ctx.lineTo(len * 0.62, -wid * 0.5);
+        ctx.lineTo(-tail, -wid * 0.5);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = wid;
+        ctx.lineCap = form.hands === 'block' ? 'butt' : 'round';
+        ctx.beginPath();
+        ctx.moveTo(-tail, 0);
+        ctx.lineTo(len, 0);
+        ctx.stroke();
+      }
       ctx.restore();
     }
-    hand(hourF / 12, 0.46, 0.05, pal.hourHand, 0.14);
-    hand(minF / 60, 0.68, 0.034, pal.minuteHand, 0.16);
+    hand(hourF / 12, 0.5, 0.064, pal.hourHand, 0.1);
+    hand(minF / 60, 0.76, 0.042, pal.minuteHand, 0.12);
 
-    // second hand: a thin sweep with a small counter-circle tail
+    // second hand: a hairline with a small counterweight; a kick makes it jump forward and settle back
     if (cfg.kickTick && A.kickHit > 0.3 && A.drive > 0.1) tickKick = Math.max(tickKick, 0.4 + A.kickHit * 0.6);
     tickKick *= Math.exp(-9 * A.dt);
     var a3 = (secF / 60) * 6.283 - Math.PI / 2 + tickKick * 0.085;
     ctx.save();
     ctx.strokeStyle = pal.secondHand;
+    ctx.fillStyle = pal.secondHand;
     ctx.lineCap = 'round';
-    ctx.lineWidth = Math.max(1 * k, R * 0.011);
+    ctx.lineWidth = Math.max(1 * k, R * 0.012);
     ctx.beginPath();
-    ctx.moveTo(cx - Math.cos(a3) * R * 0.16, cy - Math.sin(a3) * R * 0.16);
-    ctx.lineTo(cx + Math.cos(a3) * R * 0.8, cy + Math.sin(a3) * R * 0.8);
+    ctx.moveTo(cx - Math.cos(a3) * R * 0.18, cy - Math.sin(a3) * R * 0.18);
+    ctx.lineTo(cx + Math.cos(a3) * R * 0.86, cy + Math.sin(a3) * R * 0.86);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(cx - Math.cos(a3) * R * 0.12, cy - Math.sin(a3) * R * 0.12, R * 0.026, 0, 6.283);
-    ctx.fillStyle = pal.secondHand;
+    ctx.arc(cx - Math.cos(a3) * R * 0.18, cy - Math.sin(a3) * R * 0.18, R * 0.024, 0, 6.283);
+    ctx.fill();
+    // hub
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(2.6 * k, R * 0.05), 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = pal.faceCenter;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(1 * k, R * 0.018), 0, 6.283);
     ctx.fill();
     ctx.restore();
-
-    // centre hub: a small layered jewel with a bright highlight fleck
-    ctx.beginPath();
-    ctx.arc(cx, cy, Math.max(3 * k, R * 0.058), 0, 6.283);
-    ctx.fillStyle = pal.rim;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx, cy, Math.max(2 * k, R * 0.036), 0, 6.283);
-    ctx.fillStyle = pal.accent;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx - R * 0.012, cy - R * 0.012, Math.max(1 * k, R * 0.013), 0, 6.283);
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fill();
   }
 
   /* ---------- Golden: interlocking gears + a bed of sand ---------- */
@@ -808,17 +959,30 @@
     var t = theme();
     Can.backdrop(1);
     var style = styleId();
-    var R0 = Math.min(w, h * 0.92) * 0.34;
-    if (t.decor) stepOrbit(w, h, w / 2, h * 0.52, R0, k, dt, cfg, t.pal, t.decor);
+    // a new skin starts with no drifting characters: the old ones carry the old skin's glyphs and way of moving
+    if (style !== lastStyle){ orbit = []; lastStyle = style; }
+    // the dial is 0.3 of the short side, so the loudest crown (1.52 radii) still ends inside the picture
+    var R = Math.min(w, h) * 0.3, cx = w / 2, cy = h * 0.5;
+    var form = FORMS[style] || FORMS.omega;
+    // a soft light behind the clock: brighter in a big part of the song
+    var halo = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 2.4);
+    halo.addColorStop(0, U.rgba(U.hexRGB(t.pal.accent), ((0.08 + 0.2 * A.drive) * (0.4 + cfg.glow)).toFixed(3)));
+    halo.addColorStop(1, U.rgba(U.hexRGB(t.pal.accent), '0'));
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, w, h);
+
+    if (t.decor) stepOrbit(w, h, cx, cy, R, k, dt, cfg, t.pal, t.decor);
     else if (style === 'golden'){ paintGoldenAmbience(w, h, k); stepGears(w, h, k, dt, cfg, t.pal); stepSand(w, h, k, dt, cfg); }
     else if (style === 'solarpunk'){ stepSolarLive(w, h, k, dt, cfg); stepSolarParticles(w, h, k, dt, cfg); }
     else if (style === 'cyberpunk'){ stepCyberLive(w, h, k, dt, cfg); stepCyberParticles(w, h, k, dt, cfg); }
     else { stepClouds(w, h, k, dt, cfg); stepHeavenParticles(w, h, k, dt, cfg); }
 
-    var R = Math.min(w, h * 0.92) * 0.34;
-    stepChimes(w / 2, h * 0.52, R, t.pal, k, dt);
-    if (style === 'heaven') drawWings(w / 2, h * 0.52, R, t.pal, k);
-    drawFace(w / 2, h * 0.52, R, t.pal, cfg, k);
+    if (cfg.orbits) drawOrbits(cx, cy, R, t.pal, k);
+    stepChimes(cx, cy, R, t.pal, k, dt);
+    if (style === 'heaven') drawWings(cx, cy, R, t.pal, k);
+    drawRing(cx, cy, R, t.pal, form, cfg, k, dt);
+    if (cfg.songRing) drawSongRing(cx, cy, R, t.pal, k);
+    drawFace(cx, cy, R, t.pal, form, cfg, k);
   }
   function onTap(x, y){
     var style = styleId();
@@ -826,7 +990,7 @@
     App.taps.spawnRing(x, y, ringColor);
     var k = Can.dpr();
     if (theme().decor){
-      for (var o = 0; o < 6; o++) spawnOrbit(canvas.width, canvas.height, canvas.width / 2, canvas.height * 0.52, 1, theme().decor,
+      for (var o = 0; o < 4; o++) spawnOrbit(canvas.width, canvas.height, canvas.width / 2, canvas.height * 0.5, 1, theme().decor,
                                              x + (Math.random() - 0.5) * 40 * k, y + (Math.random() - 0.5) * 40 * k);
       return;
     }
@@ -848,11 +1012,14 @@
 
   App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, fx: 0.4 });
 
-  App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true });
+  App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true, digital: true, songRing: true, orbits: true });
   App.cfg.registerSchema({ id: 'clock', label: 'Clock', fields: [
     ['style', 'Style', 'layout', ['theme'].concat(Object.keys(THEMES))],
     ['kickTick', 'Second hand jumps on the kick', 'bool'],
     ['chimes', 'Rings of light when the music swells', 'bool'],
+    ['songRing', 'A ring round the dial fills as the song plays', 'bool'],
+    ['digital', 'The time in figures on the dial', 'bool'],
+    ['orbits', 'Orbits: a dot a minute, an hour, twelve hours', 'bool'],
     ['density', 'Decoration density', 'range', 0.3, 2, 0.05],
     ['glow', 'Glow amount', 'range', 0, 1, 0.05],
     ['handSpeed', 'Background motion', 'range', 0.2, 2, 0.05]

@@ -136,10 +136,20 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
 - Ideas left: notes that **fall onto** the keys before they sound (ROADMAP 20). Two routes, written up in
   docs/RESEARCH.md section 6: read the whole file first (the song map), or play the sound 2.3 s late.
 
-## Clock
-- Listens to: `level`, `punch`, `beat` (pulses, gear speed), `kick` (second hand), `drive` (rings of light).
-- Built: the second hand jumps on a kick and settles back; rings of light leave the clock when the music
-  swells; the four skins follow the theme code ("theme" is the default style).
+## Clock (redrawn 2026-11-16, asked by the user: the old one "looks pretty ugly")
+- Picture, from the middle out: a plain dial with a hairline rim, hour marks, slim hands and the time in small
+  figures; a thin ring that fills as the song plays; a crown of 96 sound marks round the dial (bass at 12
+  o'clock, treble at 6, the same on both sides); three faint orbits with one dot each (a minute, an hour,
+  twelve hours). The heavy metal bezel, the sunburst and the crowd of letters are gone.
+- Listens to: the spectrum (the crown), `drive` (how far the crown opens, how many characters drift, rings of
+  light), `punch` (the rim glows), `kick` (second hand jumps, orbit dots swell), `level` and `beat` (gears, sand).
+- Calm against lively: in a calm passage the crown is short, like a watch's minute marks; in a loud one it
+  opens to about a third of the dial's radius beyond the rim.
+- Skins: every skin keeps its palette and background and gets a form (`FORMS` in the file): hour marks
+  (batons, dots, Roman, figures or hearts), crown (bars, dots, blocks, rays, a wave, or bars pointing inward)
+  and hands (round, needle or block). "theme" follows the theme code (`look.clock`).
+- Size: the dial is 0.3 of the picture's short side, so the loudest crown still ends inside a wide, low
+  picture; `engine/check.js` fails if it would be cut off.
 - Ideas left: tick exactly on the beat once a tempo is known (needs the song map, ROADMAP 6).
 
 ## Liquid (added 2026-11-16, asked by the user; model: `inspiration/liquid-example.mp4`)
