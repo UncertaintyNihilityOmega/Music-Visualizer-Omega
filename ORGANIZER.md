@@ -61,7 +61,8 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 ## Standing approvals
 - **Runs may push to GitHub on their own** after each step's commit; never force-push. A push to `main`
   publishes the site (GitHub Pages, "Deploy from a branch").
-- Runs may use the preview server, and do several steps until the usage gate stops them (AGENT-RUN.md).
+- Runs may use the preview server, and do several steps until the usage gate stops them (AGENT-RUN.md): the
+  5-hour meter may pass 75% but must never hit 100%; the weekly one stops new steps at 95%.
 - Agents are allowed within AGENT-RUN.md's limits (default per run: at most 2 Sonnet agents and 1 Opus agent).
 - Unused files may be deleted; `node engine/unused.js` lists candidates. User files never.
 - The scheduled task `music-visualiser-omega-next-step` may run; the user switches it on or starts it by hand.

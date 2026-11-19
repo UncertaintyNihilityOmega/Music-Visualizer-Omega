@@ -15,9 +15,13 @@ other session can continue from. Runs are started by hand (a prompt from PROMPTS
 2. **Read** ORGANIZER.md, then ROADMAP.md, then run `git status`. If the last run stopped at a usage limit,
    finish what it left on disk first: gates, then commit. **Start the preview server** ("static-server") now,
    at the start of the run: the project is visual.
-3. **Usage gate.** Read the usage meter (`get_usage`) before every step. Start a step only if the 5-hour window
-   is at 75% or less and the weekly limit at 95% or less. If the 5-hour reset is under
-   30 minutes away, wait for it and go on. Otherwise write "waiting for the reset at <time>" in "Now" and stop.
+3. **Usage gate.** Read the usage meter (`get_usage`) before every step. The 5-hour window may pass 75%; it
+   must never hit 100% (the user's rule). So start a step only if what is left in the 5-hour window covers it
+   (a step costs about 10 to 20%, an agent step with browser checks the upper end): at 80% or less start any
+   step, from 80% to 90% only a small one (docs, a one-file fix), above 90% none; and the weekly limit must be
+   at 95% or less. Read the meter again while a long step or an agent runs; at 95% checkpoint-commit what is
+   on disk and stop agents. If the 5-hour reset is under 30 minutes away, wait for it and go on. Otherwise
+   write "waiting for the reset at <time>" in "Now" and stop.
 4. **Loop.** Take the next step that is not waiting on the user: one queue item, or one package of a
    multi-package item. For each step:
    - do the work, saving as you go; never hold a finished file only in the chat;
@@ -108,7 +112,7 @@ folders, half a review (one agent, about 125k tokens) and the start of the song 
 tokens). Two agents at once doubled the spend; the user closed the run to save the weekly limit. Lesson: one
 agent at a time, and ask each agent to checkpoint-commit as soon as one part passes its gates.
 
-So a run fits about three steps, and a step that starts above 60% is likely to cross 75%. Browser checks cost
+A step costs about 10 to 20% of the 5-hour meter; an agent step with browser checks about 10%, three mode fixes by one agent about 10% (2026-11-19). Browser checks cost
 most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over
 screenshots, and one screenshot per fault. Update this table after more runs.
 

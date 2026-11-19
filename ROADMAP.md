@@ -3,8 +3,8 @@
 ## Now
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
 - Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks).
-- v0.3.0 started: items 24 and 25 built (they wait on your look); item 17's review finished; Liquid, Emoji
-  and String being fixed by an agent.
+- v0.3.0 started: items 24 and 25 built (they wait on your look); item 17: review finished, Liquid,
+  Emoji and String fixed, Fire, Basic and Nature in hand (agent).
 - Item 6 (v0.5.0) is started, not committed: the pure maths is in `.run/wip/song-map.js` (git-ignored). The
   user's beat counts agree with it (see item 6). To resume: move the file back to `js/core/` and add it to
   `index.html` in the same commit.
@@ -55,7 +55,10 @@
     **Review finished 2026-11-19** (second half in docs/MODES.md): worst are Emoji (quiet 11 to 23 under every
     code, ratio 1.2 to 1.5), Liquid (ratio 0.9 to 1.6) and String (ratio 0.8 to 1.9); Emoji and Liquid codes
     change mostly colours; Fire under three codes and Nature under pale codes are weaker. Every mode is under
-    6 ms a frame (worst 4.7 ms at 1280 px, 2.3 ms at 375 px). Fixes for Liquid, Emoji, String: in hand (agent).
+    6 ms a frame (worst 4.7 ms at 1280 px, 2.3 ms at 375 px). **Liquid, Emoji, String fixed 2026-11-19**: quiet
+    against loud now 12 to 28 times (Liquid), 7 to 35 (Emoji), 8 or more (String) under every code; Liquid and
+    Emoji got a form for more codes. Weak: Emoji under Cyberpunk is quieter when loud (7.25). Left: the notes on
+    Fire, Basic and Nature (in hand), and a dated Clock line.
     Clock notes left for a later look: the time in figures is crowded beside VIII and IV in the Roman skins,
     the hands can pass over it, Golden's sand covers the bottom of the crown on a phone, Cyberpunk is busy,
     Solarpunk's solar panels are left over.

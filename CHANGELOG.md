@@ -18,6 +18,9 @@ ROADMAP.md "Done" is emptied for the next one.
 - **Clock: Gears** are flat gear icons now, eighteen of them, all turning in time.
 - **Clock: Sand**, a new design. Sand pours in and fills the picture in about ten minutes; press and drag to
   scoop some up and let go while moving to throw it. When the picture is full it drains away and starts again.
+- **Liquid, Emoji and String are calm in quiet music** and move a lot when it is loud (they moved nearly the
+  same in both before). Liquid and Emoji also take a form of their own from more theme codes now, not only
+  colours (for example a slime drop under Halloween, bats under Halloween in Emoji, a grid under Cyberpunk).
 
 ## v0.1.0 (2026-11-19): everything built so far
 
