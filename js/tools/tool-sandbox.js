@@ -91,8 +91,22 @@
   function setMessage(msg){ SB.message = msg; SB.messageT = 2.2; }
 
   /* ---------- grid <-> screen ---------- */
+  // The palette strip: as many columns as give the biggest swatches while the strip stays within about a
+  // third of the picture (21 x 2 on a wide PC picture, 14 x 3 on a phone). Before the design pass
+  // (ROADMAP item 16) it was always 6 x 7 and took half of a phone's picture.
+  function palLayout(w, h, k){
+    var actionW = Math.min(w * 0.14, 58 * k), swW = w - actionW, best = null;
+    [7, 14, 21, 42].forEach(function(cols){
+      var rows = Math.ceil(N / cols), s = Math.min(swW / cols, 44 * k);
+      if (rows * s > h * 0.36) s = h * 0.36 / rows;
+      if (!best || s > best.s + 0.5) best = { cols: cols, rows: rows, s: s };
+    });
+    best.actionW = actionW; best.swW = swW;
+    best.palH = best.rows * best.s + 8 * k;
+    return best;
+  }
   function layout(w, h, k){
-    var palH = Math.max(h * 0.27, 100 * k);
+    var palH = palLayout(w, h, k).palH;
     return { gridH: h - palH, palY: h - palH, palH: palH };
   }
   function cellPx(k){ return BASE_CELL * SB.zoom * k; }
@@ -187,14 +201,17 @@
 
   /* ---------- layout helpers for hit-testing + drawing ---------- */
   function paletteRects(w, h, k){
-    var lay = layout(w, h, k);
-    var actionW = Math.min(w * 0.16, 64 * k);
-    var swW = w - actionW;
-    var cellW = swW / 6, cellH = lay.palH / 7;
+    var lay = layout(w, h, k), pl = palLayout(w, h, k);
+    var actionW = pl.actionW, swW = pl.swW;
+    var cellW = swW / pl.cols, cellH = pl.s, top = lay.palY + 4 * k;
     var rects = [];
+    // seven families (six hues, then the greys) of six shades, each family a block of its own:
+    // 1 x 6 with 7 columns, 2 x 3 with 14, 3 x 2 with 21, 6 x 1 with 42
+    var per = pl.cols / 7;
     for (var i = 0; i < N; i++){
-      var col = i % 6, row = Math.floor(i / 6);
-      rects.push({ x: col * cellW, y: lay.palY + row * cellH, w: cellW, h: cellH });
+      var fam = i < 36 ? i % 6 : 6, shade = i < 36 ? Math.floor(i / 6) : i - 36;
+      var col = fam * per + (shade % per), row = Math.floor(shade / per);
+      rects.push({ x: col * cellW, y: top + row * cellH, w: cellW, h: cellH });
     }
     var btnH = lay.palH / 3;
     var buttons = {
@@ -214,10 +231,18 @@
   }
 
   /* ---------- drawing ---------- */
+  // The look (ROADMAP item 16, after the user's picture inspiration/sandbox-example.jpg, in a style of its
+  // own): chunky blocks with a light top-left edge and a dark bottom-right edge on a dusk sky, slow blocky
+  // clouds, and a dark palette strip so the colours stand out. Before it: flat squares on pale grey.
   function paintBG(c, w, h){
-    c.fillStyle = 'rgba(255,255,255,0.4)';
+    var g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#2A2458');
+    g.addColorStop(0.55, '#5A4F98');
+    g.addColorStop(1, '#B49AD0');
+    c.fillStyle = g;
     c.fillRect(0, 0, w, h);
   }
+  // the square visualiser behind the grid (GAME-AUDIT B6): soft light squares, bigger where the sound is loud
   function stepAmbientSquares(w, h, k, gridH){
     var tilesX = 12, tilesY = 7;
     var tw = w / tilesX, th = gridH / tilesY;
@@ -226,10 +251,66 @@
         var f = (tx + ty * tilesX) / (tilesX * tilesY);
         var v = Aud.specAt(f);
         var inset = Math.min(tw, th) * (0.16 + (1 - v) * 0.14);
-        ctx.fillStyle = 'rgba(130,150,205,' + (0.05 + v * 0.14).toFixed(3) + ')';
+        ctx.fillStyle = 'rgba(255,240,255,' + (0.025 + v * 0.09).toFixed(3) + ')';
         ctx.fillRect(tx * tw + inset, ty * th + inset, tw - inset * 2, th - inset * 2);
       }
     }
+  }
+  // blocky clouds drifting across the sky: almost still in a quiet passage, quicker in a big one
+  var CLOUDS = [{ x: 0.08, y: 0.12, s: 1 }, { x: 0.46, y: 0.06, s: 0.8 }, { x: 0.78, y: 0.2, s: 1.15 }];
+  var CLOUD_SHAPE = [[1, 0, 3], [0, 1, 6], [2, 2, 2]];   // rows of blocks: start column, row, length
+  function drawClouds(w, gridH, k, dt){
+    var b = 9 * k, mo = Cfg.CFG.look.motion;
+    for (var i = 0; i < CLOUDS.length; i++){
+      var cl = CLOUDS[i], cb = b * cl.s;
+      cl.x += dt * (0.004 + 0.05 * A.drive) * mo / cl.s;
+      if (cl.x * w > w + cb * 7) cl.x = -cb * 7 / w;
+      var x0 = cl.x * w, y0 = cl.y * gridH;
+      for (var r = 0; r < CLOUD_SHAPE.length; r++){
+        var row = CLOUD_SHAPE[r];
+        ctx.fillStyle = r === 2 ? 'rgba(214,206,236,0.55)' : 'rgba(250,247,255,0.62)';
+        ctx.fillRect(x0 + row[0] * cb, y0 + row[1] * cb, row[2] * cb, cb);
+      }
+      ctx.fillStyle = 'rgba(160,150,200,0.35)';
+      ctx.fillRect(x0, y0 + 2 * cb - cb * 0.25, 6 * cb, cb * 0.25);
+    }
+  }
+  // one block, drawn once per colour and size and then copied
+  // kept by colour and size (the grid, the palette and the dragged block each use their own size; one
+  // cache per size rebuilt them every frame: 13.7 ms a frame instead of about 2)
+  var blockCache = {}, blockCount = 0;
+  function blockSprite(idx, px){
+    px = Math.max(3, Math.round(px));
+    var key = idx + '|' + px;
+    if (blockCache[key]) return blockCache[key];
+    if (++blockCount > 260){ blockCache = {}; blockCount = 1; }   // zooming makes new sizes: keep it small
+    var cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    var x = cv.getContext('2d'), e = Math.max(1, Math.round(px * 0.15));
+    x.fillStyle = PALETTE[idx];
+    x.fillRect(0, 0, px, px);
+    // a little grain, the same for every block of a colour
+    var q = Math.max(1, Math.round(px / 6));
+    x.fillStyle = 'rgba(255,255,255,0.10)';
+    x.fillRect(Math.round(px * 0.3), Math.round(px * 0.35), q, q);
+    x.fillRect(Math.round(px * 0.62), Math.round(px * 0.6), q, q);
+    x.fillStyle = 'rgba(0,0,0,0.10)';
+    x.fillRect(Math.round(px * 0.5), Math.round(px * 0.25), q, q);
+    x.fillRect(Math.round(px * 0.25), Math.round(px * 0.66), q, q);
+    // light top and left edges, dark bottom and right edges, a thin outline
+    x.fillStyle = 'rgba(255,255,255,0.34)';
+    x.fillRect(0, 0, px, e);
+    x.fillRect(0, e, e, px - e);
+    x.fillStyle = 'rgba(0,0,0,0.30)';
+    x.fillRect(e, px - e, px - e, e);
+    x.fillRect(px - e, e, e, px - 2 * e);
+    if (px >= 8){
+      x.strokeStyle = 'rgba(0,0,0,0.32)';
+      x.lineWidth = 1;
+      x.strokeRect(0.5, 0.5, px - 1, px - 1);
+    }
+    blockCache[key] = cv;
+    return cv;
   }
   function draw(){
     load();
@@ -240,6 +321,7 @@
     Can.backdrop(1);
 
     stepAmbientSquares(w, h, k, lay.gridH);
+    drawClouds(w, lay.gridH, k, dt);
 
     // grid area clip
     ctx.save();
@@ -250,7 +332,7 @@
     var c = cellPx(k);
     var viewCols = Math.ceil(w / c) + 1, viewRows = Math.ceil(lay.gridH / c) + 1;
     // grid lines
-    ctx.strokeStyle = 'rgba(110,30,46,0.10)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
     ctx.lineWidth = Math.max(1, k * 0.6);
     ctx.beginPath();
     for (var gx = 0; gx <= viewCols; gx++){
@@ -266,7 +348,10 @@
     ctx.stroke();
     // canvas extent border
     var origin = gridToScreen(0, 0, k), end = gridToScreen(SB.cols, SB.rows, k);
-    ctx.strokeStyle = 'rgba(110,30,46,0.35)';
+    ctx.fillStyle = 'rgba(10,8,24,0.38)';
+    if (end.x < w) ctx.fillRect(end.x, 0, w - end.x, lay.gridH);
+    if (end.y < lay.gridH) ctx.fillRect(0, end.y, Math.min(w, end.x), lay.gridH - end.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
     ctx.lineWidth = Math.max(1.4, k);
     ctx.strokeRect(origin.x, origin.y, end.x - origin.x, end.y - origin.y);
 
@@ -275,17 +360,15 @@
       var p = key.split(','), px = +p[0], py = +p[1];
       if (px < SB.viewX - 1 || px > SB.viewX + viewCols || py < SB.viewY - 1 || py > SB.viewY + viewRows) continue;
       var pt = gridToScreen(px, py, k);
-      ctx.fillStyle = PALETTE[SB.grid[key]];
-      ctx.fillRect(pt.x, pt.y, c, c);
+      ctx.drawImage(blockSprite(SB.grid[key], c), pt.x, pt.y, c, c);
     }
 
     // hover / drag preview
     if (SB.carrying >= 0 && SB.carryPt && SB.carryPt.y < lay.gridH){
       var g = screenToGrid(SB.carryPt.x, SB.carryPt.y, k);
       var hp = gridToScreen(g.gx, g.gy, k);
-      ctx.globalAlpha = 0.55;
-      ctx.fillStyle = PALETTE[SB.carrying];
-      ctx.fillRect(hp.x, hp.y, c, c);
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(blockSprite(SB.carrying, c), hp.x, hp.y, c, c);
       ctx.globalAlpha = 1;
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = Math.max(1.4, k);
@@ -297,18 +380,17 @@
     if (SB.carrying >= 0 && SB.carryPt){
       ctx.save();
       ctx.globalAlpha = 0.85;
-      ctx.fillStyle = PALETTE[SB.carrying];
       var gs = 22 * k;
       ctx.shadowColor = 'rgba(0,0,0,0.35)';
       ctx.shadowBlur = 6 * k;
-      ctx.fillRect(SB.carryPt.x - gs / 2, SB.carryPt.y - gs / 2, gs, gs);
+      ctx.drawImage(blockSprite(SB.carrying, gs), SB.carryPt.x - gs / 2, SB.carryPt.y - gs / 2, gs, gs);
       ctx.restore();
     }
 
     /* ---------- palette strip ---------- */
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillStyle = 'rgba(16,12,32,0.9)';
     ctx.fillRect(0, lay.palY, w, lay.palH);
-    ctx.strokeStyle = 'rgba(110,30,46,0.18)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
     ctx.lineWidth = Math.max(1, k);
     ctx.beginPath(); ctx.moveTo(0, lay.palY); ctx.lineTo(w, lay.palY); ctx.stroke();
 
@@ -316,45 +398,41 @@
     for (var i = 0; i < N; i++){
       var r = rects.swatches[i];
       var stock = SB.inventory[i];
-      var pad = Math.min(r.w, r.h) * 0.14;
+      var pad = Math.min(r.w, r.h) * 0.1;
       var sz = Math.min(r.w, r.h) - pad * 2;
       var cx2 = r.x + r.w / 2, cy2 = r.y + r.h / 2;
       ctx.save();
-      if (stock <= 0) ctx.globalAlpha = 0.28;
-      ctx.shadowColor = 'rgba(0,0,0,0.3)';
-      ctx.shadowBlur = 3 * k;
-      ctx.shadowOffsetY = 1 * k;
-      ctx.fillStyle = PALETTE[i];
-      U.roundRect(ctx, cx2 - sz / 2, cy2 - sz / 2, sz, sz, sz * 0.18);
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.strokeStyle = (SB.carrying === i) ? '#6E1E2E' : 'rgba(0,0,0,0.25)';
-      ctx.lineWidth = (SB.carrying === i ? 2.2 : 1) * k;
-      U.roundRect(ctx, cx2 - sz / 2, cy2 - sz / 2, sz, sz, sz * 0.18);
-      ctx.stroke();
+      if (stock <= 0) ctx.globalAlpha = 0.25;
+      ctx.drawImage(blockSprite(i, sz), cx2 - sz / 2, cy2 - sz / 2, sz, sz);
+      if (SB.carrying === i){
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2 * k;
+        ctx.strokeRect(cx2 - sz / 2 - k, cy2 - sz / 2 - k, sz + 2 * k, sz + 2 * k);
+      }
       ctx.restore();
       if (stock > 0){
-        ctx.font = 'bold ' + Math.max(8, sz * 0.32) + 'px Karla, sans-serif';
-        ctx.textAlign = 'center';
+        ctx.font = 'bold ' + Math.max(8, sz * 0.36) + 'px Karla, sans-serif';
+        ctx.textAlign = 'right';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillText(String(stock), cx2 + 1, cy2 + sz / 2 + 1);
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillText(String(stock), cx2 + sz / 2 - k * 0.5, cy2 + sz / 2 + k * 0.5);
         ctx.fillStyle = '#fff';
-        ctx.fillText(String(stock), cx2, cy2 + sz / 2);
+        ctx.fillText(String(stock), cx2 + sz / 2 - k * 1.5, cy2 + sz / 2 - k * 0.5);
       }
     }
     var btns = rects.buttons;
     ['exportBtn', 'fitBtn', 'clearBtn'].forEach(function(id){
       var b = btns[id];
-      ctx.fillStyle = 'rgba(194,98,111,0.12)';
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
       U.roundRect(ctx, b.x + 3 * k, b.y + 2 * k, b.w - 6 * k, b.h - 4 * k, 6 * k);
       ctx.fill();
       ctx.font = Math.max(11, b.h * 0.4) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#EDE7FF';      // the Fit sign is text, not an emoji: it needs a colour of its own
       ctx.fillText(b.icon, b.x + b.w / 2, b.y + b.h / 2 - 2 * k);
       ctx.font = Math.max(8, b.h * 0.18) + 'px Karla, sans-serif';
-      ctx.fillStyle = '#6E1E2E';
+      ctx.fillStyle = '#EDE7FF';
       ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h * 0.82);
     });
 
@@ -364,16 +442,16 @@
     ctx.textBaseline = 'top';
     ctx.font = (11 * k) + 'px Karla, sans-serif';
     var hud = (Cfg.CFG.sandbox.gravity ? 'Gravity: on' : 'Gravity: sky') + '   Next swatch in ' + untilNext + 's   Zoom ' + SB.zoom.toFixed(2) + 'x   ' + SB.cols + '×' + SB.rows;
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillText(hud, 9 * k, 9 * k + 1);
-    ctx.fillStyle = 'rgba(110,30,46,0.85)';
+    ctx.fillStyle = 'rgba(244,238,255,0.88)';
     ctx.fillText(hud, 8 * k, 8 * k);
 
     if (SB.messageT > 0){
       SB.messageT -= dt;
       ctx.textAlign = 'center';
       ctx.font = 'bold ' + (12 * k) + 'px Karla, sans-serif';
-      ctx.fillStyle = 'rgba(110,30,46,' + Math.min(1, SB.messageT).toFixed(2) + ')';
+      ctx.fillStyle = 'rgba(255,248,255,' + Math.min(1, SB.messageT).toFixed(2) + ')';
       ctx.fillText(SB.message, w / 2, 10 * k);
     }
 
