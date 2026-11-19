@@ -45,23 +45,23 @@ SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/t
 ## Dungeon of Echoes (was "Cards")
 | # | Requirement | State | Where |
 | --- | --- | --- | --- |
-| C1 | Branching endless dungeon, 3 branches visible, each splits in 2 | to check | CD |
-| C2 | 20 enemies, 5 bosses, boss every N levels (shared setting) | in code, counts to check | CD `ENEMIES`, `BOSSES` |
-| C3 | Turn-based; pick from 4 random cards; start with 2 | to check | CD |
-| C4 | 10 magic cards to level 30 with an evolution at 15; 5 passives to level 10 | in code, counts to check | CD card table, `CARD_EVOS` |
-| C5 | After each win: level up and pick 1 of 3 | in code | CD uses the shared card picker |
-| C6 | Counts "Dungeon level" | in code | HO save label "dungeon lvl" |
-| C7 | Art, background, enemies and cards look as good as possible | to judge | CD |
+| C1 | Branching endless dungeon, 3 branches visible, each splits in 2 | **confirmed 2026-11-19** | two ways on from where you stand, three tiers seen, every step splits in two (`Probe.dungeon`) |
+| C2 | 20 enemies, 5 bosses, boss every N levels (shared setting) | **confirmed 2026-11-19** | 20 enemies, 5 bosses; with "boss every 20" the bosses come on levels 20 and 40 |
+| C3 | Turn-based; pick from 4 random cards; start with 2 | **fixed 2026-11-19** | you start with 2 cards; the hand showed every card owned (up to 10), now 4 dealt at random from those owned, again each turn (36 different hands in 40 deals) |
+| C4 | 10 magic cards to level 30 with an evolution at 15; 5 passives to level 10 | **confirmed 2026-11-19** | 10 cards to 30 with three evolutions each, 5 passives to 10; all 30 evolutions cast with no errors |
+| C5 | After each win: level up and pick 1 of 3 | **confirmed 2026-11-19** | a win raised the dungeon level by one and offered up to 3 rewards |
+| C6 | Counts "Dungeon level" | **confirmed 2026-11-19** | the panel under the picture reads "Dungeon level 2" after the first win |
+| C7 | Art, background, enemies and cards look as good as possible | **with ROADMAP item 16** | a look, judged by the user: the design pass on the mini-games (item 16) |
 
 ## Solarium (was "Sandbox")
 | # | Requirement | State | Where |
 | --- | --- | --- | --- |
-| B1 | A square of colour every 30 to 60 s, setting, default 60 | in code | SB `grantInterval: 60` |
-| B2 | 36 colours + 6 greys, stacks to 64 | in code | SB `PALETTE` (42), `MAX_STACK = 64` |
-| B3 | Drag from inventory to grid; grid cells stay the same size; zoomable; a bigger tab adds cells | in code | SB header, `BASE_CELL` |
-| B4 | Export / download | in code | SB `toBlob` |
-| B5 | Gravity toggle, default off ("sky") | in code | SB setting `gravity: false` |
-| B6 | Square audio visualiser in the background | to check | SB |
+| B1 | A square of colour every 30 to 60 s, setting, default 60 | **fixed 2026-11-19** | one swatch after 61 s at the default 60; the setting ran from 10 to 180 s, now 30 to 60, and a value saved before is held inside that |
+| B2 | 36 colours + 6 greys, stacks to 64 | **confirmed 2026-11-19** | 36 colours and 6 greys; twelve swatches given onto a full stack leave it at 64 |
+| B3 | Drag from inventory to grid; grid cells stay the same size; zoomable; a bigger tab adds cells | **confirmed 2026-11-19** | a pointer drag from a swatch put that colour in the cell under the pointer; cells are 18 units; the wheel zooms; a wider picture added columns (26 to 32) |
+| B4 | Export / download | **confirmed 2026-11-19** | Export makes `music-visualiser-omega-pixel-art.png` (caught in the test, nothing downloaded) |
+| B5 | Gravity toggle, default off ("sky") | **confirmed 2026-11-19** | off by default; on, a square placed high falls to the bottom of its column |
+| B6 | Square audio visualiser in the background | **confirmed 2026-11-19** | 12 x 7 squares behind the grid, bigger and brighter where the spectrum is loud |
 
 ## Shared
 | # | Requirement | State | Where |

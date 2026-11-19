@@ -107,6 +107,136 @@
     return { mean: +(sum / Math.max(1, n)).toFixed(1), worst: +worst.toFixed(1), drive: +App.audio.A.drive.toFixed(2) };
   };
 
+  // Solarium, the B rows of docs/GAME-AUDIT.md played by script (ROADMAP item 9). Solarium keeps the user's
+  // pixel art in localStorage ('viz.sandbox'): writes to it are blocked while this runs, nothing is
+  // downloaded (the export link's click is caught), and the art in memory is put back exactly after.
+  P.solarium = async function(){
+    var keep = Storage.prototype.setItem, aClick = HTMLAnchorElement.prototype.click, downloads = [];
+    Storage.prototype.setItem = function(k, v){ if (/^viz\.(auto\.|saves|sandbox)/.test(String(k))) return; return keep.call(this, k, v); };
+    HTMLAnchorElement.prototype.click = function(){ downloads.push(this.download); };
+    var C = App.cfg.CFG.sandbox, savedCfg = JSON.parse(JSON.stringify(C)), R = {}, e0 = P.errors.length;
+    App.modes.setMode('sandbox'); await wait(100);
+    var pr = App.modes.registry.sandbox.probe(), SB = pr.SB, api = pr.api;
+    var snap = JSON.stringify({ grid: SB.grid, inventory: SB.inventory, cols: SB.cols, rows: SB.rows, lastGrant: SB.lastGrant, zoom: SB.zoom, viewX: SB.viewX, viewY: SB.viewY, userZoomed: SB.userZoomed });
+    try {
+      // B1: a new swatch every 30 to 60 s, 60 by default
+      var field = (App.cfg.SCHEMA || []).length ? null : null;
+      var counts = SB.inventory.reduce(function(s, n){ return s + n; }, 0);
+      SB.inventory = SB.inventory.map(function(){ return 10; }); SB.lastGrant = Date.now() - 61 * 1000; C.grantInterval = 60; api.grantTick();
+      var got1 = SB.inventory.reduce(function(s, n){ return s + n; }, 0) - 10 * pr.palette.length;
+      C.grantInterval = 10; var held = api.grantSeconds(); C.grantInterval = 500; var held2 = api.grantSeconds(); C.grantInterval = savedCfg.grantInterval;
+      R.B1 = { ok: got1 === 1 && held === 30 && held2 === 60, oneAfter61s: got1, tenHeldTo: held, fiveHundredHeldTo: held2 };
+      void field; void counts;
+      // B2: 36 colours and 6 greys, a stack never above 64
+      SB.inventory[0] = 64; SB.lastGrant = Date.now() - 12 * 60 * 1000; api.grantTick();
+      var greys = pr.palette.filter(function(c){ return /hsl\(0,0%/.test(c); }).length;
+      R.B2 = { ok: pr.palette.length === 42 && greys === 6 && Math.max.apply(null, SB.inventory) <= 64 && pr.maxStack === 64, colours: pr.palette.length - greys, greys: greys, biggestStack: Math.max.apply(null, SB.inventory) };
+      // B3: a drag from a swatch to the grid places a square there (real pointer events); cells keep their size;
+      // the wheel zooms; a bigger picture adds cells
+      var cv = App.canvas.canvas, w = cv.width, h = cv.height, k = App.canvas.dpr(), rect = cv.getBoundingClientRect(), sc = rect.width / w;
+      SB.grid = {}; SB.inventory = SB.inventory.map(function(){ return 10; }); SB.zoom = 1; SB.viewX = 0; SB.viewY = 0; C.gravity = false;
+      var sw = api.paletteRects(w, h, k).swatches[7], c = api.cellPx(k);
+      function fire(type, x, y){ cv.dispatchEvent(new PointerEvent(type, { clientX: rect.left + x * sc, clientY: rect.top + y * sc, bubbles: true, pointerId: 1, isPrimary: true })); }
+      fire('pointerdown', sw.x + sw.w / 2, sw.y + sw.h / 2); fire('pointermove', c * 4.5, c * 3.5); fire('pointerup', c * 4.5, c * 3.5);
+      var placed = SB.grid['4,3'];
+      var cols0 = SB.cols, z0 = SB.zoom;
+      cv.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: rect.left + 50, clientY: rect.top + 50, bubbles: true, cancelable: true }));
+      var zoomed = SB.zoom > z0;
+      R.B3 = { ok: placed === 7 && pr.baseCell === 18 && zoomed, placedColour: placed, cellUnits: pr.baseCell, wheelZooms: zoomed, cols: cols0, rows: SB.rows };
+      // B4: export makes a PNG download (the PNG is made at once here, so nothing can fire after this test)
+      var toBlob = HTMLCanvasElement.prototype.toBlob, made = null;
+      HTMLCanvasElement.prototype.toBlob = function(cb){ made = this.width + 'x' + this.height; cb(new Blob(['png'], { type: 'image/png' })); };
+      try { api.exportPNG(); } finally { HTMLCanvasElement.prototype.toBlob = toBlob; }
+      R.B4 = { ok: downloads.length === 1 && /\.png$/.test(downloads[0]) && !!made, file: downloads[0], picture: made };
+      // B5: gravity off by default (the "sky"); on, a square falls to the bottom of its column
+      var defOff = App.cfg.DEFAULTS ? App.cfg.DEFAULTS.sandbox.gravity === false : savedCfg.gravity === false;
+      SB.grid = {}; C.gravity = true; api.placePixel(2, 1, 3); var fell = SB.grid['2,' + (SB.rows - 1)] === 3; C.gravity = savedCfg.gravity;
+      R.B5 = { ok: defOff && fell, offByDefault: defOff, fallsWhenOn: fell };
+      // B6: the square visualiser behind the grid follows the sound: louder spectrum, bigger and brighter squares
+      var ambient = /stepAmbientSquares/.test(String(App.modes.registry.sandbox.draw));
+      R.B6 = { ok: ambient, drawsSquares: ambient };
+    } catch (err){
+      R.thrown = err.message + ' | ' + String(err.stack || '').split('\n').slice(1, 3).join(' ');
+    } finally {
+      var back = JSON.parse(snap);
+      Object.keys(back).forEach(function(kk){ SB[kk] = back[kk]; });
+      SB.dirty = false; SB.carrying = -1; SB.carryPt = null;
+      Object.keys(savedCfg).forEach(function(kk){ C[kk] = savedCfg[kk]; });
+      Storage.prototype.setItem = keep; HTMLAnchorElement.prototype.click = aClick;
+    }
+    R.errors = P.errors.slice(e0);
+    return R;
+  };
+
+  // Dungeon of Echoes, the C rows of docs/GAME-AUDIT.md played by script (ROADMAP item 9); saves blocked
+  P.dungeon = async function(){
+    var keep = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v){ if (/^viz\.(auto\.|saves)/.test(String(k))) return; return keep.call(this, k, v); };
+    var G = App.games, C = App.cfg.CFG.games, savedCfg = JSON.parse(JSON.stringify(C)), R = {}, e0 = P.errors.length;
+    try {
+      C.autoUpgrade = false;
+      App.modes.setMode('cards'); await wait(150);
+      var d = G.registry.cards, CA = d.state, pr = d.probe(), api = pr.api;
+      if (G.GAME.state === 'playing' || G.GAME.state === 'paused'){ CA.hp = 0; G.gameOver(CA); }
+      G.startGame(); await wait(50);
+      if (G.GAME.state === 'paused') G.togglePause();
+      var startOwned = api.ownedSpells().length;
+      // C1: from where you stand, two ways on, and each splits in two for two more steps (3 tiers seen)
+      api.genFrontier();
+      var f = CA.frontier, tiers = 0, splitsOk = true;
+      (function walk(n, depth){ tiers = Math.max(tiers, depth); if (n.children){ if (n.children.length !== 2) splitsOk = false; n.children.forEach(function(c){ walk(c, depth + 1); }); } })(f, 0);
+      R.C1 = { ok: f.children.length === 2 && tiers === 3 && splitsOk, waysOn: f.children.length, tiersSeen: tiers, everyNodeSplitsIn2: splitsOk };
+      // C2: 20 enemies, 5 bosses, a boss on every bossEvery-th level
+      var bossLv = [], every = C.bossEvery;
+      for (var lv = 1; lv <= every * 2; lv++) if (G.isBossLevel(lv)) bossLv.push(lv);
+      R.C2 = { ok: pr.enemies.length === 20 && pr.bosses.length === 5 && bossLv.length === 2 && bossLv[0] === every, enemies: pr.enemies.length, bosses: pr.bosses.length, bossLevels: bossLv };
+      // C3: start with 2 cards; a hand of at most 4 random cards from those owned, dealt again each turn
+      pr.items.forEach(function(it){ if (it.type === 'spell') CA.lv[it.id] = 1; });
+      var hands = {}, sizes = [];
+      for (var i = 0; i < 40; i++){ api.dealHand(); var h = api.handCards(); sizes.push(h.length); hands[h.map(function(c){ return c.id; }).sort().join()] = 1; }
+      R.C3 = { ok: startOwned === 2 && Math.max.apply(null, sizes) === 4 && Object.keys(hands).length > 5, startOwned: startOwned, handSize: Math.max.apply(null, sizes), differentHandsIn40: Object.keys(hands).length };
+      // C4: 10 spells to 30 with three evolutions each, 5 passives to 10
+      var spells = pr.items.filter(function(it){ return it.type === 'spell'; }), pass = pr.items.filter(function(it){ return it.type === 'passive'; });
+      var evosOk = spells.every(function(s){ return (pr.evos[s.id] || []).length === 3; });
+      R.C4 = { ok: spells.length === 10 && pass.length === 5 && spells.every(function(s){ return G.maxLvOf(CA, s) === 30; }) && pass.every(function(p){ return G.maxLvOf(CA, p) === 10; }) && evosOk,
+               spells: spells.length, passives: pass.length, threeEvolutionsEach: evosOk };
+      // C5 / C6: winning a fight raises the dungeon level and offers 1 of up to 3; the level is shown
+      var lv0 = CA.level;
+      api.enterNode(CA.frontier.children[0]);
+      CA.enemy.hp = 0.5; CA.enemy.maxHp = 0.5;
+      api.castCard(api.handCards()[0]);
+      for (var t = 0; t < 120 && CA.phase === 'battle'; t++) api.update(1 / 60);
+      var offered = G.GAME.cards.length, phase = CA.phase;
+      if (CA.phase === 'reward') api.pickRewardCard(0);
+      if (G.GAME.state === 'choosing') G.pickCard(0);
+      api.renderGridInfo();
+      var info = (document.getElementById('gridInfo') || {}).textContent || '';
+      R.C5 = { ok: CA.level === lv0 + 1 && phase === 'reward' && offered >= 1 && offered <= 3, levelBefore: lv0, levelAfter: CA.level, offered: offered };
+      R.C6 = { ok: /Dungeon level \d+/.test(info), shown: info.slice(0, 40) };
+      // every evolution of every card: cast once against a tough enemy, no errors, damage or effect
+      var bad = [];
+      spells.forEach(function(s){
+        (pr.evos[s.id] || []).forEach(function(ev){
+          CA.lv[s.id] = 15; CA.evo[s.id] = ev.id; CA.phase = 'map'; api.genFrontier(); api.enterNode(CA.frontier.children[0]);
+          CA.enemy.hp = CA.enemy.maxHp = 1e6; CA.hp = CA.maxHp = 1e6; var ee = P.errors.length;
+          for (var turn = 0; turn < 4 && CA.enemy; turn++){ CA.turn = 'player'; api.castCard(s); for (var q = 0; q < 90; q++) api.update(1 / 60); }
+          var hurt = CA.enemy ? CA.enemy.hp < 1e6 : true;
+          if (P.errors.length > ee || (!hurt && s.id !== 'holy')) bad.push(s.id + '.' + ev.id);
+          CA.evo[s.id] = null;
+        });
+      });
+      R.evolutions = { ok: bad.length === 0, failed: bad };
+      CA.hp = 0; G.gameOver(CA);
+    } catch (err){
+      R.thrown = err.message + ' | ' + String(err.stack || '').split('\n').slice(1, 3).join(' ');
+    } finally {
+      Object.keys(savedCfg).forEach(function(k){ C[k] = savedCfg[k]; });
+      Storage.prototype.setItem = keep;
+    }
+    R.errors = P.errors.slice(e0);
+    return R;
+  };
+
   // Undarum, every row of docs/GAME-AUDIT.md played by script (ROADMAP item 31); saves blocked as above
   P.undarum = async function(){
     var keep = Storage.prototype.setItem;

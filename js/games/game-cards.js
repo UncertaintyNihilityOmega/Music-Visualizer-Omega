@@ -155,6 +155,15 @@
     return null;
   }
   function ownedSpells(){ return CARD_ITEMS.filter(function(it){ return it.type === 'spell' && CARDS.lv[it.id] > 0; }); }
+  // Each turn the hand is up to 4 cards dealt at random from the cards owned (GAME-AUDIT C3, the old
+  // prompt: "pick from 4 random cards; start with 2"); before 2026-11-19 it showed every card owned.
+  var HAND_SIZE = 4;
+  function dealHand(){ CARDS.hand = shuffle(ownedSpells()).slice(0, HAND_SIZE).map(function(it){ return it.id; }); }
+  function handCards(){
+    if (!CARDS.hand || !CARDS.hand.length) dealHand();
+    return CARDS.hand.map(itemDef).filter(function(it){ return it && CARDS.lv[it.id] > 0; });
+  }
+  function startPlayerTurn(){ CARDS.turn = 'player'; dealHand(); }
   function unownedSpells(){ return CARD_ITEMS.filter(function(it){ return it.type === 'spell' && CARDS.lv[it.id] === 0; }); }
   function passiveList(){ return CARD_ITEMS.filter(function(it){ return it.type === 'passive'; }); }
   function recomputeMaxHp(){
@@ -210,7 +219,7 @@
     };
     telegraphNext();
     CARDS.phase = 'battle';
-    CARDS.turn = 'player';
+    startPlayerTurn();
     setLog((node.boss ? 'Boss: ' : 'A ') + def.name + ' appears!');
   }
   function telegraphNext(){
@@ -348,7 +357,7 @@
     if (!e || e.hp <= 0){ handleWin(); return; }
     if (Math.random() < CARDS.lv.momentum * 0.03){
       setLog('Momentum! Play again.');
-      CARDS.turn = 'player';
+      startPlayerTurn();
       return;
     }
     CARDS.turn = 'enemyResolving';
@@ -371,7 +380,7 @@
       setLog((e.stunned ? 'Stunned' : 'Frozen') + ' - the enemy loses its turn.');
       e.stunned = false; e.frozen = false;
       telegraphNext();
-      CARDS.turn = 'player';
+      startPlayerTurn();
       processMeteors();
       if (CARDS.enemy && CARDS.enemy.hp <= 0) handleWin();
       return;
@@ -391,7 +400,7 @@
     CARDS.shake = Math.min(1, CARDS.shake + 0.5);
     if (CARDS.hp <= 0){ G.gameOver(CARDS); return; }
     telegraphNext();
-    CARDS.turn = 'player';
+    startPlayerTurn();
     processMeteors();
     if (CARDS.enemy && CARDS.enemy.hp <= 0) handleWin();
   }
@@ -675,7 +684,7 @@
   }
 
   function drawHand(w, lay, k){
-    var hand = ownedSpells();
+    var hand = handCards();
     ctx.fillStyle = 'rgba(6,10,20,0.55)';
     ctx.fillRect(0, lay.handY, w, lay.handH);
     var interactive = CARDS.turn === 'player';
@@ -851,6 +860,10 @@
     },
     renderShop: renderShop,
     renderGridInfo: renderGridInfo,
+    // for checks in the browser (play-testing GAME-AUDIT rows by script), never read by the app
+    probe: function(){ return { enemies: ENEMIES, bosses: BOSSES, evos: CARD_EVOS, items: CARD_ITEMS, handSize: HAND_SIZE,
+      api: { update: update, draw: draw, castCard: castCard, enterNode: enterNode, handCards: handCards, dealHand: dealHand,
+             genFrontier: genFrontier, pickRewardCard: pickRewardCard, ownedSpells: ownedSpells, renderGridInfo: renderGridInfo } }; },
     onLevelUp: function(){ renderShop(); },
     handleKey: function(key, down){
       if (!down) return false;

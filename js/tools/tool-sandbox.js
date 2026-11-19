@@ -69,10 +69,13 @@
     SB.dirty = false;
   }
 
+  // one new swatch every 30 to 60 s (GAME-AUDIT B1; the setting went from 10 to 180 s before 2026-11-19, and a
+  // value saved then is held inside the range)
+  function grantSeconds(){ return Math.max(30, Math.min(60, Cfg.CFG.sandbox.grantInterval || 60)); }
   // Wall-clock based: swatches accrue even across a closed tab, catching up
   // (capped) when you come back, rather than only while Sandbox is on screen.
   function grantTick(){
-    var interval = Math.max(5, Cfg.CFG.sandbox.grantInterval) * 1000;
+    var interval = grantSeconds() * 1000;
     var now = Date.now();
     var elapsed = now - SB.lastGrant;
     if (elapsed < interval) return;
@@ -356,7 +359,7 @@
     });
 
     // HUD: gravity state + next grant countdown + zoom
-    var untilNext = Math.max(0, Math.ceil((Cfg.CFG.sandbox.grantInterval * 1000 - (Date.now() - SB.lastGrant)) / 1000));
+    var untilNext = Math.max(0, Math.ceil((grantSeconds() * 1000 - (Date.now() - SB.lastGrant)) / 1000));
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.font = (11 * k) + 'px Karla, sans-serif';
@@ -456,11 +459,15 @@
     e.preventDefault();
   });
 
-  App.modes.register('sandbox', { draw: draw, paintBG: paintBG, reset: reset });
+  // probe: for checks in the browser (play-testing GAME-AUDIT rows by script), never read by the app
+  App.modes.register('sandbox', { draw: draw, paintBG: paintBG, reset: reset,
+    probe: function(){ return { SB: SB, palette: PALETTE, maxStack: MAX_STACK, baseCell: BASE_CELL,
+      api: { placePixel: placePixel, erasePixel: erasePixel, grantTick: grantTick, grantSeconds: grantSeconds, exportPNG: exportPNG,
+             layout: layout, paletteRects: paletteRects, cellPx: cellPx, save: save } }; } });
 
   App.cfg.registerDefaults('sandbox', { grantInterval: 60, gravity: false });
   App.cfg.registerSchema({ id: 'sandbox', label: 'Solarium', fields: [
-    ['grantInterval', 'New swatch every (seconds)', 'range', 10, 180, 5],
+    ['grantInterval', 'New swatch every (seconds)', 'range', 30, 60, 5],
     ['gravity', 'Gravity (off = sky, pixels stay put)', 'bool']
   ]});
   App.cfg.onGroupChange('sandbox', function(key){
