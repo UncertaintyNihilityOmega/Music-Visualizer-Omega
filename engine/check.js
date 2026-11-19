@@ -323,6 +323,17 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!/P\.inView/.test(pl) || !/P\.removeFromView/.test(pl)) err('playlist.js: the order and the list must follow the open folder (P.inView), and the ✕ in a folder must only take the song out of it (P.removeFromView)');
 }
 
+/* 9b. a tap in fullscreen pauses or plays (ROADMAP item 21): on by default, only in fullscreen, never in a
+       game, and a mode may keep taps of its own (Piano's keys) */
+{
+  const tp = read('js/core/taps.js'), cc = read('js/core/canvas-core.js');
+  if (!/fsTapPause: true/.test(cc)) err('canvas-core.js: "In fullscreen, a tap on the picture pauses and plays" must be on by default (look.fsTapPause)');
+  if (!/CFG\.look\.fsTapPause/.test(tp) || !/App\.isFull\(\)/.test(tp) || !/keepsTap/.test(tp)) err('taps.js: a tap may pause only with the setting on, in fullscreen, and where the mode does not keep the tap (keepsTap)');
+  const down = (tp.match(/addEventListener\('pointerdown'[\s\S]*?\n  \}\);/) || [''])[0];
+  if (!/isGameMode[\s\S]*tapPauses/.test(down)) err('taps.js: the game check must come before the fullscreen tap, so games keep the canvas');
+  if (!/App\.isFull = isFull/.test(read('js/main.js'))) err('main.js: App.isFull must be set, or a tap in fullscreen never pauses');
+}
+
 /* 10. every script the offline list (sw.js) caches is tracked by git, so the published site can install it
        (found 2026-11-17: sw.js was pushed listing js/player/folders.js before that file was committed) */
 {

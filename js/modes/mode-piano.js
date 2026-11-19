@@ -497,7 +497,13 @@
 
   // fx: 0 - a keyboard that zooms and shakes is hard to read
   // probe: read by engine/probe.js and by checks in the browser, never by the app
-  App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, reset: reset, fx: 0,
+  // keepsTap: in fullscreen a tap pauses the song (taps.js), but a tap on the
+  // keys still plays the key: the same key height as drawPiano
+  function keepsTap(x, y){
+    var h = canvas.height, keyH = Math.min(h * 0.32, 92 * Can.dpr());
+    return y >= h - keyH;
+  }
+  App.modes.register('piano', { draw: drawPiano, paintBG: paintBG, onTap: onTap, drawTapFX: drawTapFX, keepsTap: keepsTap, reset: reset, fx: 0,
                                 probe: function(){ return { clock: pc, segs: pianoSegs, lagOn: LAG_ON, lagOff: LAG_OFF }; } });
 
   App.cfg.registerDefaults('piano', {

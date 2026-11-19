@@ -2,7 +2,7 @@
 
 ## Now
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
-- Next snapshot: **v0.2.0**, first item 21.
+- Snapshot in hand: **v0.2.0**. Item 21 done; next item 22.
 - Item 17 (v0.3.0) is half done: the "## Review" section of docs/MODES.md has motion and speed numbers for Omega
   and Love and the three worst faults (Liquid moves the same quiet and loud; Emoji and String move a lot when
   quiet). Not yet looked at: the other seven codes, looks, 375 px, phone fullscreen.
@@ -26,11 +26,6 @@
 
 **v0.2.0: everyday playing** (things the user meets every time they listen)
 
-21. **Tap the picture to pause and play.** In fullscreen (and on the picture outside it) one tap or click pauses
-    or plays the song, so fullscreen need not be closed to stop the music. Modes that use touch (Fire's plasma
-    globe, Liquid's splash, Piano's keys, Solarium) keep their touch: decide per mode (for example a short tap
-    toggles only where the mode does nothing with a tap, or a double tap elsewhere) and say it on the Guide
-    page. Done when: in fullscreen on desktop and at 375 px, a tap pauses and a second tap plays, in every mode.
 22. **Keep the screen on while the visualiser plays.** Use the Screen Wake Lock API while a song plays and the
     picture is on screen (like a video site); let go on pause and when the page is hidden; ask for it again
     when the page is seen again. That also stops the phone dropping out of fullscreen when the screen goes off.
@@ -147,6 +142,13 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 21 Tap the picture to pause and play: in fullscreen a short tap (under 14 px of movement and 0.5 s) pauses or
+  plays and shows a sign in the middle; the mode's own tap effect is skipped then, except where the mode keeps
+  the tap (`keepsTap`: Piano's keys); games keep the canvas. Outside fullscreen a tap is the mode's, as before
+  (the play button is there). Setting "In fullscreen, a tap on the picture pauses and plays", on by default;
+  Guide page line; rules in `check.js`. Checked in the browser with a real song at 1280 px and 375 px: tap
+  pauses, second tap plays, a drag does not, Piano's keys keep the tap, a game ignores it, no console errors
+  (2026-11-19).
 
 ## For the user
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.

@@ -34,6 +34,7 @@ App.pages.define('guide', {
         '<tr><td><kbd>V</kbd></td><td>next visual</td></tr>' +
         '<tr><td><kbd>1</kbd>–<kbd>9</kbd></td><td>jump to a visual (in a game: buy / pick)</td></tr>' +
         '<tr><td><kbd>F</kbd></td><td>fullscreen</td></tr>' +
+        '<tr><td>tap</td><td>in fullscreen, a tap on the picture pauses or plays (in Piano, a tap on the keys plays the key)</td></tr>' +
         '<tr><td><kbd>S</kbd></td><td>settings</td></tr>' +
         '<tr><td><kbd>M</kbd></td><td>mute</td></tr>' +
         '<tr><td><kbd>P</kbd></td><td>pause a game</td></tr>' +

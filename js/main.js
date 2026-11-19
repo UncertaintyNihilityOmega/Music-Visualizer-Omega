@@ -19,6 +19,7 @@
   function isFull(){
     return !!(document.fullscreenElement || document.webkitFullscreenElement) || vizCard.classList.contains('viz-fill');
   }
+  App.isFull = isFull;
   // On a phone held upright, fullscreen turns the picture sideways, the way
   // a video does: every mode is drawn for a wide picture. The phone lets a
   // page do that only while it is in real fullscreen, and gives the screen

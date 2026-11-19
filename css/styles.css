@@ -129,6 +129,12 @@ canvas{ width:100%; height:clamp(200px, 34vw, 320px); display:block; border-radi
 .viz-card.is-full .game-row{ margin-top:0; padding-top:0; }
 .viz-card.is-full .game-row::before{ display:none; }
 .viz-card.is-full .mode-sep.fs-only{ display:inline-block; margin:0 8px; }
+/* Fullscreen tap: a pause or play sign in the middle for 0.7 s (taps.js) */
+.tap-sign{ position:absolute; top:50%; left:50%; width:88px; height:88px; margin:-44px 0 0 -44px; border-radius:50%;
+  background:rgba(12,8,24,.55); display:flex; align-items:center; justify-content:center; opacity:0;
+  pointer-events:none; transform:scale(.8); transition:opacity .35s, transform .35s; z-index:3; }
+.tap-sign svg{ width:44px; height:44px; fill:#f2ecff; }
+.tap-sign.show{ opacity:1; transform:scale(1); transition:opacity .08s, transform .08s; }
 html.viz-fill-on, html.viz-fill-on body{ overflow:hidden; }
 /* iPhone zooms the page when a text box with small letters is tapped; 16px stops that */
 @supports (-webkit-touch-callout:none){

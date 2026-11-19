@@ -4,7 +4,9 @@ What someone using the app would notice. Newest first. Each finished snapshot ge
 ROADMAP.md "Done" is emptied for the next one.
 
 ## 0.2.0-dev (in progress: everyday playing)
-Nothing yet.
+- **Tap to pause in fullscreen.** In fullscreen, one tap or click on the picture pauses the song and another
+  plays it; a pause or play sign shows in the middle for a moment. In Piano a tap on the keys still plays the
+  key. Settings > Performance & feel > "In fullscreen, a tap on the picture pauses and plays" turns it off.
 
 ## v0.1.0 (2026-11-19): everything built so far
 
