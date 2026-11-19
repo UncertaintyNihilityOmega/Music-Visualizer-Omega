@@ -96,8 +96,6 @@
 
 **v0.5.0: song map**
 
-7. **Mapping selectors.** A generic "follows: [source]" setting type, like Rain's wind, so any mode property can
-   be pointed at any source (docs/MODES.md idea D). Done when: three modes use it and it is documented.
 
 **v0.6.0: Artificium**
 
@@ -151,6 +149,10 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 7 "Follows" settings: a setting of type `'source'` lists every sound by a plain name (kick drum, hi-hat, ...);
+  Rain ("Wind follows"), Fire ("Sway follows") and Nature (new: "Leaves swell with") use it, each default what
+  the mode did before; documented in docs/MODES.md idea D; rules in `check.js`. Seen at 1280 px and 375 px, no
+  console errors (2026-11-19).
 - 6 Song map: `js/core/song-map.js` reads a whole song once in small slices (tempo, beats, hits, sections,
   energy); `node engine/songmap.js <file>` writes the JSON and `--check` checks the test songs; the energy hill
   and the hits are drawn behind the seek bar for songs on the device (up to 15 minutes). Tempo 77.5, 109.4 and
