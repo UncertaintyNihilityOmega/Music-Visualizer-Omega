@@ -4,7 +4,9 @@
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
 - Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks).
 - v0.3.0 started: items 24 and 25 built (they wait on your look); item 17 done (every custom mode
-  measured and the weak ones fixed). Next: v0.4.0 (special modes).
+  measured and the weak ones fixed).
+- v0.4.0 started: item 28 done, item 27 built. Next: item 26 (Piano plays piano sounds, a big one: best
+  started with a fresh 5-hour window), then Ice (item 20) and the new fish (item 29).
 - Item 6 (v0.5.0) is started, not committed: the pure maths is in `.run/wip/song-map.js` (git-ignored). The
   user's beat counts agree with it (see item 6). To resume: move the file back to `js/core/` and add it to
   `index.html` in the same commit.
@@ -82,9 +84,8 @@
     touch plays notes, and the setting brings back the song.
 27. **Piano: note icons on touch.** The touch effect draws music-note icons (line drawings, not emoji such as
     "🎶") in the colour of the key that was pressed. Done when: seen at 1280 px and 375 px.
-28. **Aquatic: the edges.** A fish that swims past the left or right edge comes back from the other side; one
-    that swims up out of the water jumps and falls back in (it does not come from the bottom); the bottom is a
-    wall. Done when: checked by stepping frames with fish forced to each edge.
+    **Built 2026-11-19:** three drawn notes (a quaver, two joined quavers, a crotchet) in the colour of the key
+    under the touch; seen at 1280 px; the preview pane did not give a true 375 px picture, so that look waits.
 29. **Aquatic: better fish** after `inspiration/fish-example.jpg` (shape and style like it). Done when: seen at
     1280 px and 375 px and the user says they look right.
 
@@ -154,6 +155,10 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 28 Aquatic edges: a fish past the left or right edge comes back from the other side (drawn on both sides while
+  it crosses); one that swims up out of the water leaps in an arc and splashes back in (at most one leap every
+  1.2 s for the whole school); the seabed is a wall. Checked by forcing fish to each edge and stepping frames:
+  0 fish out of bounds in 500 loud frames; 0.5 to 0.8 ms a frame; no console errors (2026-11-19).
 - 17 Custom modes pass: review finished (docs/MODES.md "Review"); Liquid, Emoji, String, Fire, Basic and Nature
   fixed so quiet passages are calm (ratios: Liquid 12 to 28, Emoji 7 to 35, String 8 or more, Fire 5.5 or more,
   Basic 2.6 to 5.3, Nature 3.5 to 4.2 under the pale codes); Liquid and Emoji got forms for more codes; Basic's

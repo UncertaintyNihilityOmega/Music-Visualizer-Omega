@@ -24,6 +24,10 @@ ROADMAP.md "Done" is emptied for the next one.
 - **Fire and Basic are calmer in quiet music** too, under every code. Basic's Solarpunk bars are easier to
   read, and the codes that draw Basic with symbols cost half as much. **Nature moves more in loud music**: the
   branches sway, the leaves flutter and let go on the big hits.
+- **Aquatic: the fish stay in the sea.** A fish that swims off one side comes back from the other; one that
+  swims up leaps out of the water and splashes back in; none can go below the seabed.
+- **Piano: touching the picture throws drawn music notes** in the colour of the key you touched (they were an
+  emoji before).
 
 ## v0.1.0 (2026-11-19): everything built so far
 
