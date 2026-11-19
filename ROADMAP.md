@@ -114,17 +114,7 @@
     twice). D16: playing itself on Normal it reaches wave 61 with no life lost and 💰13,525 unspent, so it looks
     easy. On a wide PC screen the board now has empty space at both sides (it keeps a 2:1 shape).
 
-**v0.7.0: Undarum**
-
-31. **Undarum: the old prompt, played and fixed.** Every Undarum row of docs/GAME-AUDIT.md (S1 to S8): magic to
-    level 30 with an evolution at 15, passives to 10, Satellite from 2 orbs, Fire Breath 3 circles, Nature
-    Bloom 4, one big Sweeping Laser through the player, Meteor 2, a bigger Boomerang with an emoji that shows,
-    +1% after everything is maxed and no more choice screen. Known failures (user check): holding Shift in
-    fullscreen throws the player out of fullscreen (likely Windows: Shift held 8 s opens the Filter Keys box,
-    Shift pressed 5 times opens Sticky Keys; both take the focus), so the dash needs another key or a way
-    round; spamming Shift while running down puts the player outside the map. Losing one game must not count
-    as losing another (D4). Done when: every S row says "confirmed" or "fixed" with the date, and the player
-    cannot leave the map (a check).
+**v0.7.0: Undarum** (item 31 done)
 
 **v0.8.0: mini-games**
 
@@ -155,6 +145,12 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 31 Undarum played row by row (`Probe.undarum()`): S1 to S8 confirmed or fixed in docs/GAME-AUDIT.md, all 30
+  evolutions deal damage. Fixed: 3x speed is now the X key, a switch, not a held Shift (Windows opens Filter
+  Keys / Sticky Keys on Shift and that ended fullscreen), and it goes off when the window loses focus; the
+  player is held inside the map after every move, resize and before drawing (0 frames outside at 3x speed
+  against each edge; `check.js` rule 8f); the boomerang flies as its 🥏 emoji; Satellite's text says it starts
+  with 2 orbs. Seen at 1280 px and 375 px, no console errors (2026-11-19).
 - 7 "Follows" settings: a setting of type `'source'` lists every sound by a plain name (kick drum, hi-hat, ...);
   Rain ("Wind follows"), Fire ("Sway follows") and Nature (new: "Leaves swell with") use it, each default what
   the mode did before; documented in docs/MODES.md idea D; rules in `check.js`. Seen at 1280 px and 375 px, no
