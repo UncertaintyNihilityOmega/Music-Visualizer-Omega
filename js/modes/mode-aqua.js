@@ -96,30 +96,99 @@
     if (Math.abs(f.vx) < 40 * k) f.vx = f.face * (40 + Math.random() * 50) * k;
     f.air = true; f.up = false; f.airT = 0; f.cool = 9;
   }
+  // A fish after inspiration/fish-example.jpg (ROADMAP item 29): a flat icon with a see-through body
+  // and a thick rim in the fish's own colour, a forked tail with two fin lines, a shine on the back, a
+  // dark pointed head with a ring eye, and its skeleton (a spine and three pairs of ribs) showing
+  // through. Drawn in units of L (half the body's length), head toward +x, the tail wagging.
+  var FISH_DARK = 'rgba(9,13,22,0.96)';
+  function fishColours(f){
+    if (f.rim === f.color) return;
+    var c = U.hexRGB(f.color), lt = [0, 1, 2].map(function(i){ return Math.round(c[i] + (255 - c[i]) * 0.5); });
+    f.rim = f.color;
+    f.glass = U.rgba(lt, '0.5');
+    f.glassHi = U.rgba(lt, '0.85');
+  }
   function paintFish(f, x, L, H, wag, k, ang){
+    fishColours(f);
+    var w = wag * 0.45;
     ctx.save();
     ctx.translate(x, f.y);
-    ctx.scale(f.face, 1);
+    ctx.scale(f.face * L, L);
     ctx.rotate(ang);
-    ctx.globalAlpha = 0.78;
-    ctx.fillStyle = f.color;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(0.09, 1.7 * k / L);
+    ctx.strokeStyle = f.rim;
+    // tail: two lobes and a notch, swinging with the wag
     ctx.beginPath();
-    ctx.moveTo(L, 0);
-    ctx.quadraticCurveTo(0, -H, -L * 0.7, 0);
-    ctx.quadraticCurveTo(0, H, L, 0);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-L * 0.65, 0);
-    ctx.lineTo(-L * 1.15, -H * (0.8 + wag));
-    ctx.lineTo(-L * 1.15, H * (0.8 - wag));
+    ctx.moveTo(-0.5, -0.12);
+    ctx.quadraticCurveTo(-0.85, -0.6 + w, -1.15, -0.64 + w);
+    ctx.quadraticCurveTo(-1.06, -0.25 + w * 0.6, -0.93, w * 0.3);
+    ctx.quadraticCurveTo(-1.06, 0.25 + w * 0.6, -1.15, 0.64 + w);
+    ctx.quadraticCurveTo(-0.85, 0.6 + w, -0.5, 0.12);
     ctx.closePath();
+    var tg = ctx.createLinearGradient(-1.15, 0, -0.5, 0);
+    tg.addColorStop(0, f.glass);
+    tg.addColorStop(1, f.glassHi);
+    ctx.fillStyle = tg;
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.stroke();
+    // body: a tall rounded back, down to the tail root, round the belly to the nose
     ctx.beginPath();
-    ctx.arc(L * 0.55, -H * 0.22, 1.1 * k * f.size, 0, 6.283);
+    ctx.moveTo(1, 0.04);
+    ctx.bezierCurveTo(0.86, -0.55, 0.22, -0.98, -0.14, -0.86);
+    ctx.bezierCurveTo(-0.36, -0.76, -0.45, -0.36, -0.55, -0.12);
+    ctx.lineTo(-0.55, 0.12);
+    ctx.bezierCurveTo(-0.45, 0.42, -0.34, 0.82, -0.08, 0.82);
+    ctx.bezierCurveTo(0.26, 0.84, 0.86, 0.52, 1, 0.04);
+    ctx.closePath();
+    var bg = ctx.createLinearGradient(0, -0.9, 0, 0.85);
+    bg.addColorStop(0, f.glass);
+    bg.addColorStop(1, f.glassHi);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.stroke();
+    // fin lines on the tail and the shine on the back
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = Math.max(0.05, 1 * k / L);
+    ctx.beginPath();
+    ctx.moveTo(-0.74, -0.1 + w * 0.4); ctx.lineTo(-0.94, -0.3 + w * 0.6);
+    ctx.moveTo(-0.74, 0.1 + w * 0.4); ctx.lineTo(-0.94, 0.3 + w * 0.6);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.ellipse(-0.06, -0.6, 0.13, 0.07, -0.35, 0, 6.283);
+    ctx.fill();
+    // the skeleton: a spine and three pairs of ribs, longest near the head
+    ctx.strokeStyle = FISH_DARK;
+    ctx.lineWidth = 0.13;
+    ctx.beginPath();
+    ctx.moveTo(-0.5, 0); ctx.lineTo(0.35, 0);
+    var ribs = [[-0.3, 0.2], [-0.08, 0.28], [0.13, 0.34]];
+    for (var r = 0; r < 3; r++){ ctx.moveTo(ribs[r][0], -ribs[r][1]); ctx.lineTo(ribs[r][0], ribs[r][1]); }
+    ctx.stroke();
+    // the head: dark and pointed, with a thin rim so it shows on dark water
+    ctx.beginPath();
+    ctx.moveTo(0.27, -0.62);
+    ctx.quadraticCurveTo(0.76, -0.46, 1.02, 0.03);
+    ctx.quadraticCurveTo(0.76, 0.52, 0.27, 0.64);
+    ctx.quadraticCurveTo(0.15, 0, 0.27, -0.62);
+    ctx.closePath();
+    ctx.fillStyle = FISH_DARK;
+    ctx.fill();
+    ctx.strokeStyle = f.rim;
+    ctx.lineWidth = Math.max(0.05, 0.9 * k / L);
+    ctx.stroke();
+    // the eye: a ring in the fish's colour round a pale middle
+    ctx.fillStyle = f.rim;
+    ctx.beginPath();
+    ctx.arc(0.56, 0.02, 0.21, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(240,255,250,0.95)';
+    ctx.beginPath();
+    ctx.arc(0.56, 0.02, 0.12, 0, 6.283);
     ctx.fill();
     ctx.restore();
-    ctx.globalAlpha = 1;
   }
   function drawFish(dt, k){
     var cfg = Cfg.CFG.aqua;
