@@ -183,5 +183,27 @@ check('a loud passage is clearly visible', loud > 0.3, `level ${loud.toFixed(2)}
   check('picture layer: zoom never passes 10%', run(1, 2).maxZoom <= 1.1);
 }
 
+/* song map (ROADMAP item 6): a made-up song of known tempo, a quiet half and a loud half */
+{
+  const SM = require('../js/core/song-map.js');
+  const sr = SM.C.rate, secs = 60, bpmIn = 128, a = new Float32Array(sr * secs);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5;
+  for (let i = 0; i < a.length; i++){
+    const t = i / sr, beat = t * bpmIn / 60, ph = (beat % 1) * 60 / bpmIn, loud = t >= 30 ? 1 : 0.12;
+    const kick = Math.sin(2 * Math.PI * 55 * ph) * Math.exp(-ph * 18);
+    const hat = (Math.floor(beat * 2) % 2 === 1 ? rnd() * Math.exp(-(((beat * 2) % 1) * 30 / bpmIn) * 60) : 0);
+    a[i] = loud * (0.7 * kick + 0.25 * hat) + 0.02 * Math.sin(2 * Math.PI * 220 * t);
+  }
+  const map = SM.build(a, sr);
+  const tempoOk = [1, 0.5, 2].some(f => Math.abs(map.bpm - bpmIn * f) <= bpmIn * f * 0.01);
+  check('song map: a 128 a minute kick reads 128 (or half or double) within 1%', tempoOk, `${map.bpm}`);
+  const gaps = map.beats.slice(1).map((b, i) => b - map.beats[i]), mean = gaps.reduce((s, g) => s + g, 0) / Math.max(1, gaps.length);
+  check('song map: the beats are evenly spaced', gaps.length > 40 && gaps.every(g => Math.abs(g - mean) < 0.03), `${gaps.length} gaps, mean ${mean.toFixed(3)} s`);
+  const drop = map.sections.find(s => Math.abs(s.start - 30) < 1);
+  check('song map: the jump from quiet to loud at 30 s starts a section', !!drop && drop.jump > 0.2, map.sections.map(s => s.start).join(', '));
+  check('song map: that drop is the strongest hit', map.hits.length > 0 && Math.abs(map.hits[0].t - 30) < 1, map.hits.slice(0, 3).map(h => h.t).join(', '));
+  check('song map: confidence is between 0 and 1', map.confidence >= 0 && map.confidence <= 1, `${map.confidence}`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

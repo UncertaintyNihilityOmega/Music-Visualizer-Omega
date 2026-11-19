@@ -8,7 +8,7 @@
    The list and version are written by  node engine/sw-build.js .
    ========================================================================= */
 /* BUILD:START (written by engine/sw-build.js; do not edit by hand) */
-var VERSION = '0.2.0-dev-107fb17ab0';
+var VERSION = '0.2.0-dev-d44d26a07c';
 var FILES = [
   'css/styles.css',
   'icons/icon-180.png',
@@ -27,6 +27,7 @@ var FILES = [
   'js/core/mode-registry.js',
   'js/core/piano-voice.js',
   'js/core/settings.js',
+  'js/core/song-map.js',
   'js/core/state.js',
   'js/core/taps.js',
   'js/core/themes.js',
@@ -57,6 +58,7 @@ var FILES = [
   'js/player/folders.js',
   'js/player/library.js',
   'js/player/playlist.js',
+  'js/player/seek-map.js',
   'js/player/transport.js',
   'js/tools/tool-sandbox.js',
   'manifest.webmanifest'

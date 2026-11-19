@@ -87,6 +87,17 @@ average, 5.8 ms at worst (a frame at 60 a second has 16.7 ms). Fire burnt out to
 before its fix; after it 3% at worst (10% or less in every theme code, at desktop width and at 375 px). The loud and quiet motion numbers for every mode are
 in docs/MODES.md.
 
+## Song map (`engine/songmap.js`, ROADMAP item 6)
+`node engine/songmap.js <file> [out.json]` writes a song's map (tempo, beats, hits, sections, energy; format in
+docs/GAME-PLAN.md) with the same `js/core/song-map.js` the app runs. `node engine/songmap.js --check` checks every
+test song: tempo within 3% (or half or double) of the user's counts, and the biggest drop (the section start with
+the largest rise in energy) among the top three hits.
+
+Measured 2026-11-19: tempo 77.5, 109.4 and 84.9 against the counted 77.70, 109.30 and 85 (within 0.3%); the
+biggest drop is the strongest hit in all six songs; confidence 0.16 to 0.6 (the old rule read 1 for five of six).
+In the browser a 5-minute song takes about 5 s (1.1 to 1.6 s to decode, then 2 to 3 s of work in slices; the
+longest slice 20 ms). Node: 1 to 2.5 s a song.
+
 ## Timing
 `songtest.js` takes about 28 s for the five songs on this machine (the hour-long file is cut at 600 s).
 `test.js` and `check.js` take under a second each.

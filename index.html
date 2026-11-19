@@ -82,7 +82,7 @@
     </div>
     <div class="seek-row">
       <span id="curTime">0:00</span>
-      <input type="range" id="seekBar" min="0" max="100" value="0" aria-label="Position in the song">
+      <span class="seek-wrap"><canvas id="seekMap" aria-hidden="true"></canvas><input type="range" id="seekBar" min="0" max="100" value="0" aria-label="Position in the song"></span>
       <span id="durTime">0:00</span>
     </div>
     <div class="volume-row">
@@ -115,6 +115,7 @@
 <script src="js/core/analysis.js"></script>
 <script src="js/core/audio-engine.js"></script>
 <script src="js/core/piano-voice.js"></script>
+<script src="js/core/song-map.js"></script>
 <script src="js/core/fx.js"></script>
 <script src="js/core/canvas-core.js"></script>
 <script src="js/core/mode-registry.js"></script>
@@ -149,6 +150,7 @@
 <script src="js/player/library.js"></script>
 <script src="js/player/folders.js"></script>
 <script src="js/player/transport.js"></script>
+<script src="js/player/seek-map.js"></script>
 <script src="js/player/background.js"></script>
 
 <!-- boot: must be last -->
