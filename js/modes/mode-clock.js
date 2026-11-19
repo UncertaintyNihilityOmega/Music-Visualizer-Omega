@@ -151,11 +151,16 @@
   var RAINBOW = { light: [], dark: [] };
   for (var rh = 0; rh < 96; rh++){ RAINBOW.light.push(hslHex(rh * 3.75, 0.85, 0.5)); RAINBOW.dark.push(hslHex(rh * 3.75, 0.9, 0.66)); }
   function rbCol(f, pal){ var arr = pal.light ? RAINBOW.light : RAINBOW.dark; return arr[Math.floor((((f % 1) + 1) % 1) * 96) % 96]; }
+  // made once per centre and kind of background, not every frame (item 24: the rainbow code was slow)
+  var conicCache = {};
   function conicRainbow(cx, cy, pal){
     if (!ctx.createConicGradient) return pal.accent;
-    var g = ctx.createConicGradient(-Math.PI / 2, cx, cy);
+    var key = cx + ',' + cy + (pal.light ? 'l' : 'd'), g = conicCache[key];
+    if (g) return g;
+    g = ctx.createConicGradient(-Math.PI / 2, cx, cy);
     for (var i = 0; i <= 12; i++) g.addColorStop(i / 12, rbCol(i / 12, pal));
-    return g;
+    if (Object.keys(conicCache).length > 8) conicCache = {};
+    return (conicCache[key] = g);
   }
   // a soft round light, drawn once per colour
   var dotCache = {};
@@ -239,66 +244,71 @@
       ctx.stroke();
     }
     ctx.lineCap = kind === 'blocks' ? 'butt' : 'round';
+    // The 96 marks are gathered into a few paths, one per step of brightness (RING_STEPS) and colour,
+    // so the crown costs about ten fills instead of a hundred or more (item 24). Under the rainbow code
+    // one conic gradient gives every mark its own hue, as before.
+    var conic = rb ? conicRainbow(cx, cy, pal) : null;
+    var bodyP = [], tipP = [], altP = [], s;
+    for (s = 0; s < RING_STEPS; s++){ bodyP.push(new Path2D()); tipP.push(new Path2D()); altP.push(new Path2D()); }
+    var da = 3.1416 / RING_N * 0.85, unit = R * 0.058, dotR = Math.max(1.4 * k, arcW * 0.3);
+    var from = kind === 'inward' ? R * 1.5 : r0, dir = kind === 'inward' ? -1 : 1;
     for (i = 0; i < RING_N; i++){
       a = -Math.PI / 2 + i / RING_N * 6.283; ca = Math.cos(a); sa = Math.sin(a);
       len = lenOf(i);
-      var ev = ringEnv[i], al = 0.3 + ev * 0.7;
-      // rainbow code: a hue per mark; otherwise the body in the rim colour, the tip in the accent
-      var bodyC = rb ? rbCol(i / RING_N, pal) : pal.rim, tipC = rb ? bodyC : pal.accent;
+      s = Math.min(RING_STEPS - 1, Math.floor(ringEnv[i] * RING_STEPS));
+      // the rays and dots alternate the rim colour and the accent (one colour, the rainbow, under the rainbow code)
+      var odd = !rb && i % 2 === 1;
       if (kind === 'rays'){
-        var da = 3.1416 / RING_N * 0.85;
-        ctx.globalAlpha = al * 0.85;
-        ctx.fillStyle = rb ? bodyC : (i % 2 ? pal.accent : pal.rim);
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(a - da) * r0, cy + Math.sin(a - da) * r0);
-        ctx.lineTo(cx + ca * (r0 + len * 1.15), cy + sa * (r0 + len * 1.15));
-        ctx.lineTo(cx + Math.cos(a + da) * r0, cy + Math.sin(a + da) * r0);
-        ctx.closePath();
-        ctx.fill();
+        var pr = odd ? altP[s] : bodyP[s];
+        pr.moveTo(cx + Math.cos(a - da) * r0, cy + Math.sin(a - da) * r0);
+        pr.lineTo(cx + ca * (r0 + len * 1.15), cy + sa * (r0 + len * 1.15));
+        pr.lineTo(cx + Math.cos(a + da) * r0, cy + Math.sin(a + da) * r0);
+        pr.closePath();
       } else if (kind === 'blocks'){
-        var unit = R * 0.058, n = Math.max(1, Math.round(len / unit));
-        ctx.lineWidth = Math.max(2 * k, arcW * 0.66);
+        var n = Math.max(1, Math.round(len / unit));
         for (var b = 0; b < n; b++){
-          ctx.globalAlpha = al;
-          ctx.strokeStyle = b === n - 1 ? tipC : bodyC;
-          ctx.beginPath();
-          ctx.moveTo(cx + ca * (r0 + b * unit), cy + sa * (r0 + b * unit));
-          ctx.lineTo(cx + ca * (r0 + b * unit + unit * 0.62), cy + sa * (r0 + b * unit + unit * 0.62));
-          ctx.stroke();
+          var pb = b === n - 1 ? tipP[s] : bodyP[s];
+          pb.moveTo(cx + ca * (r0 + b * unit), cy + sa * (r0 + b * unit));
+          pb.lineTo(cx + ca * (r0 + b * unit + unit * 0.62), cy + sa * (r0 + b * unit + unit * 0.62));
         }
       } else if (kind === 'dots'){
-        ctx.globalAlpha = al * 0.3;
-        ctx.strokeStyle = bodyC;
-        ctx.lineWidth = Math.max(1, k);
-        ctx.beginPath();
-        ctx.moveTo(cx + ca * r0, cy + sa * r0);
-        ctx.lineTo(cx + ca * (r0 + len), cy + sa * (r0 + len));
-        ctx.stroke();
-        ctx.globalAlpha = al;
-        ctx.fillStyle = rb ? bodyC : (i % 2 ? pal.accent : pal.rim);
-        ctx.beginPath();
-        ctx.arc(cx + ca * (r0 + len), cy + sa * (r0 + len), Math.max(1.4 * k, arcW * 0.3), 0, 6.283);
-        ctx.fill();
+        bodyP[s].moveTo(cx + ca * r0, cy + sa * r0);
+        bodyP[s].lineTo(cx + ca * (r0 + len), cy + sa * (r0 + len));
+        var pd = odd ? altP[s] : tipP[s], dx = cx + ca * (r0 + len), dy = cy + sa * (r0 + len);
+        pd.moveTo(dx + dotR, dy);
+        pd.arc(dx, dy, dotR, 0, 6.283);
       } else {
         // bars (and inward bars)
-        var from = kind === 'inward' ? R * 1.5 : r0, dir = kind === 'inward' ? -1 : 1;
         if (kind === 'inward') len = Math.min(len, R * 0.33);
-        ctx.lineWidth = Math.max(1.5 * k, arcW * 0.42);
+        bodyP[s].moveTo(cx + ca * from, cy + sa * from);
+        bodyP[s].lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
+        tipP[s].moveTo(cx + ca * (from + dir * len * 0.72), cy + sa * (from + dir * len * 0.72));
+        tipP[s].lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
+      }
+    }
+    var bodyC = conic || pal.rim, tipC = conic || pal.accent;
+    for (s = 0; s < RING_STEPS; s++){
+      var al = 0.3 + (s + 0.5) / RING_STEPS * 0.7;
+      if (kind === 'rays'){
+        ctx.globalAlpha = al * 0.85;
+        ctx.fillStyle = bodyC; ctx.fill(bodyP[s]);
+        if (!rb){ ctx.fillStyle = pal.accent; ctx.fill(altP[s]); }
+      } else if (kind === 'dots'){
+        ctx.globalAlpha = al * 0.3;
+        ctx.strokeStyle = bodyC; ctx.lineWidth = Math.max(1, k); ctx.stroke(bodyP[s]);
         ctx.globalAlpha = al;
-        ctx.strokeStyle = bodyC;
-        ctx.beginPath();
-        ctx.moveTo(cx + ca * from, cy + sa * from);
-        ctx.lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
-        ctx.stroke();
-        ctx.strokeStyle = tipC;
-        ctx.beginPath();
-        ctx.moveTo(cx + ca * (from + dir * len * 0.72), cy + sa * (from + dir * len * 0.72));
-        ctx.lineTo(cx + ca * (from + dir * len), cy + sa * (from + dir * len));
-        ctx.stroke();
+        ctx.fillStyle = bodyC; ctx.fill(tipP[s]);
+        if (!rb){ ctx.fillStyle = pal.accent; ctx.fill(altP[s]); }
+      } else {
+        ctx.lineWidth = kind === 'blocks' ? Math.max(2 * k, arcW * 0.66) : Math.max(1.5 * k, arcW * 0.42);
+        ctx.globalAlpha = al;
+        ctx.strokeStyle = bodyC; ctx.stroke(bodyP[s]);
+        ctx.strokeStyle = tipC; ctx.stroke(tipP[s]);
       }
     }
     ctx.restore();
   }
+  var RING_STEPS = 5;
 
   /* ---------- the orbits: once a minute, once an hour, once in twelve hours ---------- */
   function drawOrbits(cx, cy, R, pal, k){
@@ -448,12 +458,17 @@
       var f = c.age / c.life, rad = R * (1.2 + f * 1.9);
       ctx.save();
       ctx.strokeStyle = pal.rainbow ? conicRainbow(cx, cy, pal) : pal.accent;
-      ctx.shadowColor = pal.accent;
-      ctx.shadowBlur = 14 * k * Cfg.CFG.clock.glow;
-      ctx.globalAlpha = (1 - f) * 0.55;
-      ctx.lineWidth = (3 * (1 - f) + 0.6) * k;
       ctx.beginPath();
       ctx.arc(cx, cy, rad, 0, 6.283);
+      // the glow: a wide faint stroke under the ring instead of a blurred shadow (item 24)
+      var gl = 14 * k * Cfg.CFG.clock.glow;
+      if (gl > 0.5){
+        ctx.globalAlpha = (1 - f) * 0.14;
+        ctx.lineWidth = (3 * (1 - f) + 0.6) * k + gl;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = (1 - f) * 0.55;
+      ctx.lineWidth = (3 * (1 - f) + 0.6) * k;
       ctx.stroke();
       // twelve short rays, one per hour, riding the ring outward
       ctx.lineWidth = 1.4 * k;
@@ -469,78 +484,105 @@
   }
 
   /* ---------- the dial and its hands ---------- */
-  function drawFace(cx, cy, R, pal, form, cfg, k){
-    var now = new Date();
-    var secF = now.getSeconds() + now.getMilliseconds() / 1000;
-    var minF = now.getMinutes() + secF / 60;
-    var hourF = (now.getHours() % 12) + minF / 60;
-    var i, a;
-
-    // the dial: a plain disc that throws a soft shadow, and a hairline rim that glows with the beat
-    ctx.save();
-    ctx.shadowColor = pal.light ? 'rgba(40,40,80,0.25)' : 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = R * 0.22;
-    ctx.shadowOffsetY = R * 0.04;
-    var face = ctx.createRadialGradient(cx, cy - R * 0.25, 0, cx, cy, R);
+  // The dial itself (the disc with its soft shadow, the minute dots and the hour marks) never changes
+  // between frames, so it is painted once into a picture of its own and copied in (item 24). It is
+  // painted again only when the size or the code changes.
+  var dialCache = null, dialKey = '';
+  function dialSprite(R, pal, form, k, pid){
+    var key = R.toFixed(1) + '|' + k + '|' + pid;
+    if (dialCache && dialKey === key) return dialCache;
+    var half = Math.ceil(R * 1.42), cv = document.createElement('canvas');
+    cv.width = cv.height = half * 2;
+    var c = cv.getContext('2d'), cx = half, cy = half, i, a;
+    c.save();
+    c.shadowColor = pal.light ? 'rgba(40,40,80,0.25)' : 'rgba(0,0,0,0.45)';
+    c.shadowBlur = R * 0.22;
+    c.shadowOffsetY = R * 0.04;
+    var face = c.createRadialGradient(cx, cy - R * 0.25, 0, cx, cy, R);
     face.addColorStop(0, pal.faceCenter);
     face.addColorStop(0.7, pal.faceMid || pal.faceCenter);
     face.addColorStop(1, pal.faceEdge);
-    ctx.fillStyle = face;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, 6.283);
-    ctx.fill();
-    ctx.restore();
-    ctx.save();
-    ctx.strokeStyle = pal.rainbow ? conicRainbow(cx, cy, pal) : pal.rim;
-    ctx.lineWidth = Math.max(1.5 * k, R * 0.02);
-    ctx.shadowColor = pal.accent;
-    ctx.shadowBlur = (4 + A.punch * 20) * cfg.glow * k;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, 6.283);
-    ctx.stroke();
-    ctx.restore();
-
+    c.fillStyle = face;
+    c.beginPath();
+    c.arc(cx, cy, R, 0, 6.283);
+    c.fill();
+    c.restore();
     // minute dots
-    ctx.fillStyle = pal.tick;
+    c.fillStyle = pal.tick;
+    c.beginPath();
     for (i = 0; i < 60; i++){
       if (i % 5 === 0) continue;
       a = (i / 60) * 6.283 - Math.PI / 2;
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9, Math.max(0.8 * k, R * 0.008), 0, 6.283);
-      ctx.fill();
+      var mr = Math.max(0.8 * k, R * 0.008), mx = cx + Math.cos(a) * R * 0.9, my = cy + Math.sin(a) * R * 0.9;
+      c.moveTo(mx + mr, my);
+      c.arc(mx, my, mr, 0, 6.283);
     }
+    c.fill();
     // hour marks, in the code's own form
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
     for (i = 0; i < 12; i++){
       a = (i / 12) * 6.283 - Math.PI / 2;
       var quarter = i % 3 === 0, ca = Math.cos(a), sa = Math.sin(a);
       if (form.marks === 'roman' || form.marks === 'digits'){
-        ctx.font = form.marks === 'roman'
+        c.font = form.marks === 'roman'
           ? 'bold ' + Math.max(9, Math.round(R * (quarter ? 0.17 : 0.13))) + 'px Georgia, "Times New Roman", serif'
           : '600 ' + Math.max(9, Math.round(R * (quarter ? 0.17 : 0.13))) + 'px Consolas, "Courier New", monospace';
-        ctx.fillStyle = pal.numeral;
-        ctx.globalAlpha = quarter ? 1 : 0.7;
-        ctx.fillText(form.marks === 'roman' ? ROMAN[i] : String(i === 0 ? 12 : i), cx + ca * R * 0.75, cy + sa * R * 0.75 + R * 0.01);
-        ctx.globalAlpha = 1;
+        c.fillStyle = pal.numeral;
+        c.globalAlpha = quarter ? 1 : 0.7;
+        c.fillText(form.marks === 'roman' ? ROMAN[i] : String(i === 0 ? 12 : i), cx + ca * R * 0.75, cy + sa * R * 0.75 + R * 0.01);
+        c.globalAlpha = 1;
       } else if (form.marks === 'glyph'){
         var gs = R * (quarter ? 0.2 : 0.14);
-        ctx.drawImage(Can.glyphSprite(form.glyph, pal.accent), cx + ca * R * 0.8 - gs / 2, cy + sa * R * 0.8 - gs / 2, gs, gs);
+        c.drawImage(Can.glyphSprite(form.glyph, pal.accent), cx + ca * R * 0.8 - gs / 2, cy + sa * R * 0.8 - gs / 2, gs, gs);
       } else if (form.marks === 'dots'){
-        ctx.fillStyle = pal.numeral;
-        ctx.beginPath();
-        ctx.arc(cx + ca * R * 0.82, cy + sa * R * 0.82, R * (quarter ? 0.04 : 0.024), 0, 6.283);
-        ctx.fill();
+        c.fillStyle = pal.numeral;
+        c.beginPath();
+        c.arc(cx + ca * R * 0.82, cy + sa * R * 0.82, R * (quarter ? 0.04 : 0.024), 0, 6.283);
+        c.fill();
       } else {
-        ctx.strokeStyle = pal.rainbow ? rbCol(i / 12, pal) : pal.numeral;
-        ctx.lineCap = 'round';
-        ctx.lineWidth = Math.max(1.4 * k, R * (quarter ? 0.034 : 0.018));
-        ctx.beginPath();
-        ctx.moveTo(cx + ca * R * (quarter ? 0.7 : 0.78), cy + sa * R * (quarter ? 0.7 : 0.78));
-        ctx.lineTo(cx + ca * R * 0.88, cy + sa * R * 0.88);
-        ctx.stroke();
+        c.strokeStyle = pal.rainbow ? rbCol(i / 12, pal) : pal.numeral;
+        c.lineCap = 'round';
+        c.lineWidth = Math.max(1.4 * k, R * (quarter ? 0.034 : 0.018));
+        c.beginPath();
+        c.moveTo(cx + ca * R * (quarter ? 0.7 : 0.78), cy + sa * R * (quarter ? 0.7 : 0.78));
+        c.lineTo(cx + ca * R * 0.88, cy + sa * R * 0.88);
+        c.stroke();
       }
     }
+    dialKey = key;
+    return (dialCache = cv);
+  }
+
+  function drawFace(cx, cy, R, pal, form, cfg, k, pid){
+    var now = new Date();
+    var secF = now.getSeconds() + now.getMilliseconds() / 1000;
+    var minF = now.getMinutes() + secF / 60;
+    var hourF = (now.getHours() % 12) + minF / 60;
+
+    var dial = dialSprite(R, pal, form, k, pid), dh = dial.width / 2;
+    ctx.drawImage(dial, Math.round(cx - dh), Math.round(cy - dh));
+    // the hairline rim glows with the beat: a wide faint stroke under it stands in for a blurred shadow
+    ctx.save();
+    var rimC = pal.rainbow ? conicRainbow(cx, cy, pal) : pal.rim, rimW = Math.max(1.5 * k, R * 0.02);
+    var glowW = (4 + A.punch * 20) * cfg.glow * k;
+    if (glowW > 0.5){
+      ctx.strokeStyle = pal.rainbow ? rimC : pal.accent;
+      ctx.globalAlpha = 0.16;
+      ctx.lineWidth = rimW + glowW;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.strokeStyle = rimC;
+    ctx.lineWidth = rimW;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 6.283);
+    ctx.stroke();
+    ctx.restore();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
     // the time in figures, small, in the lower half
     if (cfg.digital && R > 40 * k){
@@ -556,34 +598,35 @@
     function hand(frac, lenMul, widMul, color, tailMul){
       var a2 = frac * 6.283 - Math.PI / 2;
       var len = R * lenMul, wid = Math.max(1.8 * k, R * widMul), tail = R * tailMul;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(a2);
-      ctx.shadowColor = pal.light ? 'rgba(40,40,80,0.3)' : 'rgba(0,0,0,0.45)';
-      ctx.shadowBlur = R * 0.03;
-      ctx.shadowOffsetX = R * 0.01;
-      ctx.shadowOffsetY = R * 0.014;
-      if (form.hands === 'needle'){
-        // a tapered blade with a short counterweight
-        ctx.beginPath();
-        ctx.moveTo(-tail, wid * 0.5);
-        ctx.lineTo(len * 0.62, wid * 0.5);
-        ctx.lineTo(len, 0);
-        ctx.lineTo(len * 0.62, -wid * 0.5);
-        ctx.lineTo(-tail, -wid * 0.5);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-      } else {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = wid;
-        ctx.lineCap = form.hands === 'block' ? 'butt' : 'round';
-        ctx.beginPath();
-        ctx.moveTo(-tail, 0);
-        ctx.lineTo(len, 0);
-        ctx.stroke();
+      // a hand and its shadow: the same shape drawn first, offset down and right, faint (no blur: item 24)
+      var shC = pal.light ? 'rgba(40,40,80,0.2)' : 'rgba(0,0,0,0.35)';
+      for (var pass = 0; pass < 2; pass++){
+        ctx.save();
+        if (pass === 0) ctx.translate(cx + R * 0.012, cy + R * 0.018); else ctx.translate(cx, cy);
+        ctx.rotate(a2);
+        var col = pass === 0 ? shC : color;
+        if (form.hands === 'needle'){
+          // a tapered blade with a short counterweight
+          ctx.beginPath();
+          ctx.moveTo(-tail, wid * 0.5);
+          ctx.lineTo(len * 0.62, wid * 0.5);
+          ctx.lineTo(len, 0);
+          ctx.lineTo(len * 0.62, -wid * 0.5);
+          ctx.lineTo(-tail, -wid * 0.5);
+          ctx.closePath();
+          ctx.fillStyle = col;
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = col;
+          ctx.lineWidth = wid;
+          ctx.lineCap = form.hands === 'block' ? 'butt' : 'round';
+          ctx.beginPath();
+          ctx.moveTo(-tail, 0);
+          ctx.lineTo(len, 0);
+          ctx.stroke();
+        }
+        ctx.restore();
       }
-      ctx.restore();
     }
     hand(hourF / 12, 0.5, 0.064, pal.hourHand, 0.1);
     hand(minF / 60, 0.76, 0.042, pal.minuteHand, 0.12);
@@ -1363,11 +1406,29 @@
   var motes = [];
   function spawnMote(x, y){
     motes.push({ x: x, y: y, vy: (8 + Math.random() * 16) * Can.dpr(), vx: (Math.random() - 0.5) * 22 * Can.dpr(),
-                 ph: Math.random() * 6.283, life: 0, maxLife: 6 + Math.random() * 6, feather: Math.random() < 0.4, hue: Math.random() });
+                 ph: Math.random() * 6.283, life: 0, maxLife: 6 + Math.random() * 6, feather: Math.random() < 0.4,
+                 hue: Math.floor(Math.random() * 12) / 12 });   // twelve hues, so the same few pictures are reused
+  }
+  // a small falling feather, drawn once per colour and size (item 24)
+  var featherCache = {};
+  function featherSprite(fill, edge, k){
+    var key = fill + edge + k, s = featherCache[key];
+    if (s) return s;
+    s = document.createElement('canvas');
+    s.width = Math.ceil(14 * k); s.height = Math.ceil(5 * k);
+    var c = s.getContext('2d');
+    c.fillStyle = fill;
+    c.strokeStyle = edge;
+    c.lineWidth = 0.8 * k;
+    c.beginPath();
+    c.ellipse(s.width / 2, s.height / 2, 6 * k, 1.8 * k, 0, 0, 6.283);
+    c.fill();
+    c.stroke();
+    return (featherCache[key] = s);
   }
   function stepMotes(w, h, k, dt, cfg, pal){
     if (motes.length < 120 && Math.random() < (0.06 + A.drive * 1.6) * cfg.density * dt * 8) spawnMote(Math.random() * w, -8 * k);
-    var wA = pal.light ? '#FFFFFF' : mix(pal.numeral, '#FFFFFF', 0.3);
+    var wA = pal.light ? '#FFFFFF' : mix(pal.numeral, '#FFFFFF', 0.3), plainEdge = rgba(pal.rim, 0.6);
     for (var i = motes.length - 1; i >= 0; i--){
       var m = motes[i];
       m.life += dt;
@@ -1380,13 +1441,8 @@
         ctx.globalAlpha = fade * 0.9;
         ctx.translate(m.x, m.y);
         ctx.rotate(m.ph + Math.sin(A.t * 1.2 + m.ph) * 0.5);
-        ctx.fillStyle = wA;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 6 * k, 1.8 * k, 0, 0, 6.283);
-        ctx.fill();
-        ctx.strokeStyle = pal.rainbow ? rbCol(m.hue, pal) : rgba(pal.rim, 0.6);
-        ctx.lineWidth = 0.8 * k;
-        ctx.stroke();
+        var fs = featherSprite(wA, pal.rainbow ? rbCol(m.hue, pal) : plainEdge, k);
+        ctx.drawImage(fs, -fs.width / 2, -fs.height / 2);
         ctx.restore();
       } else {
         var s = 8 * k;
@@ -1446,7 +1502,7 @@
     if (design === 'sky') drawWings(cx, cy, R, w, pal, k, dt);
     drawRing(cx, cy, R, pal, form, cfg, k, dt);
     if (cfg.songRing) drawSongRing(cx, cy, R, pal, k);
-    drawFace(cx, cy, R, pal, form, cfg, k);
+    drawFace(cx, cy, R, pal, form, cfg, k, pid);
   }
   function onTap(x, y){
     var design = designId(), P = PALETTES[paletteId()], pal = P.pal, k = Can.dpr();
