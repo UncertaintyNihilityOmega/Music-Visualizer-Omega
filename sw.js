@@ -8,7 +8,7 @@
    The list and version are written by  node engine/sw-build.js .
    ========================================================================= */
 /* BUILD:START (written by engine/sw-build.js; do not edit by hand) */
-var VERSION = '0.2.0-dev-f4e6e5a240';
+var VERSION = '0.2.0-dev-24d73af9e8';
 var FILES = [
   'css/styles.css',
   'icons/icon-180.png',
@@ -25,6 +25,7 @@ var FILES = [
   'js/core/icons.js',
   'js/core/install.js',
   'js/core/mode-registry.js',
+  'js/core/piano-voice.js',
   'js/core/settings.js',
   'js/core/state.js',
   'js/core/taps.js',

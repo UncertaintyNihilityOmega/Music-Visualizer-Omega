@@ -267,6 +267,7 @@
     return out;
   }
   function dropPending(){
+    if (App.pianoVoice) App.pianoVoice.stopAll();
     for (var i = pianoSegs.length - 1; i >= 0; i--){
       var sg = pianoSegs[i];
       sg.on = false;
@@ -299,12 +300,23 @@
     var rollSpeed = lead ? keyTop / leadOff : 0.35 * h * cfg.fall * Cfg.CFG.look.motion;
     var rollTime = keyTop / rollSpeed;
 
+    // Piano sound (item 26): the speakers play piano notes for what is found
+    // instead of the song. Not with the microphone (the room is never sent
+    // to the speakers, and a piano there would be heard by the microphone),
+    // and not for a song on the plain player, which the analysis cannot hear.
+    var Voice = App.pianoVoice, S = App.state;
+    var voiced = !!(cfg.sound && Voice && Aud.source !== 'mic' && !S.usingPlain);
+    if (voiced) Aud.askSongOff();
+    var playing = voiced && Aud.isLive();
+
     // the mode's own clock: it stops while a paused song's sound is held, so
     // the notes on their way hang in the air until play
     var held = Aud.isHeld();
     var step = A.t - lastT;
     lastT = A.t;
-    if (step < 0 || step > 0.5){ step = 0; dropPending(); }        // the picture was away: what was falling is gone
+    // the picture was away: what was falling is gone (a clock a few ms behind, as when two
+    // sources draw frames, is not "away": that step is just nothing)
+    if (step < -0.1 || step > 0.5){ step = 0; dropPending(); } else if (step < 0) step = 0;
     if (Aud.lateEpoch !== epoch){ epoch = Aud.lateEpoch; dropPending(); }   // a jump in the song: those notes will never be heard
     if (held) step = 0;
     pc += step;
@@ -319,6 +331,8 @@
           if (!cur){
             cur = pianoOn[m] = { m: m, a: now + lead, b: now + lead, v: e, on: true, hit: false, em: 0, last: now };
             pianoSegs.push(cur);
+            // struck when it lands: lead seconds from now, as the song would have been heard
+            if (playing) cur.voice = Voice.noteOn(m, 0.35 + 0.65 * e, lead);
           }
           cur.last = now;
           cur.b = Math.max(cur.a + 0.07, now + leadOff);
@@ -326,6 +340,8 @@
         } else if (cur && now - cur.last > 0.06 * cfg.sustain){
           cur.on = false;
           delete pianoOn[m];
+          // let go when the end of the note is heard (a short find still sounds like a key press)
+          if (cur.voice) Voice.noteOff(cur.voice, Math.max(cur.b, cur.a + 0.15) - now);
         }
       }
     }
@@ -456,14 +472,9 @@
   // Touch: releases falling music notes coloured like the piano's own palette
   function onTap(x, y){
     var k = Can.dpr(), cfg = Cfg.CFG.piano;
-    // the colour of the key under the touch (found by x, as below): by octave, or the settings' colours
-    var kc = U.hexRGB(cfg.noteColor);
-    if (pianoKeys){
-      for (var p = 0; p < pianoKeys.white.length; p++){
-        var pk = pianoKeys.white[p];
-        if (x >= pk.x && x < pk.x + pk.w){ kc = noteRGB(pk.m); break; }
-      }
-    }
+    // the colour of the key under the touch: by octave, or the settings' colours
+    var key = keyAt(x, y);
+    var kc = key ? noteRGB(key.m) : U.hexRGB(cfg.noteColor);
     var col = 'rgb(' + kc[0] + ',' + kc[1] + ',' + kc[2] + ')';
     for (var n = 0; n < 5; n++){
       tapNotes.push({ x: x + (Math.random() - 0.5) * 24 * k, y: y, age: 0,
@@ -472,12 +483,37 @@
                       size: (11 + Math.random() * 10) * k,
                       col: col, shape: Math.floor(Math.random() * 3) });
     }
-    if (pianoKeys){
-      for (var q = 0; q < pianoKeys.white.length; q++){
-        var wk = pianoKeys.white[q];
-        if (x >= wk.x && x < wk.x + wk.w){ pianoSegs.push({ m: wk.m, a: pc, b: pc + 0.14, v: 0.9, on: false, hit: false, em: 0, last: pc }); break; }
+    if (key){
+      pianoSegs.push({ m: key.m, a: pc, b: pc + 0.14, v: 0.9, on: false, hit: false, em: 0, last: pc });
+      playTouch(key.m);
+    }
+  }
+  // the key under a touch: a black key where one is drawn (upper part of the keyboard), else the white key
+  function keyAt(x, y){
+    if (!pianoKeys) return null;
+    var h = canvas.height, keyH = Math.min(h * 0.32, 92 * Can.dpr()), keyTop = h - keyH;
+    if (y >= keyTop && y < keyTop + keyH * 0.62){
+      for (var b = 0; b < pianoKeys.black.length; b++){
+        var bk = pianoKeys.black[b];
+        if (x >= bk.x && x < bk.x + bk.w) return bk;
       }
     }
+    for (var q = 0; q < pianoKeys.white.length; q++){
+      var wk = pianoKeys.white[q];
+      if (x >= wk.x && x < wk.x + wk.w) return wk;
+    }
+    return null;
+  }
+  // a touched key sounds at once, with the piano sound on. While a paused
+  // song's late sound is held the sound engine is stopped, so nothing can
+  // sound then; the key still lights.
+  function playTouch(m){
+    var Voice = App.pianoVoice;
+    if (!Cfg.CFG.piano.sound || !Voice || Aud.source === 'mic' || Aud.frozen) return;
+    Aud.ensureAudioGraph();
+    var ctxA = Aud.audioCtx;
+    if (ctxA.state === 'suspended'){ var p = ctxA.resume(); if (p && p.catch) p.catch(function(){}); }
+    Voice.noteOff(Voice.noteOn(m, 0.8, 0), 1.2);
   }
   // a music-note icon drawn with paths, centred on 0,0 and about u high:
   // 0 a quaver (one note with a flag), 1 two quavers joined by a beam, 2 a crotchet
@@ -541,7 +577,7 @@
 
   App.cfg.registerDefaults('piano', {
     low: 36, high: 96, threshold: 0.4, polyphony: 6, melody: false, octaves: true, chord: true,
-    fall: 1, falling: true, labels: true, sustain: 1, sparks: 1,
+    fall: 1, falling: true, labels: true, sustain: 1, sparks: 1, sound: true,
     keyColor: '#F4ECE1', activeColor: '#E0728A', noteColor: '#7BD3F7',
     bg1: '#161127', bg2: '#05030C'
   });
@@ -553,6 +589,7 @@
     ['melody', 'Melody only (the strongest note of each moment)', 'bool'],
     ['octaves', 'Colour notes by octave', 'bool'],
     ['chord', 'Show the chord name', 'bool'],
+    ['sound', 'Play piano notes instead of the song (a touched key plays too); off: hear the song', 'bool'],
     ['falling', 'Notes fall onto the keys (in this mode the song is heard about 2 seconds late)', 'bool'],
     ['fall', 'Fall speed', 'range', 0.6, 2.8, 0.05],
     ['sparks', 'Flames from the keys', 'range', 0, 2, 0.05],

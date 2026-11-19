@@ -18,6 +18,7 @@ App.pages.define('guide', {
         '<li><b>Spot the hits.</b> When a band suddenly jumps above its own recent average, that is a beat, a snare or a hi-hat.</li>' +
         '<li><b>Draw.</b> Each mode maps those numbers to something you can see: a bar\'s height, the wind in the rain, the size of a flame.</li>' +
       '</ol>' +
+      '<p class="page-text"><b>Piano mode plays piano.</b> There you hear piano notes for the notes the app finds in the song, not the song itself, and each one sounds as it lands on its key; a touched key plays too. To hear the song: Settings, Piano, switch off "Play piano notes instead of the song".</p>' +
       '<p class="page-text">So when a mode looks wrong, ask which step is off. Bars stuck at the top: step 4 (lower Sensitivity or raise the Noise floor in Settings). Flickering: step 5 (raise FFT smoothing or lower Fall speed). Missing the beat: step 6 (lower the Beat threshold).</p>' +
     '</div>' +
     '<div class="card">' +

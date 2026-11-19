@@ -6,8 +6,9 @@
    results from App.audio.A and never touch Web Audio themselves.
 
    Graph:
-     <audio> --> direct --------------> volume --> speakers
-     <audio> --> delay --> late ------> volume          (see "Late sound")
+     <audio> --> direct --------> song --> volume --> speakers
+     <audio> --> delay --> late --> song               (see "Late sound")
+     piano voices (piano-voice.js) -----> volume     (see "Song off")
      <audio> --> analyser (2048)        } unless the microphone is on,
      <audio> --> pitchAnalyser (16384)  } then the mic feeds both instead
    The analysers are taps only: nothing the microphone hears is ever sent
@@ -66,7 +67,7 @@
   };
 
   var mediaNode = null, micNode = null, volumeNode = null;
-  var delayNode = null, directGain = null, lateGain = null;
+  var delayNode = null, directGain = null, lateGain = null, songGain = null;
   Aud.volume = 0.8;
   Aud.muted = false;
   function applyVolume(){
@@ -119,11 +120,14 @@
     delayNode.delayTime.value = Aud.late || 2.3;
     directGain.gain.value = Aud.late > 0 ? 0 : 1;
     lateGain.gain.value = Aud.late > 0 ? 1 : 0;     // the delay starts empty, so the first notes fall in silence
+    songGain = Aud.audioCtx.createGain();
+    songGain.gain.value = Aud.songOff ? 0 : 1;
     mediaNode.connect(directGain);
-    directGain.connect(volumeNode);
+    directGain.connect(songGain);
     mediaNode.connect(delayNode);
     delayNode.connect(lateGain);
-    lateGain.connect(volumeNode);
+    lateGain.connect(songGain);
+    songGain.connect(volumeNode);
     volumeNode.connect(Aud.audioCtx.destination);
     mediaNode.connect(Aud.analyser);
     mediaNode.connect(Aud.pitchAnalyser);
@@ -211,6 +215,36 @@
     flushLate();
   });
   S.audio.addEventListener('emptied', unfreeze);
+
+  /* ---------- Song off ----------
+     Piano mode can play piano notes instead of the song (piano-voice.js):
+     the analysis still hears the song, the speakers do not. Like late
+     sound, a mode asks every frame with Aud.askSongOff(); when it stops
+     asking (another mode is on screen) the song is heard again, and
+     Aud.onSongBack runs so piano notes still on their way are stopped.
+     While the page is hidden no frames are drawn, so nothing would play:
+     the song comes back at once then. The piano voices go to the volume
+     node, after the analysers, so they never reach the analysis. */
+  Aud.songOff = false;
+  Aud.onSongBack = null;
+  var songOffTTL = 0;
+  Aud.askSongOff = function(){ if (!document.hidden) songOffTTL = 3; };
+  function applySongOff(on){
+    on = !!on;
+    if (on === Aud.songOff) return;
+    Aud.songOff = on;
+    if (songGain){
+      var t = Aud.audioCtx.currentTime;
+      songGain.gain.cancelScheduledValues(t);
+      songGain.gain.setTargetAtTime(on ? 0 : 1, t, 0.02);
+    }
+    if (!on && Aud.onSongBack) Aud.onSongBack();
+  }
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){ songOffTTL = 0; applySongOff(false); }
+  });
+  // where the piano voices join the sound: after the analysers, before the volume
+  Aud.speakers = function(){ ensureAudioGraph(); return volumeNode; };
 
   /* ---------- Microphone ---------- */
   Aud.micSupported = function(){
@@ -396,6 +430,8 @@
     if (Aud.wantPitch > 0) Aud.wantPitch--;
     // late sound stays on only while a mode keeps asking for it
     if (lateTTL > 0){ lateTTL--; applyLate(lateWant); } else if (Aud.late > 0) applyLate(0);
+    // and the song stays off only while a mode keeps asking for that
+    if (songOffTTL > 0){ songOffTTL--; applySongOff(true); } else if (Aud.songOff) applySongOff(false);
     An.analyze(dt, now / 1000, cfg());
   };
   // kept for anything that still calls the old name

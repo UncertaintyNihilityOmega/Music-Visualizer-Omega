@@ -305,6 +305,20 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (late.join() !== 'js/modes/mode-piano.js') err('only Piano may ask for late sound (Aud.askLate); found in: ' + late.join(', '));
 }
 
+/* 8c. piano sound (item 26): the song is kept off the speakers only while Piano asks for it, comes back when the
+       page is hidden (no frames are drawn then, so nothing would play), and the piano never reaches the analysis */
+{
+  const eng = read('js/core/audio-engine.js'), pv = read('js/core/piano-voice.js'), pm = read('js/modes/mode-piano.js');
+  if (!/else if \(Aud\.songOff\) applySongOff\(false\)/.test(eng)) err('audio-engine.js: the song must come back when no mode asks for it to be off (Aud.frame)');
+  if (!/document\.hidden\)\{ songOffTTL = 0; applySongOff\(false\)/.test(eng)) err('audio-engine.js: the song must come back at once when the page is hidden');
+  if (/analyser|Analyser|destination/.test(pv.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))) err('piano-voice.js: the piano must go only to Aud.speakers() (the volume node), never to an analyser or straight out');
+  if (!/Aud\.onSongBack = V\.stopAll/.test(pv)) err('piano-voice.js: piano notes on their way must stop when the song comes back (Aud.onSongBack)');
+  if (!/Aud\.source !== 'mic'/.test(pm) || !/App\.pianoVoice\.stopAll\(\)/.test(pm)) err('mode-piano.js: no piano sound with the microphone, and every note on its way stops when the falling notes are dropped');
+  const off = walk('js/modes', '.js').concat(walk('js/games', '.js'), walk('js/pages', '.js'), walk('js/player', '.js')).filter(f => /Aud\.askSongOff\(/.test(read(f)));
+  if (off.join() !== 'js/modes/mode-piano.js') err('only Piano may keep the song off the speakers (Aud.askSongOff); found in: ' + off.join(', '));
+  before('js/core/audio-engine.js', 'js/core/piano-voice.js', 'the piano joins the engine\'s sound');
+}
+
 /* 9. what the app remembers (user decisions, 2026-11-15 and 2026-11-16): copies are made only while the
       "Keep a copy" switch is on, the switch is off until the user turns it on, and songs brought back from
       last time never start playing by themselves */
