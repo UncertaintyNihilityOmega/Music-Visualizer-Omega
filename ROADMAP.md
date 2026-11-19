@@ -122,6 +122,14 @@
     pictures are in `inspiration/` (`sandbox-example.jpg` for Solarium; read every file there first). Solarium
     first. One game per step, each with a before and after picture at desktop and 375 px. Done when: the user
     has seen both and says they look right.
+    **Built 2026-11-19, waiting on your look** (pictures in `docs/design/`, `*-before-*` and `*-after-*`).
+    Solarium: chunky blocks with light and dark edges on a dusk sky, slow blocky clouds (quicker when the music
+    is big), a dark palette strip that picks the biggest swatches (21 x 2 on a PC, 14 x 3 on a phone; the
+    drawing area on a phone grew from 150 to 193 px of 300). Dungeon of Echoes: a stone-brick chamber with a
+    flagstone floor, two torches whose flames grow with the music, a warm sound ring round the enemy, cards
+    washed in their colour with a numbered badge; on a phone the message and your HP bar no longer overlap.
+    Both in a style of their own (your picture shows a well-known block game: its look was the example, not
+    its textures). Weak: on a phone Solarium's view cannot be dragged (only the keyboard pans it).
 
 **v0.9.0: phone pass**
 
