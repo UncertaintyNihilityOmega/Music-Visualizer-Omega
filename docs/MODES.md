@@ -359,16 +359,17 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
 - Emoji: checked 2026-11-19, 1280 px, "Want Some Fun", "line" layout, quiet / loud (ratio), baseline measured the same day before the change: Omega 9.30 / 12.43 (1.3) -> 1.23 / 11.80 (9.6), Halloween 17.54 / 21.82 (1.2) -> 1.97 / 23.21 (12), Tessa 12.37 / 16.11 (1.3) -> 1.09 / 21.88 (20), Cyberpunk 13.19 / 17.05 (1.3) -> 0.38 / 7.25 (19); after only: New Year 1.09 / 15.87, Love 0.89 / 22.49, Solarpunk 0.94 / 14.60, Nihilum 0.30 / 10.56, Incertum 0.93 / 21.73. Cause: every column's height, size and glyph came from the spectrum's shape alone; they are now smoothed per column, scaled by `0.1 + 0.9 * min(1, drive * 2.2)`, and a glyph changes only after its value passes the next step with a margin. Cyberpunk's loud number fell (17.05 to 7.25: steps and no tilt) and is the one to look at by eye. Speed 0.66 to 0.81 ms at 1280 px, 0.36 to 0.44 at 375 px. A first Tessa run read quiet 14.6 / 9.3 with `drive` 0.37 / 0.21: the hidden pane had throttled frames, so `drive` had not settled; the repeat read 1.09.
 
 ### String
-- [ ] Moves a lot when quiet, under every code: quiet / loud 6.69 / 10.17 (Omega), 6.22 / 10.09 (New Year), 5.35 /
+- [x] (2026-11-19: quiet 0.05 to 1.31, loud 2.6 to 10.8, ratio 8 to 172 under all nine codes, 1280 px) Moves a lot when quiet, under every code: quiet / loud 6.69 / 10.17 (Omega), 6.22 / 10.09 (New Year), 5.35 /
   9.32 (Cyberpunk), 4.91 / 8.32, 4.85 / 7.95, 4.64 / 7.52, 3.78 / 5.85 (Love), 2.99 / 5.68 (Nihilum); the ratio is
   1.5 to 1.9 for all of them, 2.8 on song 2. The doc says calm music gives nearly straight strings; the numbers
   say the picture still changes a lot. Read from `mode-strings.js`, not seen by eye: each string's wave is divided
   by its own recent peak (`norm = 1 / peaks[li]`), so a soft passage is drawn at full shape, and the strings
   never drop below `big = 0.35` of their swing. Tie the wave to `drive`, not only to the peak. Fixed when the
   ratio is 3 or more under Omega, Love, New Year, Cyberpunk and Nihilum.
-- [ ] Under Tessa (the Jacob's ladder) the quiet window is the livelier one: 2.41 quiet against 2.04 loud (ratio
+- [x] (2026-11-19: Tessa 0.05 / 2.62, ratio 52) Under Tessa (the Jacob's ladder) the quiet window is the livelier one: 2.41 quiet against 2.04 loud (ratio
   0.8). Fixed when the ladder's arcs (`drawLadder`) come more often and climb faster with `drive`: ratio 3 or
   more with the loud number at least 2.04.
+- String: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Omega 6.49 / 10.53 (1.6) -> 1.07 / 9.38 (8.8), Tessa 1.33 / 1.73 (1.3) -> 0.05 / 2.62 (52), Cyberpunk 5.78 / 10.29 (1.8) -> 0.06 / 10.32 (172), Nihilum 2.56 / 5.14 (2.0) -> 0.41 / 4.94 (12); after only: Love 0.77 / 6.35 (8.2), New Year 1.31 / 10.80 (8.2), Halloween 1.04 / 8.71 (8.4), Solarpunk 0.91 / 8.67 (9.5), Incertum 0.94 / 8.48 (9.0). Cause: the swing floor (`big = 0.35`) plus each string drawn at full shape by its own peak, and the ladder's climb speed, jitter and thickness not tied to `drive`; now `big = 0.06 + 0.94 * min(1, drive * 2.2)`, the strings' own clock, drift, line weight, beads and the ladder's speed follow it. Loud numbers are within run-to-run noise of the baseline (Omega 10.53 to 9.38, Love not measured before). Speed 0.38 to 0.85 ms at 1280 px, 0.38 to 0.68 at 375 px. Cyberpunk's quiet strings are fully still (square steps swallow small swings).
 
 ### Basic
 - [ ] Ratio under the quiet codes: Incertum 2.38 / 2.82 (1.2), Nihilum 0.93 / 1.43 (1.5), Cyberpunk 1.26 / 1.89

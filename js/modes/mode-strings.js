@@ -2,7 +2,9 @@
    A set of strings, one per slice of the sound: the lowest string carries
    only the bass part of the wave, the highest only the treble. Each string
    moves as far as its own slice is loud, so calm music leaves them nearly
-   straight and a loud passage sets them all swinging (docs/MODES.md, A).
+   straight and a loud passage sets them all swinging (docs/MODES.md, A). The swing, the
+   brightness, the beads and the speed of every moving part follow the loudness (`A.drive`),
+   not only the shape of the spectrum, so a quiet passage with a soft tune stays calm.
    A snare plucks one string: it is pulled to a point and rings down.
 
    When "Follow theme" is on, the active theme code restyles the mode:
@@ -27,6 +29,7 @@
   var vals = null, valState = null;
   var plucks = [], pluckTurn = 0;
   var tapStrings = [], tapStringCd = 0;
+  var sT = 0;                        // the strings' own clock: it runs slowly in a quiet passage
   var ys = new Float32Array(200);
 
   function look(){
@@ -85,7 +88,7 @@
      string's slice of the sound wave, its speed and brightness how loud the
      slice is. A kick thickens every arc; a snare (a pluck) makes one flare. */
   var arcPos = new Float32Array(MAX_STRINGS), arcInit = false;
-  function drawLadder(w, h, k, n, m, lk, big, glowAmt, dt){
+  function drawLadder(w, h, k, n, m, lk, big, glowAmt, dt, calm){
     var cx = w / 2, yB = h * 0.93, yT = h * 0.07;
     var gapB = Math.min(w * 0.035, 22 * k), gapT = Math.min(w * 0.42, h * 0.5);
     var c1 = U.hexRGB(lk.c1), c2 = U.hexRGB(lk.c2), i, j;
@@ -105,28 +108,28 @@
       ctx.lineTo(cx + side * gapT, yT);
       ctx.stroke();
     }
-    var jt = Math.floor(A.t * 24);
+    var jt = Math.floor(A.t * 24);   // the jitter starts afresh 24 times a second; its size follows the loudness
     ctx.lineJoin = 'round';
     for (i = 0; i < n; i++){
       var v = vals[i], b = bands[i];
       // climb: slow when this slice is quiet, fast when it is loud
-      arcPos[i] += (0.07 + big * 0.22 + v * 0.5) * dt * Cfg.CFG.look.motion;
+      arcPos[i] += (0.012 + calm * (0.14 + big * 0.2 + v * 0.65)) * dt * Cfg.CFG.look.motion;
       if (arcPos[i] > 1) arcPos[i] -= 1;
       var p = arcPos[i], y = yB + (yT - yB) * p, half = gapB + (gapT - gapB) * p;
       var span = Math.max(96, m >> Math.round((n === 1 ? 0.5 : i / (n - 1)) * 3)), pts = 26;
       var pk = 0;
       for (j = 0; j < plucks.length; j++) if (plucks[j].li === i) pk = Math.max(pk, plucks[j].amp * (1 - plucks[j].age / 1.1));
-      var amp = h * 0.05 * Cfg.CFG.strings.amp * (0.25 + v * 1.5) * big + pk * h * 0.05;
+      var amp = h * 0.05 * Cfg.CFG.strings.amp * (0.25 + v * 1.5) * big * (0.3 + 0.7 * calm) + pk * h * 0.05;
       // an arc fades in as it forms and thins out just before it breaks
       var alive = Math.min(1, p * 9) * Math.min(1, (1 - p) * 5);
       for (j = 0; j <= pts; j++){
         var u = j / pts, env = Math.sin(u * Math.PI);
         var wv = b[Math.min(m - 1, Math.floor(u * (span - 1)))] || 0;
-        var jit = (hash(i, j, jt) - 0.5) * (0.35 + v * 1.2);
+        var jit = (hash(i, j, jt) - 0.5) * (0.35 + v * 1.2) * (0.1 + 0.9 * calm);
         // hot air lifts the middle of the arc
         ys[j] = y - env * half * 0.22 + (wv * 2.2 + jit) * amp * env;
       }
-      var core = (1.2 + v * 1.6 + A.kick * 1.6 + pk * 2.5) * k;
+      var core = (1.2 + (v * 1.6 + A.kick * 1.6) * calm + pk * 2.5) * k;
       for (var pass = 0; pass < 2; pass++){
         ctx.beginPath();
         for (j = 0; j <= pts; j++){
@@ -134,10 +137,10 @@
           if (j === 0) ctx.moveTo(x, ys[j]); else ctx.lineTo(x, ys[j]);
         }
         if (pass === 0){
-          ctx.strokeStyle = U.rgba(c1, (alive * (0.22 + v * 0.4) * (0.5 + glowAmt)).toFixed(3));
+          ctx.strokeStyle = U.rgba(c1, (alive * (0.22 + v * 0.4 * calm) * (0.5 + glowAmt)).toFixed(3));
           ctx.lineWidth = core * 4.5;
         } else {
-          ctx.strokeStyle = U.rgba(c2, (alive * (0.55 + v * 0.45)).toFixed(3));
+          ctx.strokeStyle = U.rgba(c2, (alive * (0.55 + v * 0.45 * calm)).toFixed(3));
           ctx.lineWidth = core;
         }
         ctx.stroke();
@@ -163,7 +166,9 @@
     if (!vals || vals.length !== n){ vals = new Float32Array(n); valState = new Float32Array(n); }
     Aud.bars(vals, { lo: 45, hi: 9000, scale: 'log', blur: 0.2, state: valState, attack: 40, release: 7 });
 
-    var t = A.t * CFGlook.motion;
+    var calm = Math.min(1, A.drive * 2.2);                   // 0 in a quiet passage, 1 once the music is clearly loud
+    sT += dt * CFGlook.motion * (0.2 + 0.8 * calm);
+    var t = sT;
     var ring = !!(lk && lk.layout === 'ring');
     var digital = !!(lk && lk.digital);
     var glyphs = lk && cfg.beads && lk.glyphs && lk.glyphs.length ? lk.glyphs : null;
@@ -172,7 +177,7 @@
     var ampPx = U.lerp(h * 0.3, Math.max(h * 0.085, gapPx * 1.1), cfg.gap) * cfg.amp;
     if (ring) ampPx = minDim * 0.085 * cfg.amp;
     // idea A: the whole mode swings wider in a loud passage
-    var big = 0.35 + 0.65 * A.drive;
+    var big = 0.06 + 0.94 * calm;
     var glowAmt = cfg.glow * CFGlook.glow;
 
     // a snare plucks one string (never the same one twice running)
@@ -186,7 +191,7 @@
       if (plucks[pq].age > 1.1) plucks.splice(pq, 1);
     }
 
-    if (lk && lk.electric){ drawLadder(w, h, k, n, m, lk, big, glowAmt, dt); return; }
+    if (lk && lk.electric){ drawLadder(w, h, k, n, m, lk, big, glowAmt, dt, calm); return; }
 
     if (ring && lk.inward){
       // the dark disc the rings circle (same idea as Basic's black hole)
@@ -213,10 +218,10 @@
       peaks[li] = Math.max(pk, peaks[li] * Math.exp(-1.5 * dt));
       var norm = 1 / Math.max(0.03, peaks[li]);
       var amp = ampPx * Math.min(1, v * 1.25) * big;
-      var drift = ampPx * 0.03;
+      var drift = ampPx * (0.006 + 0.024 * calm);
 
       var rgb = colourOf(lk, f, li, t);
-      var drive = v * 0.7 + A.punch * (1 - f) * 0.5;
+      var drive = (v * 0.7 + A.punch * (1 - f) * 0.5) * (0.25 + 0.75 * calm);
       ctx.strokeStyle = U.rgba(rgb, (0.5 + drive * 0.45).toFixed(3));
       ctx.lineWidth = (2.6 - f * 1.5 + drive * 3.6) * cfg.width * k;
       if (glowAmt > 0.01){
@@ -284,9 +289,9 @@
       // the theme's characters ride along the string
       if (glyphs){
         var every = Math.max(6, Math.round(pts / Math.max(4, (ring ? R * 6.283 : w) / (58 * k))));
-        var size = (9 + v * 13) * k * (0.8 + cfg.width * 0.2);
+        var size = (9 + v * calm * 13) * k * (0.8 + cfg.width * 0.2);
         var tick = Math.floor(A.t * 7), col = lk.dark === false ? lk.c1 : lk.c2;
-        ctx.globalAlpha = 0.45 + Math.min(0.55, v * 0.9);
+        ctx.globalAlpha = 0.45 + Math.min(0.55, v * 0.9 * calm);
         for (var e = Math.round(every / 2) + (li % 2) * Math.round(every / 2); e < pts; e += every){
           var ch = glyphs.length === 2 ? glyphs[hash(li, e, tick) < 0.5 ? 0 : 1] : glyphs[(li + Math.floor(e / every)) % glyphs.length];
           var gx, gy;
