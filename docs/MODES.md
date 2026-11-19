@@ -399,6 +399,8 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
 - Fire: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Tessa 1.04 / 1.62 (1.6) -> 0.10 / 1.61 (16), Nihilum 1.22 / 1.91 (1.6) -> 0.27 / 1.95 (7.2), Solarpunk 0.76 / 1.62 (2.1) -> 0.32 / 1.77 (5.5), Omega 1.05 / 2.09 (2.0) -> 0.66 / 3.83 (5.8), Cyberpunk 0.55 / 3.16 (5.7) -> 0.29 / 2.90 (10), Love 0.21 / 1.68 (8.0) -> 0.04 / 1.77 (44); after only: New Year 0.16 / 3.07, Halloween 0.11 / 1.37, Incertum 0.12 / 1.86 (ratio 12 to 19). Cause: the plasma threads' wander, jitter and widths, the vortex's turn, the flames' sideways wave and sway, the spectrum's part in each flame's height, beat sparks and the ember count ran at a fixed or spectrum-only rate even at `drive` 0; they are now scaled by `calm = 0.1 + 0.9 * min(1, drive * 2.2)` (the vortex turns at 0.025 rad/s quiet, 0.25 loud). Loud numbers are within run-to-run noise (Omega 2.09 to 3.83 came with `drive` 0.66 against 0.5). Speed 0.36 to 2.34 ms at 1280 px (Nihilum highest), 0.37 to 1.74 at 375 px. Not looked at by eye.
 
 ### Rain
+- Rain: checked 2026-11-19 (review): fine under every code, quiet 0.26 to 1.06, ratio 3.1 to 9.1, no
+  burnt-out white; nothing changed.
 - Fine under every code: quiet 0.26 to 1.06, ratio 3.1 to 9.1 (Love is the lowest at 3.1, 0.80 loud), no burnt-out
   white. Note only: under Love, a thin tan bolt line is drawn over the hearts in the picture. Check that a bolt in a
   heart rain is meant.
@@ -416,7 +418,10 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
 - Nature: checked 2026-11-19, 1280 px, "Want Some Fun", 10 s windows (quiet 1 to 11 s from a fresh start with loud seconds played just before, loud 58 to 68 s), quiet / loud (ratio), baseline the same day before the change: Solarpunk 0.39 / 0.34 (0.9) -> 0.24 / 0.61 (2.5), Incertum 0.25 / 0.23 (0.9) -> 0.28 / 0.49 (1.7), Omega 0.39 / 0.54 (1.4) -> 0.45 / 1.09 (2.4); after only: Love 0.29 / 0.57 (2.0), Nihilum 0.42 / 1.09 (2.6). The song has only 11 quiet seconds, so no 10 s window is purely quiet at its start. Changes: wind is `0.08 + 1.5 * drive` (was `0.3 + drive`); from a drive of 0.15 to 0.5 (`swing` 0 to 1) the branches rock, the leaves flutter and swell on each kick, and about five leaves a second let go; leaves are drawn without a save / rotate / restore each. Speed 0.99 to 1.87 ms at 1280 px (before 0.91 to 2.58), no errors. Second pass, same day: what moved in a quiet window was mostly the leaves' turnover (leafMax 0 cut quiet from 0.20 to 0.08), not the die-back. Now `pace = 0.25 + 0.75 * min(1, drive * 2.2)` scales growth, die-back, leaf ageing and leaf spawning; dusk comes slower (release 0.04 instead of 0.1); in a loud passage swing is larger (depth coefficient 0.065), leaves swell 80 % on a kick and about nine a second let go. Before / after of this pass (quiet / loud, loud is noisy from 0.49 to 1.02 between runs): Solarpunk 0.24 / 0.61 -> 0.19 / 0.79, Incertum 0.28 / 0.49 -> 0.21 / 0.74, Omega 0.45 / 1.09 -> 0.39 / 0.99. Speed 0.98 to 1.46 ms at 1280 px, 0.96 to 1.46 at 375 px. Seen once (Solarpunk, loud): the tree is intact. Omega's ratio (2.5) is below 3 but was not in the note.
 
 ### Clock
-Clock: left to items 24 and 25.
+- Clock: checked 2026-11-19 (items 24 and 25, by an agent): under Ascensus Ad Incertum (Sky) 1.84 to 1.06 ms a
+  frame at 1280 px and 1.54 to 0.92 ms at 375 px, new flat wings (three blades left, nine plumes right); Gears
+  as 18 flat gear icons turning in time (0.48 to 0.6 ms); Sand a new design (0.55 to 0.7 ms with the picture
+  95% full). Calm against loud not measured: no truly quiet passage was found. Looks wait on the user.
 
 ### Not done in this review (still to do)
 - The Clock (items 24 and 25).

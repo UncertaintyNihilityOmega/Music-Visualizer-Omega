@@ -21,6 +21,9 @@ ROADMAP.md "Done" is emptied for the next one.
 - **Liquid, Emoji and String are calm in quiet music** and move a lot when it is loud (they moved nearly the
   same in both before). Liquid and Emoji also take a form of their own from more theme codes now, not only
   colours (for example a slime drop under Halloween, bats under Halloween in Emoji, a grid under Cyberpunk).
+- **Fire and Basic are calmer in quiet music** too, under every code. Basic's Solarpunk bars are easier to
+  read, and the codes that draw Basic with symbols cost half as much. **Nature moves more in loud music**: the
+  branches sway, the leaves flutter and let go on the big hits.
 
 ## v0.1.0 (2026-11-19): everything built so far
 

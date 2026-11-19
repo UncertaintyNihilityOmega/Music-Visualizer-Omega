@@ -3,8 +3,8 @@
 ## Now
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
 - Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks).
-- v0.3.0 started: items 24 and 25 built (they wait on your look); item 17: review finished, Liquid,
-  Emoji and String fixed, Fire, Basic and Nature in hand (agent).
+- v0.3.0 started: items 24 and 25 built (they wait on your look); item 17 done (every custom mode
+  measured and the weak ones fixed). Next: v0.4.0 (special modes).
 - Item 6 (v0.5.0) is started, not committed: the pure maths is in `.run/wip/song-map.js` (git-ignored). The
   user's beat counts agree with it (see item 6). To resume: move the file back to `js/core/` and add it to
   `index.html` in the same commit.
@@ -47,21 +47,6 @@
 
 **v0.3.0: custom modes**
 
-17. **Custom modes pass.** First finish the review (open notes under "Review" in docs/MODES.md, by a session that
-    did not write the modes; prompt in PROMPTS.md). Then one step per custom mode (Basic, String, Emoji, Fire,
-    Rain, Nature, Clock, Liquid): two songs, every code, calm part against loud part measured, the weakest thing
-    fixed. Worst first: Liquid, Emoji, String. Done when: the review's notes are closed and each of the eight
-    has a dated line in docs/MODES.md.
-    **Review finished 2026-11-19** (second half in docs/MODES.md): worst are Emoji (quiet 11 to 23 under every
-    code, ratio 1.2 to 1.5), Liquid (ratio 0.9 to 1.6) and String (ratio 0.8 to 1.9); Emoji and Liquid codes
-    change mostly colours; Fire under three codes and Nature under pale codes are weaker. Every mode is under
-    6 ms a frame (worst 4.7 ms at 1280 px, 2.3 ms at 375 px). **Liquid, Emoji, String fixed 2026-11-19**: quiet
-    against loud now 12 to 28 times (Liquid), 7 to 35 (Emoji), 8 or more (String) under every code; Liquid and
-    Emoji got a form for more codes. Weak: Emoji under Cyberpunk is quieter when loud (7.25). Left: the notes on
-    Fire, Basic and Nature (in hand), and a dated Clock line.
-    Clock notes left for a later look: the time in figures is crowded beside VIII and IV in the Roman skins,
-    the hands can pass over it, Golden's sand covers the bottom of the crown on a phone, Cyberpunk is busy,
-    Solarpunk's solar panels are left over.
 24. **Clock under Ascensus Ad Incertum: speed and wings** (user check). It is laggy: measure ms per frame and
     find the cost. Redraw the wings in 2D after `inspiration/wing-example.webp` (feathered wings like it, but
     flat); the left and right wings are different from each other. Done when: under 2 ms a frame at 1280 px
@@ -169,6 +154,11 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 17 Custom modes pass: review finished (docs/MODES.md "Review"); Liquid, Emoji, String, Fire, Basic and Nature
+  fixed so quiet passages are calm (ratios: Liquid 12 to 28, Emoji 7 to 35, String 8 or more, Fire 5.5 or more,
+  Basic 2.6 to 5.3, Nature 3.5 to 4.2 under the pale codes); Liquid and Emoji got forms for more codes; Basic's
+  glyph codes halved in cost; Rain fine as it was; Clock by items 24 and 25. Every review note closed and each of
+  the eight has a dated line in docs/MODES.md. All by agents, measured on numbers; few pictures looked at (2026-11-19).
 - 21 Tap the picture to pause and play: in fullscreen a short tap (under 14 px of movement and 0.5 s) pauses or
   plays and shows a sign in the middle; the mode's own tap effect is skipped then, except where the mode keeps
   the tap (`keepsTap`: Piano's keys); games keep the canvas. Outside fullscreen a tap is the mode's, as before
