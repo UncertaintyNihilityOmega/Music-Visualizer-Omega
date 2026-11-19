@@ -456,12 +456,21 @@
   // Touch: releases falling music notes coloured like the piano's own palette
   function onTap(x, y){
     var k = Can.dpr(), cfg = Cfg.CFG.piano;
+    // the colour of the key under the touch (found by x, as below): by octave, or the settings' colours
+    var kc = U.hexRGB(cfg.noteColor);
+    if (pianoKeys){
+      for (var p = 0; p < pianoKeys.white.length; p++){
+        var pk = pianoKeys.white[p];
+        if (x >= pk.x && x < pk.x + pk.w){ kc = noteRGB(pk.m); break; }
+      }
+    }
+    var col = 'rgb(' + kc[0] + ',' + kc[1] + ',' + kc[2] + ')';
     for (var n = 0; n < 5; n++){
       tapNotes.push({ x: x + (Math.random() - 0.5) * 24 * k, y: y, age: 0,
                       life: 1.6 + Math.random(), vx: (Math.random() - 0.5) * 26 * k,
                       vy: -(30 + Math.random() * 46) * k, rot: (Math.random() - 0.5) * 0.6,
                       size: (11 + Math.random() * 10) * k,
-                      col: Math.random() < 0.5 ? cfg.noteColor : cfg.activeColor });
+                      col: col, shape: Math.floor(Math.random() * 3) });
     }
     if (pianoKeys){
       for (var q = 0; q < pianoKeys.white.length; q++){
@@ -469,6 +478,33 @@
         if (x >= wk.x && x < wk.x + wk.w){ pianoSegs.push({ m: wk.m, a: pc, b: pc + 0.14, v: 0.9, on: false, hit: false, em: 0, last: pc }); break; }
       }
     }
+  }
+  // a music-note icon drawn with paths, centred on 0,0 and about u high:
+  // 0 a quaver (one note with a flag), 1 two quavers joined by a beam, 2 a crotchet
+  function noteIcon(shape, u){
+    ctx.beginPath();
+    if (shape === 1){
+      ctx.ellipse(-0.3 * u, 0.35 * u, 0.2 * u, 0.14 * u, -0.4, 0, 6.283);
+      ctx.moveTo(0.5 * u, 0.2 * u);
+      ctx.ellipse(0.3 * u, 0.2 * u, 0.2 * u, 0.14 * u, -0.4, 0, 6.283);
+      ctx.rect(-0.14 * u, -0.45 * u, 0.065 * u, 0.8 * u);
+      ctx.rect(0.46 * u, -0.3 * u, 0.065 * u, 0.5 * u);
+      ctx.moveTo(-0.14 * u, -0.45 * u);          // the beam across the two stems
+      ctx.lineTo(0.525 * u, -0.3 * u);
+      ctx.lineTo(0.525 * u, -0.14 * u);
+      ctx.lineTo(-0.14 * u, -0.29 * u);
+      ctx.closePath();
+    } else {
+      ctx.ellipse(-0.05 * u, 0.35 * u, 0.2 * u, 0.14 * u, -0.4, 0, 6.283);
+      ctx.rect(0.11 * u, -0.5 * u, 0.065 * u, 0.85 * u);
+      if (shape === 0){                           // the flag
+        ctx.moveTo(0.175 * u, -0.5 * u);
+        ctx.bezierCurveTo(0.2 * u, -0.28 * u, 0.5 * u, -0.28 * u, 0.4 * u, 0.06 * u);
+        ctx.bezierCurveTo(0.4 * u, -0.2 * u, 0.28 * u, -0.22 * u, 0.175 * u, -0.3 * u);
+        ctx.closePath();
+      }
+    }
+    ctx.fill();
   }
   function drawTapFX(){
     var dt = A.dt;
@@ -485,10 +521,7 @@
       ctx.translate(nt.x, nt.y);
       ctx.rotate(nt.rot);
       ctx.fillStyle = nt.col;
-      ctx.font = nt.size + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🎶', 0, 0);
+      noteIcon(nt.shape, nt.size * 1.5);
       ctx.restore();
     }
   }
