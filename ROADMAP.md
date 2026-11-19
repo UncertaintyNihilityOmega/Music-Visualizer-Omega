@@ -2,7 +2,7 @@
 
 ## Now
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
-- Snapshot in hand: **v0.2.0**. Item 21 done; next item 22.
+- Snapshot in hand: **v0.2.0**. Item 21 done; item 22 built (waits on your phone check); next item 23.
 - Item 17 (v0.3.0) is half done: the "## Review" section of docs/MODES.md has motion and speed numbers for Omega
   and Love and the three worst faults (Liquid moves the same quiet and loud; Emoji and String move a lot when
   quiet). Not yet looked at: the other seven codes, looks, 375 px, phone fullscreen.
@@ -31,6 +31,10 @@
     when the page is seen again. That also stops the phone dropping out of fullscreen when the screen goes off.
     A setting, on by default. Done when: on the user's phone the screen stays on through a whole song in
     fullscreen ("For the user" check), and `check.js` guards that the lock is released on pause.
+    **Built 2026-11-19, waiting on the phone check.** `js/player/background.js` part 4; setting "Keep the screen
+    on while music plays"; rules in `check.js`. The preview pane refuses a real wake lock (its tab has no
+    focus), so the logic was checked with a stand-in: asked for on play, let go on pause and with the setting
+    off, asked for again on play. No console errors.
 23. **One permission is enough.** Today the browser asks again on every start before remembered songs load.
     Find what each browser allows (Chrome's "Allow on every visit" for files, an installed app, persistent
     storage) and use it; where a browser still asks, explain on the Music page and point to "Keep a copy".
@@ -151,6 +155,9 @@
   (2026-11-19).
 
 ## For the user
+- **Screen stays on (item 22).** Update the app on your phone (see below), play a song in fullscreen and leave
+  the phone alone: the screen should stay on to the end of the song and fullscreen should stay. Pause: the
+  screen may then go off as usual.
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
 - **Google Search Console** comes at the very end, before v1.0.0 (item 18). It needs your Google account:
   nothing to do until a run asks for the verification file or tag.

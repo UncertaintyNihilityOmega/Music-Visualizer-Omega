@@ -334,6 +334,16 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!/App\.isFull = isFull/.test(read('js/main.js'))) err('main.js: App.isFull must be set, or a tap in fullscreen never pauses');
 }
 
+/* 9c. the screen stays on while music plays (ROADMAP item 22): on by default, let go on pause and when the
+       page is hidden, so a paused app never keeps a phone's screen burning */
+{
+  const bg = read('js/player/background.js'), cc = read('js/core/canvas-core.js');
+  if (!/keepAwake: true/.test(cc)) err('canvas-core.js: "Keep the screen on while music plays" must be on by default (look.keepAwake)');
+  if (!/wakeLock\.request\('screen'\)/.test(bg) || !/\.release\(\)/.test(bg)) err('background.js: the screen wake lock must be both asked for and released');
+  if (!/document\.hidden\) return false/.test(bg) || !/el\.paused/.test(bg)) err('background.js: the wake lock must be let go when the page is hidden and when the song is paused (wantAwake)');
+  if (!/'pause'/.test(bg) || !/visibilitychange', syncAwake/.test(bg)) err('background.js: pause and visibilitychange must call syncAwake');
+}
+
 /* 10. every script the offline list (sw.js) caches is tracked by git, so the published site can install it
        (found 2026-11-17: sw.js was pushed listing js/player/folders.js before that file was committed) */
 {

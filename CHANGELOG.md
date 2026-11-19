@@ -7,6 +7,9 @@ ROADMAP.md "Done" is emptied for the next one.
 - **Tap to pause in fullscreen.** In fullscreen, one tap or click on the picture pauses the song and another
   plays it; a pause or play sign shows in the middle for a moment. In Piano a tap on the keys still plays the
   key. Settings > Performance & feel > "In fullscreen, a tap on the picture pauses and plays" turns it off.
+- **The screen stays on while music plays**, like a video: the phone no longer dims and locks in the middle
+  of a song (which also threw it out of fullscreen). Paused, the screen goes off as usual. Settings >
+  Performance & feel > "Keep the screen on while music plays".
 
 ## v0.1.0 (2026-11-19): everything built so far
 

@@ -127,7 +127,7 @@
     return cv;
   };
 
-  App.cfg.registerDefaults('look', { dprCap: 1.5, fps: 60, motion: 1, glow: 0.5, fx: 1, fsTurn: true, fsTapPause: true });
+  App.cfg.registerDefaults('look', { dprCap: 1.5, fps: 60, motion: 1, glow: 0.5, fx: 1, fsTurn: true, fsTapPause: true, keepAwake: true });
   App.cfg.registerSchema({ id: 'look', label: 'Performance & feel', fields: [
     ['dprCap', 'Render resolution', 'range', 1, 2, 0.25],
     ['fps', 'Frame rate cap', 'select', [30, 45, 60]],
@@ -135,7 +135,8 @@
     ['glow', 'Glow amount', 'range', 0, 1, 0.05],
     ['fx', 'Picture punch (zoom, shake and flash on hits; 0 = off)', 'range', 0, 2, 0.05],
     ['fsTurn', 'Fullscreen on a phone turns the picture sideways', 'bool'],
-    ['fsTapPause', 'In fullscreen, a tap on the picture pauses and plays', 'bool']
+    ['fsTapPause', 'In fullscreen, a tap on the picture pauses and plays', 'bool'],
+    ['keepAwake', 'Keep the screen on while music plays', 'bool']
   ]}, 1);
   App.cfg.onGroupChange('look', function(key){
     if (key === 'dprCap' || key === null) resizeCanvas();

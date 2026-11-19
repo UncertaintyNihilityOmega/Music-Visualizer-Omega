@@ -128,4 +128,43 @@
   // some phones pause the engine without hiding the page (a call, another app's sound)
   window.addEventListener('focus', wake);
   window.addEventListener('pageshow', wake);
+
+  /* ---------- 4. keep the screen on while the visualiser plays (ROADMAP item 22) ----------
+     Like a video site: while a song plays (or the microphone is on) and the
+     page is on screen, the app holds a Screen Wake Lock, so the phone does
+     not dim, lock, and drop out of fullscreen. It is let go on pause, at the
+     end of a song, and when the page is hidden (the browser drops it then
+     anyway); it is asked for again when the page is seen and still playing.
+     Setting "Keep the screen on while music plays" (Performance & feel). */
+  var lock = null, asking = false;
+  B.wakeLockHeld = function(){ return !!lock; };
+  function wantAwake(){
+    if (!App.cfg.CFG.look.keepAwake || document.hidden) return false;
+    if (Aud.source === 'mic') return true;
+    var el = S.player();
+    return !!(el && !el.paused && !el.ended);
+  }
+  function syncAwake(){
+    if (!('wakeLock' in navigator)) return;
+    var want = wantAwake();
+    if (want && !lock && !asking){
+      asking = true;
+      navigator.wakeLock.request('screen').then(function(l){
+        asking = false;
+        lock = l;
+        l.addEventListener('release', function(){ if (lock === l) lock = null; });
+        if (!wantAwake()) syncAwake();          // paused while the request was on its way
+      }, function(){ asking = false; });         // refused (battery saver, no permission): nothing to do
+    } else if (!want && lock){
+      var l = lock; lock = null;
+      l.release().catch(function(){});
+    }
+  }
+  B.syncAwake = syncAwake;
+  [S.audio, S.plainAudio].forEach(function(el){
+    ['play', 'playing', 'pause', 'ended', 'emptied'].forEach(function(ev){ el.addEventListener(ev, syncAwake); });
+  });
+  document.addEventListener('visibilitychange', syncAwake);
+  App.cfg.onGroupChange('look', function(){ syncAwake(); });
+  setInterval(syncAwake, 3000);                  // the microphone switching on or off
 })();
