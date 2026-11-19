@@ -372,21 +372,23 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
 - String: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Omega 6.49 / 10.53 (1.6) -> 1.07 / 9.38 (8.8), Tessa 1.33 / 1.73 (1.3) -> 0.05 / 2.62 (52), Cyberpunk 5.78 / 10.29 (1.8) -> 0.06 / 10.32 (172), Nihilum 2.56 / 5.14 (2.0) -> 0.41 / 4.94 (12); after only: Love 0.77 / 6.35 (8.2), New Year 1.31 / 10.80 (8.2), Halloween 1.04 / 8.71 (8.4), Solarpunk 0.91 / 8.67 (9.5), Incertum 0.94 / 8.48 (9.0). Cause: the swing floor (`big = 0.35`) plus each string drawn at full shape by its own peak, and the ladder's climb speed, jitter and thickness not tied to `drive`; now `big = 0.06 + 0.94 * min(1, drive * 2.2)`, the strings' own clock, drift, line weight, beads and the ladder's speed follow it. Loud numbers are within run-to-run noise of the baseline (Omega 10.53 to 9.38, Love not measured before). Speed 0.38 to 0.85 ms at 1280 px, 0.38 to 0.68 at 375 px. Cyberpunk's quiet strings are fully still (square steps swallow small swings).
 
 ### Basic
-- [ ] Ratio under the quiet codes: Incertum 2.38 / 2.82 (1.2), Nihilum 0.93 / 1.43 (1.5), Cyberpunk 1.26 / 1.89
+- [x] (2026-11-19: ratio 2.6 to 5.3 under eight codes, Incertum 3.6, 1280 px) Ratio under the quiet codes: Incertum 2.38 / 2.82 (1.2), Nihilum 0.93 / 1.43 (1.5), Cyberpunk 1.26 / 1.89
   (1.5), Solarpunk 1.9, Tessa and New Year 2.0, Omega 2.3 (1.1 against 10.3 on song 2, ratio 9.3), Love 2.2.
   Some motion in a quiet verse is right, since bars follow the spectrum, but the rainbow code is nearly as busy
   quiet as loud (the hue probably keeps cycling). Fixed when Incertum's ratio is 2 or more. Low priority.
-- [ ] Solarpunk Basic is hard to read (picture): the flower glyph stems are thin, small and pale green on cream,
+- [x] (2026-11-19: stems in the bar colour #2F7D4A, contrast 4.2 to 4.9 against the cream, glyphs at 88 to 100 % instead of 55 to 100 %; the wavy line is the waveform, setting "Waveform line", now named in the mode's header and kept; seen once, loud) Solarpunk Basic is hard to read (picture): the flower glyph stems are thin, small and pale green on cream,
   and a faint grey wavy line crosses the top of the picture over the tallest bars (also seen under Incertum). If the
   line is meant (a waveform or peak line), keep it; otherwise remove it. Fixed when the glyph colour has a contrast of
   at least 3 to 1 against the cream background and the line is either gone or named in the mode's doc.
-- [ ] In both Basic pictures with "Want Some Fun" the left 27 % of the width stays flat at the floor (seen under
+- [x] (2026-11-19: it is the song: at 30 s the left bars read 0.3 to 0.4 on "Want Some Fun", Kirara Magic and STVCKS, flat only where a song has no low sound, as "Want Some Fun" at 58 s and Nightcore at 30 s; no change) In both Basic pictures with "Want Some Fun" the left 27 % of the width stays flat at the floor (seen under
   Solarpunk and Incertum). It may be the song (little low sound), not a fault. Check the left edge on song 2 under Omega and on one more
   song: fixed when the bars at the left carry sound, or the lowest band starts where the sound does.
-- [ ] Cost: three-glyph codes (New Year 3.71, Halloween 4.67, Solarpunk 4.50 ms at 1280 px) against 0.35 to 1.5 for
+- [x] (2026-11-19: 2.0 to 2.5 ms at 1280 px, 0.27 to 0.62 at 375 px, other agents may have been running; a run 10 minutes earlier read up to 3.0) Cost: three-glyph codes (New Year 3.71, Halloween 4.67, Solarpunk 4.50 ms at 1280 px) against 0.35 to 1.5 for
   the solid codes; 78 % of the 6 ms limit. At 375 px it is 0.79 to 1.51. Fixed when none is above 3 ms at 1280 px
   on a measurement with nothing else running (one sample each so far; other agents were running).
-- [ ] Old note, song 2: now measured, 1.11 / 10.30 under Omega (ratio 9.3); closed.
+- [x] (2026-11-19) Old note, song 2: now measured, 1.11 / 10.30 under Omega (ratio 9.3); closed.
+
+- Basic: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Incertum 1.95 / 4.23 (2.2) -> 1.10 / 3.96 (3.6), Nihilum 0.43 / 1.10 (2.6) -> 0.24 / 0.95 (4.0), Cyberpunk 1.38 / 3.17 (2.3) -> 0.70 / 1.93 (2.8), Omega 3.49 / 7.58 (2.2) -> 1.38 / 7.36 (5.3), Solarpunk 0.93 / 2.29 (2.5) -> 0.66 / 2.28 (3.5), Love 0.67 / 1.32 (2.0) -> 0.47 / 1.40 (3.0), Tessa 0.75 / 1.70 (2.3) -> 0.57 / 1.46 (2.6), New Year 0.80 / 2.14 (2.7) -> 0.54 / 1.72 (3.2); Halloween 1.06 / 3.20 (3.0) before, not measured after. Changes: a quiet passage is scaled to 60 % height and the bars follow the spectrum slowly (`loud = min(1, drive * 2.2)`; attack 22 to 70, release 40 to 100 %); light looks with glyphs get a stem and fuller glyph strength; glyph bars of a fixed pattern are built once per (bar, rows) as one small canvas and glyphs are pre-scaled to the cell (glyph codes 3.7 to 4.7 before, 2.0 to 2.5 ms now; Cyberpunk's flickering 1 / 0 bars cannot be cached and read 2.2). Loud numbers are within noise of the baseline except Cyberpunk (3.17 to 1.93, one run each). Hidden-pane note: a quiet window read `drive` 0.5 when the run did not come straight after a loud window (the level control had adapted); the numbers above all have `drive` 0.01 to 0.02 quiet. Seen by eye once (Solarpunk, loud): the stems and fuller glyphs read clearly.
 
 ### Fire
 - [x] (2026-11-19: quiet 0.04 to 0.66, ratio 5.5 to 44 under all nine codes, 1280 px) Quiet is not quiet under Tessa (plasma globe) 1.17 / 1.69 (ratio 1.4), Nihilum (vortex) 1.21 / 1.83 (1.5)

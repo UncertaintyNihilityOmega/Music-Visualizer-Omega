@@ -6,7 +6,10 @@
        of a blur across half the screen.
      - Rounded peaks: each bar leans a little on its neighbours.
    When "Follow theme" is on, colours, layout and what the bars are built
-   from (solid, 1s and 0s, emoji...) come from the active theme code. */
+   from (solid, 1s and 0s, emoji...) come from the active theme code.
+   The thin wavy line across the picture is the sound's waveform (setting
+   "Waveform line"). A quiet passage is drawn at 60 % height and the bars follow
+   it slowly; from a drive of 0.45 up they are as tall and as quick as ever. */
 (function(){
   'use strict';
   var Can = App.canvas, Aud = App.audio, Cfg = App.cfg, U = App.util;
@@ -39,10 +42,13 @@
       vals = new Float32Array(n); state = new Float32Array(n); peakCaps = new Float32Array(n);
     }
     var r = RANGES[cfg.range] || RANGES.full;
+    // a quiet passage: the bars follow the spectrum slowly (attack 22 against 70, release 40 % against 100 %), so a soft
+    // verse flows instead of flickering; from a drive of 0.45 up they are as quick and as tall as before
+    var loud = Math.min(1, A.drive * 2.2);
     Aud.bars(vals, { lo: r.lo, hi: r.hi, scale: r.scale, blur: cfg.blur, state: state,
-                     attack: 70, release: U.lerp(42, 5, cfg.smooth) });
+                     attack: U.lerp(22, 70, loud), release: U.lerp(42, 5, cfg.smooth) * (0.4 + 0.6 * loud) });
     for (var i = 0; i < n; i++){
-      var v = Math.pow(vals[i], cfg.gamma);
+      var v = Math.pow(vals[i], cfg.gamma) * (0.6 + 0.4 * loud);   // a soft passage stands at 60 % of its height, so its flutter is smaller too
       vals[i] = v;
       if (v > peakCaps[i]) peakCaps[i] = v;
       else peakCaps[i] = Math.max(v, peakCaps[i] - A.dt * cfg.peakFall);
@@ -50,21 +56,62 @@
   }
 
   var glyphSprite = Can.glyphSprite;   // a character pre-drawn once per colour (canvas-core.js)
+  // The same character scaled down once to the size of a cell: drawing a 48 px sprite into an 11 px cell
+  // for every glyph of every bar cost 4.5 ms a frame at 1280 px; a 1 to 1 copy costs a fraction of it.
+  var cellSprites = {};
+  function cellSprite(ch, color, cell){
+    var px = Math.max(4, Math.round(cell)), key = ch + '|' + color + '|' + px, sp = cellSprites[key];
+    if (sp) return sp;
+    if (Object.keys(cellSprites).length > 60) cellSprites = {};
+    sp = document.createElement('canvas');
+    sp.width = sp.height = px;
+    var c = sp.getContext('2d');
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(glyphSprite(ch, color), 0, 0, px, px);
+    cellSprites[key] = sp;
+    return sp;
+  }
   function hash(a, b, c){
     var x = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
     return x - Math.floor(x);
   }
+  // A bar of a fixed glyph pattern is the same picture every frame it has the same height, so each (bar, rows, direction)
+  // is built once as one small canvas and drawn with one call instead of one per glyph (a flickering 1 / 0 set cannot be).
+  var columns = {}, columnCount = 0;
+  function glyphColumn(lk, i, n, dir, cell){
+    var px = Math.max(4, Math.round(cell));
+    var key = i + '|' + n + '|' + dir + '|' + px + '|' + lk.c1 + lk.c2 + (lk.dark ? 'd' : 'l') + lk.glyphs.join('');
+    var col = columns[key];
+    if (col) return col;
+    if (columnCount > 1200){ columns = {}; columnCount = 0; }
+    col = document.createElement('canvas');
+    col.width = px; col.height = n * px;
+    var c = col.getContext('2d');
+    for (var j = 0; j < n; j++){
+      var top = j === n - 1;
+      c.globalAlpha = top ? 1 : (lk.dark ? 0.55 + 0.45 * (j / n) : 0.88 + 0.12 * (j / n));
+      c.drawImage(cellSprite(lk.glyphs[(i + j) % lk.glyphs.length], top ? lk.c2 : lk.c1, cell), 0, dir < 0 ? (n - 1 - j) * px : j * px, px, px);
+    }
+    columns[key] = col; columnCount++;
+    return col;
+  }
   // one bar made of stacked glyphs, growing from (x, y0) in direction dir (-1 up, +1 down)
   function glyphBar(lk, i, x, y0, bw, barH, dir, cell){
     var n = Math.max(1, Math.round(barH / cell));
+    if (lk.glyphs.length !== 2 && n <= 40){
+      var colm = glyphColumn(lk, i, n, dir, cell);
+      ctx.drawImage(colm, x + (bw - cell) / 2, dir < 0 ? y0 - colm.height : y0);
+      return;
+    }
     var tick = Math.floor(A.t * 9);
     for (var j = 0; j < n; j++){
       var g = lk.glyphs.length === 2
         ? lk.glyphs[hash(i, j, tick) < 0.5 ? 0 : 1]            // two glyphs (1/0): flicker at random
         : lk.glyphs[(i + j) % lk.glyphs.length];                // a set: fixed pattern
       var top = j === n - 1;
-      var sp = glyphSprite(g, top ? lk.c2 : lk.c1);
-      ctx.globalAlpha = top ? 1 : 0.55 + 0.45 * (j / n);
+      var sp = cellSprite(g, top ? lk.c2 : lk.c1, cell);
+      // on a light picture the lower glyphs were drawn at 55 % and washed out into the cream: keep them near full strength
+      ctx.globalAlpha = top ? 1 : (lk.dark ? 0.55 + 0.45 * (j / n) : 0.88 + 0.12 * (j / n));
       ctx.drawImage(sp, x + (bw - cell) / 2, dir < 0 ? y0 - (j + 1) * cell : y0 + j * cell, cell, cell);
     }
     ctx.globalAlpha = 1;
@@ -228,6 +275,21 @@
       var cell = Math.max(8 * k, bw);
       ctx.fillStyle = fillFor(lk, w, h);
       if (!glyphs){ glowOn(lk, k); ctx.beginPath(); }
+      else if (!lk.dark){
+        // glyphs standing on a light picture: a stem in the bar colour (contrast 4.8 : 1 on Solarpunk's cream) under each, so a bar reads from far away
+        ctx.strokeStyle = lk.c1;
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth = Math.max(1.5 * k, bw * 0.14);
+        ctx.beginPath();
+        for (i = 0; i < count; i++){
+          var ssrc = layout === 'edges' ? (i < half ? i : count - 1 - i) : i;
+          var stx = i * barW + barW / 2;
+          ctx.moveTo(stx, floor);
+          ctx.lineTo(stx, floor - Math.max(1.5 * k, vals[Math.min(half - 1, ssrc)] * maxH));
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
       for (i = 0; i < count; i++){
         // 'edges': bass at both outer edges, treble meeting in the middle
         var src = layout === 'edges' ? (i < half ? i : count - 1 - i) : i;
@@ -387,7 +449,7 @@
     }
   }
 
-  function reset(){ vals = null; barGradient = null; gradKey = ''; }
+  function reset(){ vals = null; barGradient = null; gradKey = ''; columns = {}; columnCount = 0; cellSprites = {}; }
   App.canvas.addResizeHook(reset);
 
   App.modes.register('basic', { draw: drawBasic, paintBG: paintBG, bgColors: bgColors, onTap: onTap, drawTapFX: drawTapFX, reset: reset });
