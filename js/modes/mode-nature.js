@@ -17,7 +17,7 @@
 
   var natGrowth = 0.14, natVit = 0, natLeaves = [], natFalling = [], natFlowers = [];
   var natTips = [], tipsById = {}, branchBudget = 0, leafSeq = 0;
-  var natWind = 0, natDay = 0.6, fireflies = [], stars = null;
+  var natWind = 0, natDay = 0.6, fireflies = [], stars = null, swing = 0;
 
   var OWN = { branch: 'curve', leafShape: 'leaf', fly: '236,255,150', hill: '#8CAA8C' };
   function look(){
@@ -125,6 +125,8 @@
     }
     // wind leans the whole tree: thin outer branches bend most, the trunk hardly at all
     if (depth > 0) a += natWind * (0.012 + depth * 0.011);
+    // a lively passage rocks the branches, the outer ones most, each at its own pace
+    if (swing > 0.01) a += Math.sin(A.t * (1.3 + depth * 0.45) + seed * 6.283) * (0.03 + depth * 0.05) * swing;
     var x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L;
     var cx = x + Math.cos(a - 0.13) * L * 0.55, cy = y + Math.sin(a - 0.13) * L * 0.55;
 
@@ -178,18 +180,17 @@
     }
   }
   var curLook = OWN, trunkRGB = [90, 60, 40], leafRGB = [95, 163, 46], bloomRGB = [232, 85, 127];
+  // No save / translate / rotate / restore: 300 leaves and petals with a transform each cost 4.7 ms a frame
+  // under New Year; the turn is worked out here instead, and ellipse() takes the angle itself.
   function drawLeafShape(l, k, alpha){
     var LK = curLook;
-    var s = l.size;
-    ctx.save();
-    ctx.translate(l.x, l.y);
-    ctx.rotate(l.ang);
+    var s = l.size, x = l.x, y = l.y, an = l.ang, ca = Math.cos(an), sa = Math.sin(an);
     if (LK.glow){
       // light given off by the leaf: a wide faint disc under it
       var gc = l.bloom ? bloomRGB : leafRGB;
       ctx.fillStyle = LK.rainbow ? 'hsla(' + (l.hue || 0) + ',90%,65%,' + (alpha * 0.16).toFixed(3) + ')' : U.rgba(gc, (alpha * 0.16).toFixed(3));
       ctx.beginPath();
-      ctx.arc(s * 0.5, 0, s * 2.1, 0, 6.283);
+      ctx.arc(x + ca * s * 0.5, y + sa * s * 0.5, s * 2.1, 0, 6.283);
       ctx.fill();
     }
     if (l.bloom){
@@ -198,14 +199,14 @@
       // five petals in one path: a cherry tree is 200 blossoms, so one fill each, not five
       ctx.beginPath();
       for (var p = 0; p < 5; p++){
-        var pa = p * 1.2566, ex = Math.cos(pa) * s * 0.5, ey = Math.sin(pa) * s * 0.5;
-        ctx.moveTo(ex + Math.cos(pa) * s * 0.46, ey + Math.sin(pa) * s * 0.46);
-        ctx.ellipse(ex, ey, s * 0.46, s * 0.3, pa, 0, 6.283);
+        var pa = p * 1.2566 + an, cp = Math.cos(pa), sp = Math.sin(pa);
+        ctx.moveTo(x + cp * s * 0.96, y + sp * s * 0.96);
+        ctx.ellipse(x + cp * s * 0.5, y + sp * s * 0.5, s * 0.46, s * 0.3, pa, 0, 6.283);
       }
       ctx.fill();
       ctx.fillStyle = 'rgba(255,222,130,' + alpha.toFixed(3) + ')';
       ctx.beginPath();
-      ctx.arc(0, 0, s * 0.2, 0, 6.283);
+      ctx.arc(x, y, s * 0.2, 0, 6.283);
       ctx.fill();
     } else {
       var lc = leafRGB;
@@ -216,22 +217,33 @@
       ctx.fillStyle = LK.rainbow ? 'hsla(' + (l.hue || 0) + ',85%,58%,' + alpha.toFixed(3) + ')'
                                  : 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(3) + ')';
       if (LK.leafShape === 'square'){
-        ctx.fillRect(s * 0.1, -s * 0.5, s, s);
+        // the corners of a square that starts 0.1 s in front of the stem, turned by the leaf's angle
+        var x0 = s * 0.1, x1 = s * 1.1, y0 = -s * 0.5, y1 = s * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x + x0 * ca - y0 * sa, y + x0 * sa + y0 * ca);
+        ctx.lineTo(x + x1 * ca - y0 * sa, y + x1 * sa + y0 * ca);
+        ctx.lineTo(x + x1 * ca - y1 * sa, y + x1 * sa + y1 * ca);
+        ctx.lineTo(x + x0 * ca - y1 * sa, y + x0 * sa + y1 * ca);
+        ctx.closePath();
+        ctx.fill();
       } else if (LK.leafShape === 'spark'){
         // a four-pointed spark
         ctx.beginPath();
-        ctx.moveTo(s * 1.5, 0); ctx.lineTo(s * 0.72, s * 0.2); ctx.lineTo(s * 0.5, s); ctx.lineTo(s * 0.28, s * 0.2);
-        ctx.lineTo(-s * 0.5, 0); ctx.lineTo(s * 0.28, -s * 0.2); ctx.lineTo(s * 0.5, -s); ctx.lineTo(s * 0.72, -s * 0.2);
+        for (var q = 0; q < 8; q++){
+          var px = SPARK[q * 2] * s, py = SPARK[q * 2 + 1] * s;
+          if (q === 0) ctx.moveTo(x + px * ca - py * sa, y + px * sa + py * ca);
+          else ctx.lineTo(x + px * ca - py * sa, y + px * sa + py * ca);
+        }
         ctx.closePath();
         ctx.fill();
       } else {
         ctx.beginPath();
-        ctx.ellipse(s * 0.7, 0, s, s * 0.42, 0, 0, 6.283);
+        ctx.ellipse(x + ca * s * 0.7, y + sa * s * 0.7, s, s * 0.42, an, 0, 6.283);
         ctx.fill();
       }
     }
-    ctx.restore();
   }
+  var SPARK = [1.5, 0, 0.72, 0.2, 0.5, 1, 0.28, 0.2, -0.5, 0, 0.28, -0.2, 0.5, -1, 0.72, -0.2];
   function drawFlower(fl, k, groundY){
     var alpha = fl.alpha;
     if (alpha <= 0.02) return;
@@ -286,12 +298,15 @@
     // wind): bright, airy music blows one way, dark music the other, with a
     // slow drift underneath so it is never perfectly still.
     var gustNow = Math.sin(A.t * 0.23) * 0.35 + A.trebleTilt * 2.4;
-    natWind = U.env(natWind, gustNow * (0.3 + A.drive) * cfg.wind, 2.2, 2.2, dt);
+    natWind = U.env(natWind, gustNow * (0.08 + A.drive * 1.5) * cfg.wind, 2.2, 2.2, dt);
 
     natVit = U.env(natVit, U.clamp01(A.level * 0.8 + A.intensity * 0.35), 2.2 * cfg.growth, 0.5 * cfg.decay, dt);
     natGrowth = U.env(natGrowth, 0.12 + natVit * 1.15, 0.55 * cfg.growth, 0.3 * cfg.decay, dt);
     natGrowth = Math.max(0.06, Math.min(1, natGrowth));
 
+    // how lively the passage is: 0 below a drive of 0.15, 1 from 0.5 up. The tree sways and the leaves flutter by it, so a loud
+    // passage moves a lot and a quiet one only grows and sheds.
+    swing = U.clamp01((A.drive - 0.15) / 0.35);
     var maxDepth = Math.round(cfg.depth);
     if (w < 900) maxDepth = Math.min(maxDepth, 7);
     var depthF = 1.2 + natGrowth * (maxDepth - 0.7);
@@ -310,6 +325,11 @@
     /* --- leaves: attached until their lifespan runs out, then they fall --- */
     // a snare shakes a few leaves loose (more of them in a loud passage)
     var shed = cfg.snareLeaves && A.snareHit > 0.4 && natLeaves.length > 6 ? 1 + Math.round(A.snareHit * 3 * (0.3 + A.drive)) : 0;
+    // and in a lively passage a few leaves let go on their own, about five a second (they grow back quickly)
+    if (swing > 0.01 && natLeaves.length > 6){
+      var letGo = swing * 5 * dt;
+      shed += Math.floor(letGo) + (Math.random() < letGo % 1 ? 1 : 0);
+    }
     for (var sh = 0; sh < shed; sh++){
       var pick = natLeaves[Math.floor(Math.random() * natLeaves.length)];
       pick.age = pick.life + 1;
@@ -332,8 +352,11 @@
       occupied[l.id] = 1;
       l.x = tip.x;
       l.y = tip.y;
-      l.ang = tip.a;
+      l.ang = tip.a + (swing > 0.01 ? Math.sin(A.t * 4.2 + l.id * 1.9) * 0.9 * swing : 0);   // leaves flutter in a lively passage
+      var sz0 = l.size;
+      l.size = sz0 * (1 + 0.6 * A.kick * swing);   // every kick makes the leaves swell for a moment
       drawLeafShape(l, k, 0.9 * U.clamp01(l.age / 0.4) * (0.25 + 0.75 * (1 - U.clamp01((l.age - (l.life - 1)) / 1))));
+      l.size = sz0;
     }
     if (natLeaves.length < cfg.leafMax){
       var want = cfg.leafRate * (0.4 + natVit * 3) * 24 * dt;

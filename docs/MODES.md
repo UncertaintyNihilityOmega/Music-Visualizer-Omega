@@ -404,14 +404,16 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
   heart rain is meant.
 
 ### Nature
-- [ ] Loud is nearly as still as quiet under the pale codes: Solarpunk 0.28 / 0.36 (ratio 1.3) and Incertum 0.26 /
+- [ ] (2026-11-19, partly: in 10 s windows loud is 0.49 to 0.61 against quiet 0.24 to 0.28, ratio 1.7 to 2.5, was 0.9 / 0.9 before; Solarpunk's loud number is now above 0.6 but no ratio reaches 3, still open) Loud is nearly as still as quiet under the pale codes: Solarpunk 0.28 / 0.36 (ratio 1.3) and Incertum 0.26 /
   0.32 (1.2), Love 0.30 / 0.40 (1.3); Cyberpunk 0.41 / 0.67, Nihilum 0.52 / 0.78. Under Tessa it is 0.87 / 2.15
   (2.5), clearly more than Omega's 0.17 / 0.63 (3.7), because the sparks fly. At 375 px under Omega the quiet
   window was the busier one (1.71 / 0.99). The old note stands: a 3 s window is short for Nature (about 10 s to
   grow or die back), so first measure with 10 s windows. Fixed when, in 10 s windows, loud changes at least 3 times
   what quiet does under Solarpunk and Incertum, and the loud number is not below 0.6.
-- [ ] Nature costs 4.67 ms under New Year and 2.7 to 2.9 under Halloween, Cyberpunk and Nihilum, against 1.0 to 1.8
+- [x] (2026-11-19: 0.99 to 1.87 ms at 1280 px after, 0.91 to 2.58 before, measured the same day; the review's 4.67 was not reproduced, probably a busy machine) Nature costs 4.67 ms under New Year and 2.7 to 2.9 under Halloween, Cyberpunk and Nihilum, against 1.0 to 1.8
   under the rest (375 px: 1.6 to 1.8). Fixed when none is above 3 ms at 1280 px on a quiet machine.
+
+- Nature: checked 2026-11-19, 1280 px, "Want Some Fun", 10 s windows (quiet 1 to 11 s from a fresh start with loud seconds played just before, loud 58 to 68 s), quiet / loud (ratio), baseline the same day before the change: Solarpunk 0.39 / 0.34 (0.9) -> 0.24 / 0.61 (2.5), Incertum 0.25 / 0.23 (0.9) -> 0.28 / 0.49 (1.7), Omega 0.39 / 0.54 (1.4) -> 0.45 / 1.09 (2.4); after only: Love 0.29 / 0.57 (2.0), Nihilum 0.42 / 1.09 (2.6). The song has only 11 quiet seconds, so no 10 s window is purely quiet at its start. Changes: wind is `0.08 + 1.5 * drive` (was `0.3 + drive`); from a drive of 0.15 to 0.5 (`swing` 0 to 1) the branches rock, the leaves flutter and swell on each kick, and about five leaves a second let go; leaves are drawn without a save / rotate / restore each. Speed 0.99 to 1.87 ms at 1280 px (before 0.91 to 2.58), no errors. Still open: the ratio under Solarpunk and Incertum (needs 3; what moves in the quiet window is the tree dying back and growing, which follows `level`, not `drive`). Not looked at by eye.
 
 ### Clock
 Clock: left to items 24 and 25.
