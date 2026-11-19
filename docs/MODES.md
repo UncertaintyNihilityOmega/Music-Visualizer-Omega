@@ -341,7 +341,7 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
 - Liquid: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Omega 1.28 / 1.30 (1.0) -> 0.05 / 1.32 (26), Tessa 1.15 / 1.39 (1.2) -> 0.07 / 1.93 (28), Cyberpunk 1.08 / 1.18 (1.1) -> 0.15 / 2.70 (18), Incertum 0.62 / 0.56 (0.9) -> 0.07 / 1.21 (17); after only: New Year 0.11 / 2.39, Halloween 0.08 / 0.95 (12), Love 0.02 / 0.34, Solarpunk 0.03 / 0.51, Nihilum 0.05 / 1.22. Cause: the boom (`swell`) followed every soft kick even at `drive` 0; it is now scaled by `drive`, and whirlpool, specks, slow edge waves, rainbow hue and the edge's swing are tied to `drive` too. Speed 0.58 to 1.03 ms at 1280 px, 0.51 to 0.60 at 375 px. The loud numbers of the review (1.76, 3.46, 1.86) were not reproduced by the baseline (1.30, 1.39, 1.18); the new loud numbers are above both.
 
 ### Emoji
-- [ ] Quiet is busier than any other mode's loud, under every code: quiet / loud 11.12 / 15.39 (Nihilum) up to
+- [x] (2026-11-19: quiet 0.3 to 2.0, ratio 7 to 35 under all nine codes, "line" layout, 1280 px) Quiet is busier than any other mode's loud, under every code: quiet / loud 11.12 / 15.39 (Nihilum) up to
   23.06 / 26.99 (Love); Omega 12.42 / 18.05; ratio 1.2 to 1.5 everywhere. On song 2 (nearly silent start) the
   same mode reads 3.08 / 21.86 (7.1), so it follows the spectrum's shape, not the loudness. In the "line" layout
   (`mode-emoji.js`, the `cfg.shape === 'line'` branch) the column height `v * maxHeight`, the size `12 + v * 46`
@@ -350,12 +350,13 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
   that changes by threshold swaps a whole emoji between two frames (not confirmed by eye). The "circle" and
   "heart" layouts use the same `v2`: do the same. Fixed when quiet is under 4 under every one of the nine codes
   and the ratio is 3 or more on "Want Some Fun" in the "line" layout.
-- [ ] The codes change only the five emoji. Fixed when at least Tessa, Halloween, Cyberpunk and Nihilum also change
+- [x] (2026-11-19: Tessa crackles in 14 Hz steps, Halloween's emoji flap and the kick sends a flock up and some bats drift up the picture, Cyberpunk snaps heights and sizes to a grid and throws along the four axes, Nihilum's kick ring forms at the edge and falls inward) The codes change only the five emoji. Fixed when at least Tessa, Halloween, Cyberpunk and Nihilum also change
   a form or a motion (for instance Tessa's emoji crackle in steps, Cyberpunk's fall in a grid, Halloween's float up
   like bats, Nihilum's drift inward), as String does.
-- [ ] Under Halloween, loud, the big skulls and pumpkins in the top and bottom rows are cut by the picture's edge
+- [x] (2026-11-19: every emoji in the line, circle and heart layouts is placed by a clamp that keeps its centre half its size from the edge; seen in a loud Halloween sheet) Under Halloween, loud, the big skulls and pumpkins in the top and bottom rows are cut by the picture's edge
   (seen in the picture),. Fixed when the glyph's centre stays at least half its size
   from the edge.
+- Emoji: checked 2026-11-19, 1280 px, "Want Some Fun", "line" layout, quiet / loud (ratio), baseline measured the same day before the change: Omega 9.30 / 12.43 (1.3) -> 1.23 / 11.80 (9.6), Halloween 17.54 / 21.82 (1.2) -> 1.97 / 23.21 (12), Tessa 12.37 / 16.11 (1.3) -> 1.09 / 21.88 (20), Cyberpunk 13.19 / 17.05 (1.3) -> 0.38 / 7.25 (19); after only: New Year 1.09 / 15.87, Love 0.89 / 22.49, Solarpunk 0.94 / 14.60, Nihilum 0.30 / 10.56, Incertum 0.93 / 21.73. Cause: every column's height, size and glyph came from the spectrum's shape alone; they are now smoothed per column, scaled by `0.1 + 0.9 * min(1, drive * 2.2)`, and a glyph changes only after its value passes the next step with a margin. Cyberpunk's loud number fell (17.05 to 7.25: steps and no tilt) and is the one to look at by eye. Speed 0.66 to 0.81 ms at 1280 px, 0.36 to 0.44 at 375 px. A first Tessa run read quiet 14.6 / 9.3 with `drive` 0.37 / 0.21: the hidden pane had throttled frames, so `drive` had not settled; the repeat read 1.09.
 
 ### String
 - [ ] Moves a lot when quiet, under every code: quiet / loud 6.69 / 10.17 (Omega), 6.22 / 10.09 (New Year), 5.35 /

@@ -1,7 +1,17 @@
-/* ---------- Emoji ---------- */
+/* ---------- Emoji ----------
+   Columns, a circle or a heart of emoji that follow the spectrum, plus rings thrown by the kick and
+   sparkles from the hi-hat. Everything is tied to the loudness (`A.drive`): in a quiet passage the
+   emoji are small and stay near the middle line, in a loud one they leap, grow and change.
+   A column's glyph only changes when its value moves well past the next step (no flicker).
+   Each theme code has a form of its own besides its emoji (chosen by the code's id):
+     tessa       the emoji crackle: they jump and tilt in steps, fourteen times a second
+     halloween   bats: the emoji flap, the kick sends a flock up and away, and a few drift up the picture
+     cyberpunk   a grid: heights and sizes snap to steps, nothing tilts, the kick throws along the four axes
+     nihilum     the kick's ring forms at the edge and falls inward
+   ========================================================================= */
 (function(){
   'use strict';
-  var Can = App.canvas, Aud = App.audio, Cfg = App.cfg;
+  var Can = App.canvas, Aud = App.audio, Cfg = App.cfg, U = App.util;
   var canvas = Can.canvas, ctx = Can.ctx;
   var A = Aud.A;
 
@@ -9,6 +19,22 @@
   var photoImg = null;
 
   var kickCd = 0;
+  var EMAX = 1024;
+  var ev = new Float32Array(EMAX), gi = new Int8Array(EMAX);     // line: each column's smoothed value, glyph step
+  var ev2 = new Float32Array(EMAX), gi2 = new Int8Array(EMAX);   // circle / heart: the same
+  function hash(a, b){ var x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return x - Math.floor(x); }
+  // the glyph step for value x (0..1) of n glyphs: it changes only when x has moved well past the step
+  function pick(st, idx, x, n){
+    var c = x * n, cur = st[idx];
+    if (c > cur + 1.3 || c < cur - 0.3) st[idx] = Math.max(0, Math.min(n - 1, Math.floor(c)));
+    return Math.min(st[idx], n - 1);
+  }
+  // stamp an emoji with its centre at least half its size from every edge
+  function place(sprite, x, y, rot, size, alpha){
+    var hs = size * 0.5 + 1, w = canvas.width, h = canvas.height;
+    x = Math.max(hs, Math.min(w - hs, x)); y = Math.max(hs, Math.min(h - hs, y));
+    Can.stampEmoji(sprite, x, y, rot, size, alpha);
+  }
 
   // the emoji to use, quiet to loud: the theme code's set when "Follow
   // theme" is on and the theme has one, otherwise the user's own list
@@ -89,7 +115,9 @@
     Can.backdrop(1);
     var set = emojiSet();
     var t = A.t * Cfg.CFG.look.motion;
-    var pop = 1 + A.punch * cfg.pop;
+    var calm = Math.min(1, A.drive * 2.2), g = 0.1 + 0.9 * calm, dtt = A.dt;   // g: how much of the spectrum's swing shows
+    var form = cfg.followTheme && App.theme.look && App.theme.look.emoji ? App.theme.current : '';
+    var pop = 1 + A.punch * cfg.pop * (0.2 + 0.8 * calm);
     var box = photoBox();
 
     // how busy the scene is: a calm passage spawns little, a loud one a lot
@@ -106,14 +134,24 @@
       var speed = (110 + A.kickHit * 240) * k * (0.5 + 0.5 * A.drive) * Cfg.CFG.look.motion;
       var a0 = Math.random() * 6.283;
       for (var rn = 0; rn < ringN; rn++){
-        var ra = a0 + rn / ringN * 6.283;
-        spawnEmojiPart(cx + Math.cos(ra) * r0, cy + Math.sin(ra) * r0, 'ring', 0, {
-          vx: Math.cos(ra) * speed, vy: Math.sin(ra) * speed, life: 0.9 + A.drive * 0.5,
+        var ra = a0 + rn / ringN * 6.283, rdx = Math.cos(ra), rdy = Math.sin(ra), rx0 = rdx * r0, ry0 = rdy * r0, rvx = rdx * speed, rvy = rdy * speed;
+        if (form === 'halloween'){                  // a flock of bats takes off and climbs
+          rx0 = rdx * r0; ry0 = rdy * r0 * 0.3; rvx = rdx * speed * 0.6; rvy = -(Math.abs(rdy) * 0.9 + 0.3) * speed;
+        } else if (form === 'cyberpunk'){           // thrown along the four axes, in lanes
+          var axis = (rn % 4) * Math.PI / 2, lane = (Math.floor(rn / 4) % 3 - 1) * 22 * k;
+          rdx = Math.cos(axis); rdy = Math.sin(axis);
+          rx0 = rdx * r0 - rdy * lane; ry0 = rdy * r0 + rdx * lane; rvx = rdx * speed; rvy = rdy * speed;
+        } else if (form === 'nihilum'){             // formed at the edge, falling inward
+          var er = Math.min(w, h) * 0.46;
+          rx0 = rdx * er; ry0 = rdy * er; rvx = -rdx * speed * 0.5; rvy = -rdy * speed * 0.5;
+        }
+        spawnEmojiPart(cx + rx0, cy + ry0, 'ring', 0, {
+          vx: rvx, vy: rvy, life: 0.9 + A.drive * 0.5,
           size: (13 + A.kickHit * 14) * k * cfg.size, g: set[Math.min(set.length - 1, Math.floor(A.kickHit * set.length))] });
       }
     }
     // Hi-hat: small quick sparkles anywhere, in the quietest emoji of the set
-    if (cfg.hatSparks && A.hatHit > 0.25 && A.drive > 0.08){
+    if (cfg.hatSparks && A.hatHit > 0.25 && A.drive > 0.15){
       var sn = 1 + Math.round(A.hatHit * 2 * cfg.rate);
       for (var hs = 0; hs < sn; hs++){
         spawnEmojiPart(w * (0.05 + Math.random() * 0.9), h * (0.06 + Math.random() * 0.88), 'spark', 0, {
@@ -168,29 +206,44 @@
     if (cfg.shape === 'line' || cfg.shape === 'circle' || cfg.shape === 'heart'){
       var count = Math.max(6, Math.round(w / (48 * k) * cfg.cols));
       if (cfg.shape === 'line'){
-        var maxHeight = cy * 0.85, colWidth = cx / count;
+        var maxHeight = cy * 0.85, colWidth = cx / count, step = Math.floor(A.t * 14);
+        count = Math.min(count, EMAX);
         for (var i = 0; i < count; i++){
-          var v = Aud.specAt(i / count);
+          ev[i] = U.env(ev[i], Aud.specAt(i / count), 18, 6, dtt);    // smoothed, so a column does not flicker
+          var v = ev[i] * g;
+          if (form === 'cyberpunk') v = Math.round(v * 8) / 8;          // a grid: heights in steps
           var size = (12 + v * 46) * k * cfg.size * pop;
-          var sprite = Can.getEmojiSprite(set[Math.min(set.length - 1, Math.floor(v * set.length))]);
-          var wob = Math.sin(t * 2.4 + i) * 4 * k * v * cfg.wobble;
+          if (form === 'halloween') size *= 1 + 0.12 * calm * Math.sin(t * 9 + i * 1.7);   // wings flap
+          var sprite = Can.getEmojiSprite(set[pick(gi, i, v, set.length)]);
+          var wob = Math.sin(t * 2.4 + i) * 4 * k * v * cfg.wobble, jy = 0, jr = 0;
+          if (form === 'tessa'){ jy = (hash(i, step) - 0.5) * 16 * k * calm; jr = (hash(i + 99, step) - 0.5) * 0.7 * calm; wob = 0; }
+          else if (form === 'cyberpunk') wob = 0;
           var xR = cx + i * colWidth + colWidth / 2, xL = cx - i * colWidth - colWidth / 2;
-          Can.stampEmoji(sprite, xR, cy - v * maxHeight - Math.abs(wob), wob * 0.05, size);
-          Can.stampEmoji(sprite, xR, cy + v * maxHeight + Math.abs(wob), -wob * 0.05, size);
-          Can.stampEmoji(sprite, xL, cy - v * maxHeight - Math.abs(wob), -wob * 0.05, size);
-          Can.stampEmoji(sprite, xL, cy + v * maxHeight + Math.abs(wob), wob * 0.05, size);
+          var up = v * maxHeight + Math.abs(wob) + jy;
+          place(sprite, xR, cy - up, wob * 0.05 + jr, size);
+          place(sprite, xR, cy + up, -wob * 0.05 - jr, size);
+          place(sprite, xL, cy - up, -wob * 0.05 + jr, size);
+          place(sprite, xL, cy + up, wob * 0.05 - jr, size);
         }
+        // bats drift up the picture while the music is loud
+        if (form === 'halloween' && calm > 0.3 && Math.random() < calm * dtt * 6) spawnEmojiPart(w * (0.05 + Math.random() * 0.9), h * 0.95, 'bubble', A.level);
       } else {
         var n2 = Math.max(10, Math.round(count * 1.6));
         var base = Math.min(w, h) * (box ? 0.44 : 0.26);
+        n2 = Math.min(n2, EMAX);
+        var step2 = Math.floor(A.t * 14);
         for (var j = 0; j < n2; j++){
           var f = j / n2;
-          var v2 = Aud.specAt(f < 0.5 ? f * 2 : (1 - f) * 2);
+          ev2[j] = U.env(ev2[j], Aud.specAt(f < 0.5 ? f * 2 : (1 - f) * 2), 18, 6, dtt);
+          var v2 = ev2[j] * g;
+          if (form === 'cyberpunk') v2 = Math.round(v2 * 8) / 8;
           var sz = (11 + v2 * 40) * k * cfg.size * pop;
-          var sp2 = Can.getEmojiSprite(set[Math.min(set.length - 1, Math.floor(v2 * set.length))]);
+          if (form === 'halloween') sz *= 1 + 0.12 * calm * Math.sin(t * 9 + j * 1.7);
+          var sp2 = Can.getEmojiSprite(set[pick(gi2, j, v2, set.length)]);
+          var jr2 = form === 'tessa' ? (hash(j, step2) - 0.5) * 0.7 * calm : 0, jp = form === 'tessa' ? (hash(j + 50, step2) - 0.5) * 14 * k * calm : 0;
           var px, py, ang = f * 6.283 - Math.PI / 2;
           if (cfg.shape === 'circle'){
-            var rr = base * (1 + v2 * 0.55) + Math.sin(t * 2 + j) * 3 * k * cfg.wobble;
+            var rr = base * (1 + v2 * 0.55) + Math.sin(t * 2 + j) * 3 * k * cfg.wobble * g + jp;
             px = cx + Math.cos(ang) * rr;
             py = cy + Math.sin(ang) * rr;
           } else {
@@ -201,7 +254,7 @@
             px = cx + hx * hs;
             py = cy - hy * hs;
           }
-          Can.stampEmoji(sp2, px, py, Math.sin(t + j) * 0.12 * cfg.wobble, sz);
+          place(sp2, px, py, (form === 'cyberpunk' ? 0 : Math.sin(t + j) * 0.12 * cfg.wobble * g) + jr2, sz);
         }
       }
     } else if (cfg.shape === 'bubbles'){
@@ -254,7 +307,7 @@
     }
   }
 
-  function reset(){ emojiParts = []; kickCd = 0; }
+  function reset(){ emojiParts = []; kickCd = 0; ev.fill(0); ev2.fill(0); gi.fill(0); gi2.fill(0); }
 
   App.modes.register('emoji', { draw: drawEmoji, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset });
 
