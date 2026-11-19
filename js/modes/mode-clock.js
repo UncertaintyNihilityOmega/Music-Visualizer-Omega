@@ -28,6 +28,8 @@
                                  characters drifting by
                         gears    flat gear icons in four trains that mesh and
                                  turn in time
+                        sand     falling sand that fills the picture in ten
+                                 minutes, to scoop up and throw
                         garden   hills and two vines that grow and sway
                         grid     a perspective grid, circuit traces, glitches
                         sky      clouds, two unlike flat wings (blades, plumes), motes
@@ -36,7 +38,7 @@
    they are mixed with the palette.
 
    Calm against loud: in a quiet passage the gears all but stop, the vines
-   and wings are still, the pile settles; in a big one they move a lot.
+   and wings are still, the sand only trickles; in a big one they move a lot.
 
    Interlocking gears rotate at speeds that are actually derived from their
    radii, the way a real gear train works: for two meshed gears, angular
@@ -57,7 +59,7 @@
   var ROMAN = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
 
   // the Clock's own designs (the style setting); never theme ids (engine/check.js)
-  var DESIGNS = ['classic', 'gears', 'garden', 'grid', 'sky'];
+  var DESIGNS = ['classic', 'gears', 'sand', 'garden', 'grid', 'sky'];
 
   // One palette per theme code (keyed by theme id).
   //   decor  for the Classic design: glyphs = what drifts, move = 'rise' | 'fall' | 'inward', arcs = sparks from the rim
@@ -831,6 +833,275 @@
     }
   }
 
+  /* ---------- Sand: falling sand that fills the picture, to grab and throw ----------
+     (item 25, the user: "let the user play with sand, let us be able to grab and throw it around in piles
+     that separate ... in the sand style make it slowly fill the entire screen in 10 minutes")
+     The picture is a grid of cells about 5 px across (SAND_CELL); a cell is empty, rock (the dial: sand
+     heaps on it and runs round it) or one grain with a colour. Each frame every grain falls one cell, or
+     slides one cell down to the side when the cell under it is taken, so heaps stand at their own slope
+     and stay apart. The grid is drawn as one small picture, one pixel a cell, scaled up.
+       pouring    thin streams from the top bring enough sand to fill the picture in about ten minutes of
+                  play (SAND_FILL_SECS): slower in a calm passage, faster in a big one, nothing while a
+                  song is paused. The colour changes slowly, so the sand lies in layers; under the
+                  rainbow code the layers run through the rainbow
+       the beat   in a big passage a kick throws grains up off the tops of the heaps; a calm one leaves
+                  them still
+       hands      press on the sand and drag to scoop it up (it follows the finger as a clump); let go
+                  while moving to throw it: it flies, lands and heaps where it falls
+       full       when the picture is full the floor opens: the sand drains out of the bottom over about
+                  half a minute, then the streams start again */
+  var SAND_CELL = 5, SAND_FILL_SECS = 600, SAND_DRAIN_SECS = 30, SAND_HOLD_MAX = 900, SAND_FLY_MAX = 2500;
+  var sg = null, sandClock = 0, sandKickCd = 0, sandHand = null;
+  // the colours, as pixels: 1..5 the code's sand tones, 6..17 the rainbow
+  var sandLutKey = '', sandLut = new Uint32Array(256);
+  function sandColours(pal, pid){
+    if (sandLutKey === pid) return sandLut;
+    var lut = new Uint32Array(256), j, cc, rgb;
+    for (j = 1; j < 18; j++){
+      cc = j <= 5 ? sandTone(j - 1, pal) : pal.rainbow ? rbCol((j - 6) / 12, pal) : sandTone((j - 6) % 5, pal);
+      rgb = rgbOf(cc);
+      lut[j] = ((255 << 24) | (rgb[2] << 16) | (rgb[1] << 8) | rgb[0]) >>> 0;
+    }
+    sandLutKey = pid;
+    return (sandLut = lut);
+  }
+  var SAND_RAMP = ['#F3E1B4', '#E2C48A', '#CDA264', '#A87E47', '#7C5933'];
+  function sandTone(j, pal){ return mix(mix(SAND_RAMP[j], pal.accent, 0.16), pal.bg2, pal.light ? 0 : 0.18); }
+  // the colour of a new grain: the layer of the moment, a grain lighter or darker now and then
+  function grainColour(pal, layer){
+    var j = Math.random() < (pal.rainbow ? 0.08 : 0.3) ? (Math.random() < 0.5 ? -1 : 1) : 0;
+    if (pal.rainbow) return 6 + (((layer + j) % 12) + 12) % 12;
+    return 1 + Math.max(0, Math.min(4, (layer % 4) + j));
+  }
+  function sandGrid(w, h, k, cx, cy, R, pal){
+    var cs = Math.max(3, Math.round(SAND_CELL * k)), cols = Math.ceil(w / cs), rows = Math.ceil(h / cs);
+    var key = cols + 'x' + rows + '|' + Math.round(R) + '|' + Math.round(cx) + ',' + Math.round(cy);
+    if (sg && sg.key === key) return sg;
+    var old = sg, n = cols * rows, cells = new Uint8Array(n), free = n, x, y;
+    // the dial is rock: sand heaps on its top and runs round it
+    var rr = R * 1.12 / cs, ccx = cx / cs, ccy = cy / cs;
+    for (y = Math.max(0, Math.floor(ccy - rr)); y <= Math.min(rows - 1, Math.ceil(ccy + rr)); y++)
+      for (x = Math.max(0, Math.floor(ccx - rr)); x <= Math.min(cols - 1, Math.ceil(ccx + rr)); x++)
+        if ((x + 0.5 - ccx) * (x + 0.5 - ccx) + (y + 0.5 - ccy) * (y + 0.5 - ccy) < rr * rr){ cells[y * cols + x] = 255; free--; }
+    var cv = document.createElement('canvas');
+    cv.width = cols; cv.height = rows;
+    var c = cv.getContext('2d'), img = c.createImageData(cols, rows);
+    sg = { key: key, cs: cs, cols: cols, rows: rows, cells: cells, free: free, count: 0, cv: cv, c: c, img: img,
+           px: new Uint32Array(img.data.buffer), fly: [], held: [], drain: false, blocked: 0, acc: 0, flip: 0, dirty: true };
+    // a new size keeps how full it was, settled flat
+    if (old && old.free) sandSettle(sg, (old.count + old.fly.length + old.held.length) / old.free, pal);
+    return sg;
+  }
+  // fill the grid to a share f of its room with settled layers from the floor up (a new size; a test)
+  function sandSettle(g, f, pal){
+    var cells = g.cells, cols = g.cols, want = Math.min(g.free, Math.round(f * g.free)), band = Math.max(1, Math.round(g.rows / 14));
+    for (var i = 0; i < cells.length; i++) if (cells[i] !== 255) cells[i] = 0;
+    g.count = 0; g.fly = []; g.held = []; g.drain = false; g.blocked = 0;
+    for (var y = g.rows - 1; y >= 0 && g.count < want; y--){
+      var layer = Math.floor((g.rows - 1 - y) / band);
+      for (var x = 0; x < cols && g.count < want; x++){
+        var idx = y * cols + x;
+        if (cells[idx] !== 0) continue;
+        cells[idx] = grainColour(pal, layer);
+        g.count++;
+      }
+    }
+    g.dirty = true;
+  }
+  // a grain into the grid at cell (x, y), or the nearest free cell above it
+  function sandPut(g, x, y, v){
+    x = Math.max(0, Math.min(g.cols - 1, x | 0)); y = Math.max(0, Math.min(g.rows - 1, y | 0));
+    for (var t = 0; t < 40 && y >= 0; t++, y--){
+      var idx = y * g.cols + x;
+      if (g.cells[idx] === 0){ g.cells[idx] = v; g.count++; return true; }
+    }
+    return false;
+  }
+  function stepSandGrid(g, dt, cfg, pal){
+    var cells = g.cells, cols = g.cols, rows = g.rows, i, x, y, q, v, moved = false;
+    var playing = !(App.state.currentIndex !== -1 && App.state.player().paused);
+    var total = g.count + g.fly.length + g.held.length;
+    // pouring: enough to fill the picture in SAND_FILL_SECS of play, slower when calm, faster when big
+    sandClock += dt * (playing ? 0.5 + A.drive : 0);
+    if (!g.drain && playing){
+      g.acc += g.free / SAND_FILL_SECS * (0.5 + A.drive) * dt;
+      var layer = Math.floor(sandClock / 24), fails = 0;
+      while (g.acc >= 1){
+        g.acc -= 1;
+        var st = Math.floor(Math.random() * 3), sx = Math.round(cols * (0.5 + 0.42 * Math.sin(sandClock * 0.045 + st * 2.1))) + Math.round((Math.random() - 0.5) * 3);
+        sx = Math.max(0, Math.min(cols - 1, sx));
+        if (cells[sx] === 0){ cells[sx] = grainColour(pal, layer); g.count++; }
+        else {
+          // that stream's spot is buried: try anywhere along the top
+          var rx = Math.floor(Math.random() * cols);
+          if (cells[rx] === 0){ cells[rx] = grainColour(pal, layer); g.count++; } else fails++;
+        }
+      }
+      g.blocked = fails ? g.blocked + dt : Math.max(0, g.blocked - dt);
+      if (total >= g.free * 0.985 || g.blocked > 4) g.drain = true;
+    }
+    // full: the floor opens and the sand runs out, then the streams start again
+    if (g.drain){
+      var out = g.free / SAND_DRAIN_SECS * dt, base = (rows - 1) * cols;
+      for (var tries = 0; tries < out * 3 && out > 0; tries++){
+        x = Math.floor(Math.random() * cols);
+        v = cells[base + x];
+        if (v !== 0 && v !== 255){ cells[base + x] = 0; g.count--; out--; }
+      }
+      if (g.count + g.fly.length + g.held.length < g.free * 0.03){ g.drain = false; g.blocked = 0; }
+    }
+    // the beat: in a big passage a kick throws grains up off the tops of the heaps
+    sandKickCd -= dt;
+    if (A.kickHit > 0.5 && A.drive > 0.3 && sandKickCd <= 0 && g.fly.length < SAND_FLY_MAX - 200){
+      sandKickCd = 0.15;
+      var nK = Math.round((6 + 40 * A.kickHit * A.drive * A.drive) * cols / 200 * cfg.density);
+      for (q = 0; q < nK; q++){
+        x = Math.floor(Math.random() * cols);
+        for (y = 0; y < rows; y++){ v = cells[y * cols + x]; if (v) break; }
+        if (y >= rows - 1 || v === 255 || !v) continue;
+        cells[y * cols + x] = 0; g.count--;
+        g.fly.push({ x: x + 0.5, y: y - 0.5, vx: (Math.random() - 0.5) * 40, vy: -(40 + Math.random() * 70) * A.kickHit * A.drive * (0.6 + 0.4 * cfg.density), v: v });
+      }
+    }
+    // falling: bottom row up, so no grain moves twice; the sweep changes direction every frame
+    g.flip ^= 1;
+    for (y = rows - 2; y >= 0; y--){
+      var row = y * cols, below = row + cols;
+      for (q = 0; q < cols; q++){
+        x = g.flip ? q : cols - 1 - q;
+        v = cells[row + x];
+        if (v === 0 || v === 255) continue;
+        if (cells[below + x] === 0){ cells[below + x] = v; cells[row + x] = 0; moved = true; continue; }
+        var d = ((x + y + g.flip) & 1) ? 1 : -1, x1 = x + d, x2 = x - d;
+        if (x1 >= 0 && x1 < cols && cells[below + x1] === 0 && cells[row + x1] === 0){ cells[below + x1] = v; cells[row + x] = 0; moved = true; }
+        else if (x2 >= 0 && x2 < cols && cells[below + x2] === 0 && cells[row + x2] === 0){ cells[below + x2] = v; cells[row + x] = 0; moved = true; }
+      }
+    }
+    // grains in the air: thrown, or kicked up; they land on the first grain or rock they meet
+    var grav = 2500 * Can.dpr() / g.cs;
+    for (i = g.fly.length - 1; i >= 0; i--){
+      var p = g.fly[i];
+      p.vy += grav * dt;
+      var dx = p.vx * dt, dy = p.vy * dt, steps = Math.min(12, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy), 0.01))), landed = false;
+      for (var s = 0; s < steps; s++){
+        var nx = p.x + dx / steps, ny = p.y + dy / steps;
+        if (nx < 0){ nx = 0; p.vx = -p.vx * 0.3; dx = -dx * 0.3; }
+        if (nx > cols - 0.01){ nx = cols - 0.01; p.vx = -p.vx * 0.3; dx = -dx * 0.3; }
+        if (ny >= rows - 1 || (ny >= 0 && cells[(ny | 0) * cols + (nx | 0)] !== 0)){
+          sandPut(g, p.x, Math.min(rows - 1, Math.max(0, p.y)), p.v);
+          landed = true;
+          break;
+        }
+        p.x = nx; p.y = ny;
+      }
+      if (landed){ g.fly.splice(i, 1); moved = true; }
+    }
+    if (moved || g.fly.length || g.held.length) g.dirty = true;
+  }
+  function drawSandGrid(g, pal, pid){
+    var lut = sandColours(pal, pid), px = g.px, cells = g.cells, cols = g.cols, rows = g.rows, i;
+    if (g.dirty){
+      for (i = 0; i < cells.length; i++) px[i] = lut[cells[i]];
+      // the grains in the air and in the hand, one pixel each
+      for (i = 0; i < g.fly.length; i++){
+        var p = g.fly[i], fx = p.x | 0, fy = p.y | 0;
+        if (fy >= 0 && fy < rows) px[fy * cols + fx] = lut[p.v];
+      }
+      if (sandHand && g.held.length){
+        var hx = sandHand.x / g.cs, hy = sandHand.y / g.cs;
+        for (i = 0; i < g.held.length; i++){
+          var hg = g.held[i], gx = (hx + hg.ox) | 0, gy = (hy + hg.oy) | 0;
+          if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) px[gy * cols + gx] = lut[hg.v];
+        }
+      }
+      g.c.putImageData(g.img, 0, 0);
+      g.dirty = false;
+    }
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(g.cv, 0, 0, cols * g.cs, rows * g.cs);
+    ctx.restore();
+  }
+  function stepSand(w, h, k, dt, cfg, pal, pid, cx, cy, R){
+    var g = sandGrid(w, h, k, cx, cy, R, pal);
+    if (canvas.style.touchAction !== 'none'){ sandTouchWas = canvas.style.touchAction; canvas.style.touchAction = 'none'; }
+    stepSandGrid(g, Math.min(dt, 0.05), cfg, pal);
+    drawSandGrid(g, pal, pid);
+  }
+  // a warm light low in the frame, under the sand
+  function paintSandBG(c, w, h, pal){
+    var glow = c.createRadialGradient(w / 2, h * 0.98, 0, w / 2, h * 0.98, w * 0.6);
+    glow.addColorStop(0, rgba(pal.accent, pal.light ? 0.2 : 0.16));
+    glow.addColorStop(1, rgba(pal.accent, 0));
+    c.fillStyle = glow;
+    c.fillRect(0, 0, w, h);
+  }
+
+  /* hands in the sand: the pointer is read here, only while the Clock shows the Sand design. A press
+     scoops up the sand under it, dragging scoops more and carries it, letting go throws it with the
+     speed of the last tenth of a second. Dragging must not scroll the page, so the picture takes all
+     touches while Sand is on (touch-action: none), and gives them back when it is not. */
+  var sandTouchWas = null;
+  function sandOn(){ return App.modes.current === 'clock' && designId() === 'sand' && !!sg; }
+  function sandRestoreTouch(){ if (sandTouchWas !== null){ canvas.style.touchAction = sandTouchWas; sandTouchWas = null; } }
+  function sandScoop(g, x, y, rad){
+    var cs = g.cs, cx0 = x / cs, cy0 = y / cs, r = rad / cs, cols = g.cols, n = 0;
+    for (var yy = Math.max(0, Math.floor(cy0 - r)); yy <= Math.min(g.rows - 1, Math.ceil(cy0 + r)); yy++)
+      for (var xx = Math.max(0, Math.floor(cx0 - r)); xx <= Math.min(cols - 1, Math.ceil(cx0 + r)); xx++){
+        if (g.held.length >= SAND_HOLD_MAX) return n;
+        var dx = xx + 0.5 - cx0, dy = yy + 0.5 - cy0, idx = yy * cols + xx, v = g.cells[idx];
+        if (v === 0 || v === 255 || dx * dx + dy * dy > r * r) continue;
+        g.cells[idx] = 0; g.count--; n++;
+        // in the hand the grains huddle closer than they lay
+        g.held.push({ v: v, ox: dx * 0.7, oy: dy * 0.7 });
+      }
+    g.dirty = true;
+    return n;
+  }
+  function sandRelease(vx, vy){
+    var g = sg, hand = sandHand;
+    sandHand = null;
+    if (!g || !hand) return;
+    var cs = g.cs, hx = hand.x / cs, hy = hand.y / cs;
+    for (var i = 0; i < g.held.length; i++){
+      var hg = g.held[i];
+      if (g.fly.length >= SAND_FLY_MAX){ sandPut(g, hx + hg.ox, hy + hg.oy, hg.v); continue; }
+      var spread = 0.88 + Math.random() * 0.24;
+      g.fly.push({ x: Math.max(0, Math.min(g.cols - 0.01, hx + hg.ox)), y: hy + hg.oy,
+                   vx: vx / cs * spread + (Math.random() - 0.5) * 6, vy: vy / cs * spread + (Math.random() - 0.5) * 6, v: hg.v });
+    }
+    g.held = [];
+    g.dirty = true;
+  }
+  canvas.addEventListener('pointerdown', function(ev){
+    if (!sandOn()) return;
+    var pt = App.taps.canvasPoint(ev), k = Can.dpr();
+    sandHand = { id: ev.pointerId, x: pt.x, y: pt.y, trail: [{ x: pt.x, y: pt.y, t: performance.now() }] };
+    sandScoop(sg, pt.x, pt.y, 24 * k);
+    try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
+  });
+  canvas.addEventListener('pointermove', function(ev){
+    if (!sandHand || sandHand.id !== ev.pointerId) return;
+    if (!sandOn()){ sandRelease(0, 0); return; }
+    var pt = App.taps.canvasPoint(ev), now = performance.now(), tr = sandHand.trail;
+    sandHand.x = pt.x; sandHand.y = pt.y;
+    tr.push({ x: pt.x, y: pt.y, t: now });
+    while (tr.length > 2 && now - tr[0].t > 100) tr.shift();
+    sandScoop(sg, pt.x, pt.y, 16 * Can.dpr());
+  });
+  function sandLetGo(ev, throwIt){
+    if (!sandHand || sandHand.id !== ev.pointerId) return;
+    var tr = sandHand.trail, now = performance.now(), vx = 0, vy = 0, a = tr[0], b = tr[tr.length - 1];
+    if (throwIt && tr.length > 1 && now - b.t < 80){
+      var span = Math.max(16, b.t - a.t) / 1000, cap = 2000 * Can.dpr();
+      vx = Math.max(-cap, Math.min(cap, (b.x - a.x) / span));
+      vy = Math.max(-cap, Math.min(cap, (b.y - a.y) / span));
+    }
+    sandRelease(vx, vy);
+  }
+  canvas.addEventListener('pointerup', function(ev){ sandLetGo(ev, true); });
+  canvas.addEventListener('pointercancel', function(ev){ sandLetGo(ev, false); });
+
   /* ---------- Garden: hills, two vines that grow and sway, leaves and pollen ---------- */
   function paintGardenBG(c, w, h, pal){
     c.fillStyle = rgba(mix(pal.rim, pal.bg2, 0.55), pal.light ? 0.3 : 0.4);
@@ -1444,6 +1715,7 @@
     var d = designId(), pal = PALETTES[paletteId()].pal;
     if (d === 'garden') paintGardenBG(c, w, h, pal);
     else if (d === 'gears') paintGearsBG(c, w, h, k || 1, pal);
+    else if (d === 'sand') paintSandBG(c, w, h, pal);
   }
   function bgColors(){
     var pal = PALETTES[paletteId()].pal;
@@ -1455,6 +1727,7 @@
     var style = design + '|' + pid;
     // a new design or code starts with no drifting characters: the old ones carry the old glyphs and way of moving
     if (style !== lastStyle){ orbit = []; lastStyle = style; Can.invalidateBG(); }
+    if (design !== 'sand'){ if (sandHand) sandRelease(0, 0); sandRestoreTouch(); }
     Can.backdrop(1);
     // the dial is 0.3 of the short side, so the loudest crown (1.52 radii) still ends inside the picture
     var R = Math.min(w, h) * 0.3, cx = w / 2, cy = h * 0.5;
@@ -1479,6 +1752,7 @@
 
     if (design === 'classic') stepOrbit(w, h, cx, cy, R, k, dt, cfg, pal, P.decor);
     else if (design === 'gears') stepGears(w, h, k, dt, cfg, pal, pid);
+    else if (design === 'sand') stepSand(w, h, k, dt, cfg, pal, pid, cx, cy, R);
     else if (design === 'garden'){ stepVines(w, h, k, dt, cfg, pal); stepLeaves(w, h, k, dt, cfg, pal); }
     else if (design === 'grid'){ stepGrid(w, h, k, dt, cfg, pal); stepGlitches(w, h, k, dt, cfg, pal); }
     else { stepClouds(w, h, k, dt, cfg, pal); stepMotes(w, h, k, dt, cfg, pal); }
@@ -1507,19 +1781,23 @@
       for (var m = 0; m < 10; m++) spawnMote(x, y);
     }
   }
-  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; tickKick = 0; }
+  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; tickKick = 0; if (sandHand) sandRelease(0, 0); sandRestoreTouch(); }
   Can.addResizeHook(function(){ cloudsReady = false; });
   // what the motion is doing now, for measuring calm against loud (engine/probe.js, by hand)
   function stats(){
-    return { design: designId(), palette: paletteId(), drive: A.drive, gearSpeed: gearOmegaNow,
+    return { design: designId(), palette: paletteId(), drive: A.drive, gearSpeed: gearOmegaNow, sandFill: sg ? (sg.count + sg.fly.length + sg.held.length) / sg.free : 0, sandFlying: sg ? sg.fly.length : 0, sandHeld: sg ? sg.held.length : 0, sandDrain: sg ? sg.drain : false,
              flap: flapAmpNow, vineSway: vineAmpNow, vineReach: vineGrow, gridSpeed: 6 + 120 * gridDrive * gridDrive };
   }
 
-  App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, reset: reset, stats: stats, fx: 0.4 });
+  // in fullscreen a tap on the Sand design is a hand in the sand, not pause (js/core/taps.js)
+  function keepsTap(){ return designId() === 'sand'; }
+  // for measuring a nearly full picture without waiting ten minutes (engine/probe.js, by hand)
+  function fillSand(f){ if (sg) sandSettle(sg, f, PALETTES[paletteId()].pal); }
+  App.modes.register('clock', { draw: draw, paintBG: paintBG, bgColors: bgColors, onTap: onTap, keepsTap: keepsTap, reset: reset, stats: stats, fillSand: fillSand, fx: 0.4 });
 
   App.cfg.registerDefaults('clock', { style: 'theme', density: 1, glow: 0.6, handSpeed: 1, kickTick: true, chimes: true, digital: true, songRing: true, orbits: true });
   App.cfg.registerSchema({ id: 'clock', label: 'Clock', fields: [
-    ['style', 'Style', 'layout', ['theme', 'classic', 'gears', 'garden', 'grid', 'sky']],
+    ['style', 'Style', 'layout', ['theme', 'classic', 'gears', 'sand', 'garden', 'grid', 'sky']],
     ['kickTick', 'Second hand jumps on the kick', 'bool'],
     ['chimes', 'Rings of light when the music swells', 'bool'],
     ['songRing', 'A ring round the dial fills as the song plays', 'bool'],
