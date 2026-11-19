@@ -1,7 +1,9 @@
 /* ---------- Aquatic ----------
    An underwater scene that listens the way docs/MODES.md describes:
      water surface   a line drawn from the bass (30-800 Hz), like Basic's bass range
-     fish            swim as one school while the music is calm; a kick drum scatters them
+     fish            swim as one school while the music is calm; a kick drum scatters them.
+                     Past a side edge a fish comes back on the other side; the seabed is a wall;
+                     a fish that swims up out of the water leaps in an arc and splashes back in
      bubbles         a steady stream that follows how loud the passage is, plus a
                      quick burst of small ones on every hi-hat
      light shafts    brighten as the passage gets louder
@@ -13,7 +15,7 @@
   var canvas = Can.canvas, ctx = Can.ctx;
   var A = Aud.A;
 
-  var aquaBubbles = [], aquaRings = [], aquaFish = [];
+  var aquaBubbles = [], aquaRings = [], aquaFish = [], aquaDrops = [], aquaRipples = [];
   var surf = new Float32Array(56), surfState = new Float32Array(56);
   var FISH_COLORS = ['#F2A65A', '#7BD3F7', '#E8757F', '#8FE3B0', '#F5D06F', '#B79CE8'];
 
@@ -31,75 +33,170 @@
         ph: Math.random() * 6.283,
         // this fish's own place in the school, around its centre
         ox: (Math.random() - 0.5) * 2, oy: (Math.random() - 0.5) * 2,
-        color: FISH_COLORS[i % FISH_COLORS.length]
+        color: FISH_COLORS[i % FISH_COLORS.length],
+        air: false, up: false, airT: 0, cool: 0
       });
     }
+  }
+  // where the water surface is at x (the same line drawAqua draws)
+  function surfY(x, w, h, k, mo){
+    var base = h * 0.085 + Math.sin(x * 0.01 / k + A.t * 1.3 * mo) * 2.5 * k;
+    if (!Cfg.CFG.aqua.surface) return base;
+    var n = surf.length, u = Math.max(0, Math.min(1, x / w)) * (n - 1), i = Math.floor(u), fr = u - i;
+    var v = surf[i] * (1 - fr) + surf[Math.min(n - 1, i + 1)] * fr;
+    return base - v * h * 0.075;
+  }
+  // a small splash where a fish leaves or enters the water: droplets and a flat ripple
+  function splash(x, y, k, n, size){
+    if (aquaRipples.length < 14) aquaRipples.push({ x: x, y: y, age: 0, life: 0.9, r: 20 * k * (0.7 + size * 0.4) });
+    for (var i = 0; i < n && aquaDrops.length < 90; i++){
+      aquaDrops.push({
+        x: x + (Math.random() - 0.5) * 8 * k, y: y,
+        vx: (Math.random() - 0.5) * 110 * k, vy: -(70 + Math.random() * 150) * k,
+        r: (0.8 + Math.random() * 1.2) * k, age: 0, life: 0.55 + Math.random() * 0.5
+      });
+    }
+  }
+  function drawSplash(dt, k, mo, w, h){
+    var de = dt * mo, G = 760 * k, i;
+    for (i = aquaRipples.length - 1; i >= 0; i--){
+      var rp = aquaRipples[i];
+      rp.age += dt;
+      if (rp.age > rp.life){ aquaRipples.splice(i, 1); continue; }
+      var f = rp.age / rp.life, rx = rp.r * (0.25 + 0.75 * f);
+      ctx.strokeStyle = 'rgba(215,248,255,' + ((1 - f) * 0.55).toFixed(3) + ')';
+      ctx.lineWidth = 1.3 * k;
+      ctx.beginPath();
+      ctx.ellipse(rp.x, rp.y, rx, rx * 0.22, 0, 0, 6.283);
+      ctx.stroke();
+    }
+    if (!aquaDrops.length) return;
+    ctx.fillStyle = 'rgba(225,250,255,0.75)';
+    ctx.beginPath();
+    for (i = aquaDrops.length - 1; i >= 0; i--){
+      var d = aquaDrops[i];
+      d.age += dt;
+      d.vy += G * de;
+      d.x += d.vx * de; d.y += d.vy * de;
+      if (d.age > d.life || (d.vy > 0 && d.y > h * 0.085 + 4 * k)){ aquaDrops.splice(i, 1); continue; }
+      ctx.moveTo(d.x + d.r, d.y);
+      ctx.arc(d.x, d.y, d.r, 0, 6.283);
+    }
+    ctx.fill();
+  }
+  // send a fish up out of the water: it keeps its speed under the surface, then falls under gravity
+  function leap(f, ys, h, k){
+    var apex = Math.max(10 * k, h * 0.085 - (18 + Math.random() * 55) * k * (0.7 + f.size * 0.3));
+    if (apex > ys - 14 * k) apex = ys - 14 * k;
+    f.vy = -Math.sqrt(2 * 760 * k * Math.max(14 * k, ys - apex));
+    if (Math.abs(f.vx) < 40 * k) f.vx = f.face * (40 + Math.random() * 50) * k;
+    f.air = true; f.up = false; f.airT = 0; f.cool = 9;
+  }
+  function paintFish(f, x, L, H, wag, k, ang){
+    ctx.save();
+    ctx.translate(x, f.y);
+    ctx.scale(f.face, 1);
+    ctx.rotate(ang);
+    ctx.globalAlpha = 0.78;
+    ctx.fillStyle = f.color;
+    ctx.beginPath();
+    ctx.moveTo(L, 0);
+    ctx.quadraticCurveTo(0, -H, -L * 0.7, 0);
+    ctx.quadraticCurveTo(0, H, L, 0);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.65, 0);
+    ctx.lineTo(-L * 1.15, -H * (0.8 + wag));
+    ctx.lineTo(-L * 1.15, H * (0.8 - wag));
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(L * 0.55, -H * 0.22, 1.1 * k * f.size, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
   }
   function drawFish(dt, k){
     var cfg = Cfg.CFG.aqua;
     if (aquaFish.length !== Math.max(3, Math.round(cfg.fish))) seedFish();
     var w = canvas.width, h = canvas.height, mo = Cfg.CFG.look.motion;
+    var G = 760 * k, de = dt * mo;
     // 1 while the music is calm (swim together), 0 when it is loud (each to its own)
     var together = cfg.school ? 1 - U.clamp01((A.drive - 0.22) / 0.33) : 0;
     // the school's centre wanders slowly round the tank
     var scx = w * (0.5 + 0.3 * Math.sin(A.t * 0.13 * mo)), scy = h * (0.46 + 0.17 * Math.sin(A.t * 0.19 * mo + 1));
     var heading = Math.cos(A.t * 0.13 * mo) >= 0 ? 1 : -1;
     var scatter = cfg.school && A.kickHit > 0.32 && A.drive > 0.2 ? (240 + 380 * A.kickHit) * k * (0.4 + 0.6 * A.drive) : 0;
+    // the seabed is a wall: no fish goes below it
+    var wall = Math.min(h * 0.9, h - 34 * k);
     for (var i = 0; i < aquaFish.length; i++){
       var f = aquaFish[i];
-      // pulled toward its place in the school when calm...
-      var ax = (scx + f.ox * w * 0.15 - f.x) * 1.1 * together;
-      var ay = (scy + f.oy * h * 0.13 - f.y) * 1.1 * together;
-      // ...and toward its own cruising speed when not
-      ax += (f.dir * f.sp * k * (1 + A.level * 0.8) - f.vx) * 1.6 * (1 - together * 0.9);
-      ay += (Math.sin(A.t * 0.8 + f.ph) * 9 * k - f.vy) * 1.3;
-      if (together > 0.05){ ax -= f.vx * 1.4 * together; ay -= f.vy * 0.6 * together; }
-      if (scatter){
-        var dx = f.x - scx, dy = f.y - scy, d = Math.sqrt(dx * dx + dy * dy) || 1;
-        f.vx += dx / d * scatter * (0.6 + Math.random() * 0.6);
-        f.vy += dy / d * scatter * 0.55;
-        f.dir = dx >= 0 ? 1 : -1;
+      if (f.cool > 0) f.cool -= dt;
+      var ys = surfY(f.x, w, h, k, mo);
+      if (f.air){
+        // out of the water: gravity pulls it back in; under the surface it keeps its speed
+        f.airT += dt;
+        if (f.y < ys) f.vy += G * de;
+        f.x += f.vx * de;
+        f.y += f.vy * de;
+        ys = surfY(f.x, w, h, k, mo);
+        if (!f.up && f.y < ys){ f.up = true; splash(f.x, ys, k, 4, f.size); }
+        else if (f.up && f.vy > 0 && f.y >= ys){
+          splash(f.x, ys, k, 7, f.size);
+          f.air = false; f.vy *= 0.3; f.vx *= 0.5;
+        } else if (f.airT > 7){ f.air = false; f.vy = 0; }
+        if (f.y < 3 * k){ f.y = 3 * k; if (f.vy < 0) f.vy = 0; }
+        if (f.y > wall){ f.y = wall; f.vy = -Math.abs(f.vy) * 0.3; f.air = false; }
+      } else {
+        // pulled toward its place in the school when calm...
+        var ax = (scx + f.ox * w * 0.15 - f.x) * 1.1 * together;
+        var ay = (scy + f.oy * h * 0.13 - f.y) * 1.1 * together;
+        // ...and toward its own cruising speed when not
+        ax += (f.dir * f.sp * k * (1 + A.level * 0.8) - f.vx) * 1.6 * (1 - together * 0.9);
+        ay += (Math.sin(A.t * 0.8 + f.ph) * 9 * k - f.vy) * 1.3;
+        if (together > 0.05){ ax -= f.vx * 1.4 * together; ay -= f.vy * 0.6 * together; }
+        if (scatter){
+          var dx = f.x - scx, dy = f.y - scy, d = Math.sqrt(dx * dx + dy * dy) || 1;
+          f.vx += dx / d * scatter * (0.6 + Math.random() * 0.6);
+          f.vy += dy / d * scatter * 0.55;
+          f.dir = dx >= 0 ? 1 : -1;
+        }
+        f.vx += ax * dt; f.vy += ay * dt;
+        f.x += f.vx * dt * mo;
+        f.y += f.vy * dt * mo;
+        // a hard kick now and then sends a fish near the top leaping out of the water
+        if (f.cool <= 0 && A.kickHit > 0.5 && A.drive > 0.3 && f.y < h * 0.5 && Math.random() < 0.02){
+          f.vy = Math.min(f.vy, -140 * k);
+        }
+        var rising = f.cool <= 0 && f.vy < -110 * k;
+        if (rising && f.y < ys + h * 0.1) leap(f, ys, h, k);
+        else {
+          // keep off the surface (unless rising fast) and the seabed
+          if (f.y < h * 0.17 && !rising) f.vy += (h * 0.17 - f.y) * 6 * dt;
+          if (f.y > h * 0.86) f.vy -= (f.y - h * 0.86) * 6 * dt;
+          if (f.y > wall){ f.y = wall; if (f.vy > 0) f.vy = -f.vy * 0.4; }
+          if (f.y < ys + 6 * k){ f.y = ys + 6 * k; if (f.vy < 0) f.vy = 0; }
+        }
       }
-      f.vx += ax * dt; f.vy += ay * dt;
-      f.x += f.vx * dt * mo;
-      f.y += f.vy * dt * mo;
-      // keep off the surface and the seabed; swim off one side and come back on the other
-      if (f.y < h * 0.17) f.vy += (h * 0.17 - f.y) * 6 * dt;
-      if (f.y > h * 0.86) f.vy -= (f.y - h * 0.86) * 6 * dt;
-      if (together < 0.3){
-        if (f.x > w + 40 * k){ f.x = -40 * k; f.y = h * (0.2 + Math.random() * 0.6); }
-        else if (f.x < -40 * k){ f.x = w + 40 * k; f.y = h * (0.2 + Math.random() * 0.6); }
-      }
+      // past a side edge a fish comes in on the other side
+      if (f.x >= w) f.x -= w;
+      else if (f.x < 0) f.x += w;
       if (Math.abs(f.vx) > 5 * k) f.face = f.vx > 0 ? 1 : -1;
       else if (together > 0.6) f.face = heading;
 
       var L = 13 * k * f.size, H = 6.5 * k * f.size;
       var speed = Math.sqrt(f.vx * f.vx + f.vy * f.vy);
       var wag = Math.sin(A.t * (6 + Math.min(10, speed / (14 * k))) + f.ph) * 0.35;
-      ctx.save();
-      ctx.translate(f.x, f.y);
-      ctx.scale(f.face, 1);
-      ctx.rotate(Math.max(-0.5, Math.min(0.5, f.vy / (Math.abs(f.vx) + 30 * k))));
-      ctx.globalAlpha = 0.78;
-      ctx.fillStyle = f.color;
-      ctx.beginPath();
-      ctx.moveTo(L, 0);
-      ctx.quadraticCurveTo(0, -H, -L * 0.7, 0);
-      ctx.quadraticCurveTo(0, H, L, 0);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-L * 0.65, 0);
-      ctx.lineTo(-L * 1.15, -H * (0.8 + wag));
-      ctx.lineTo(-L * 1.15, H * (0.8 - wag));
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.beginPath();
-      ctx.arc(L * 0.55, -H * 0.22, 1.1 * k * f.size, 0, 6.283);
-      ctx.fill();
-      ctx.restore();
-      ctx.globalAlpha = 1;
+      var ang = f.air ? Math.max(-1.2, Math.min(1.2, Math.atan2(f.vy, Math.max(Math.abs(f.vx), 40 * k))))
+                      : Math.max(-0.5, Math.min(0.5, f.vy / (Math.abs(f.vx) + 30 * k)));
+      paintFish(f, f.x, L, H, wag, k, ang);
+      // while it crosses an edge it shows on both sides, so it does not pop
+      var m = L * 1.25;
+      if (f.x < m) paintFish(f, f.x + w, L, H, wag, k, ang);
+      else if (f.x > w - m) paintFish(f, f.x - w, L, H, wag, k, ang);
     }
+    drawSplash(dt, k, mo, w, h);
   }
   function spawnBubble(x, y, v, small){
     var k = Can.dpr();
@@ -273,8 +370,8 @@
     }
   }
 
-  function reset(){ aquaBubbles = []; aquaRings = []; }
-  Can.addResizeHook(function(){ aquaFish = []; });
+  function reset(){ aquaBubbles = []; aquaRings = []; aquaDrops = []; aquaRipples = []; }
+  Can.addResizeHook(function(){ aquaFish = []; aquaDrops = []; aquaRipples = []; });
 
   App.modes.register('aqua', { draw: drawAqua, paintBG: paintBG, onTap: onTap, reset: reset, fx: 0.5 });
 
