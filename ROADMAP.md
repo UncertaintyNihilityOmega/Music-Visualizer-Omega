@@ -88,18 +88,14 @@
     limit: while a paused song's late sound is held, a touched key lights but makes no sound.
 29. **Aquatic: better fish** after `inspiration/fish-example.jpg` (shape and style like it). Done when: seen at
     1280 px and 375 px and the user says they look right.
+    **Built 2026-11-19, waiting on your look.** Each fish is now a flat icon like the example: a see-through
+    body with a rim in its own colour (colours unchanged), a forked tail with two fin lines, a shine on the
+    back, a dark pointed head with a ring eye, and the skeleton (spine and three pairs of ribs) showing
+    through. Seen at 1280 px and 375 px; 0.6 ms a frame at 1280 px, 1.1 ms at 375 px; still calm when quiet
+    (change per frame 1.4) and lively when loud (9.3).
 
 **v0.5.0: song map**
 
-6. **Song map (whole-song analysis).** `js/core/song-map.js`, pure like `analysis.js`: decode a local file, find
-   tempo, beat grid, strongest hits, sections and an energy curve (format in docs/GAME-PLAN.md). Runs in small
-   slices so the page never freezes; also `node engine/songmap.js <file>` writes the JSON. Show the energy curve
-   and hits behind the seek bar. Done when: tempo is within 3% (or exactly half/double) of the user's counts
-   and the biggest drop of each song is among its top three hits.
-   The user's counts (vibesdj.io, 2026-11-19): Decensus Ad Nihilum 77.70 BPM (C minor), To Be Human 109.30
-   (A flat minor), Want Some Fun 85 (B minor). The song map read 77.5, 109.4 and 84.9: all within 0.3%. Left:
-   the drop check (fix idea: weight a hit at a section start by how much louder the section is) and confidence,
-   which reads too high.
 7. **Mapping selectors.** A generic "follows: [source]" setting type, like Rain's wind, so any mode property can
    be pointed at any source (docs/MODES.md idea D). Done when: three modes use it and it is documented.
 
@@ -155,6 +151,12 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 6 Song map: `js/core/song-map.js` reads a whole song once in small slices (tempo, beats, hits, sections,
+  energy); `node engine/songmap.js <file>` writes the JSON and `--check` checks the test songs; the energy hill
+  and the hits are drawn behind the seek bar for songs on the device (up to 15 minutes). Tempo 77.5, 109.4 and
+  84.9 against your counts 77.70, 109.30 and 85 (within 0.3%); the biggest drop is the strongest hit in all six
+  songs; confidence 0.16 to 0.6 (it read 1). About 5 s for a 5-minute song in the browser, longest slice 20 ms;
+  seen at 1280 px and 375 px, no console errors (2026-11-19).
 - 20 Special modes pass: Ice measured (change per frame 0.46 quiet, 1.83 loud; 0.6 to 0.9 ms a frame at 1280 px
   and 375 px), looked at quiet and loud, right as it is; Aquatic (item 28) and Piano (items 26, 27) checked; each
   of the three has a dated line in docs/MODES.md. Better fish (29) and Piano's sound (26) go on as their own
