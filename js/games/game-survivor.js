@@ -16,7 +16,7 @@
   var SPELL_MAX = 30, PASSIVE_MAX = 10, EVO_AT = 15;
 
   var RPG_ITEMS = [
-    { id: 'satellite', name: 'Satellite',      emoji: '🛰️', type: 'spell', color: '#7BD3F7', desc: 'Orbiting orbs, +1 orb every 6 levels (max 7). +3 damage and +1.4px orbit per level. Evolves at 15.' },
+    { id: 'satellite', name: 'Satellite',      emoji: '🛰️', type: 'spell', color: '#7BD3F7', desc: 'Starts with 2 orbiting orbs, +1 every 6 levels (max 7). +3 damage and +1.4px orbit per level. Evolves at 15.' },
     { id: 'firebreath',name: 'Fire Breath',    emoji: '🔥', type: 'spell', color: '#FF7A3D', desc: 'Cone of fire every 1.3s. +4.4 damage and +4.4px reach per level. Evolves at 15.' },
     { id: 'frost',     name: 'Frost Nova',     emoji: '❄️', type: 'spell', color: '#9FE3F0', desc: 'Ring every 2.4s, slows to 45%. +2.6 damage and +4.8px radius per level. Evolves at 15.' },
     { id: 'nature',    name: 'Nature Bloom',   emoji: '🌿', type: 'spell', color: '#7BD389', desc: 'Damaging patch lasting 3.2s. +3.4 damage and +3px radius per level. Evolves at 15.' },
@@ -164,9 +164,7 @@
       p.y += (my / ml) * speed * dt;
       p.face = Math.atan2(my, mx);
     }
-    var pad = 14 * k;
-    p.x = Math.max(pad, Math.min(w - pad, p.x));
-    p.y = Math.max(pad, Math.min(h - pad, p.y));
+    keepInside();
     p.hurtT = Math.max(0, p.hurtT - dt);
     if (RPG.lv.vitality) p.hp = Math.min(p.maxHp, p.hp + RPG.lv.vitality * 0.27 * dt);
 
@@ -301,6 +299,15 @@
       RPG.fx[f].life -= dt * 2.4;
       if (RPG.fx[f].life <= 0) RPG.fx.splice(f, 1);
     }
+  }
+  // The player never leaves the map (ROADMAP item 31: "spamming Shift while running down puts the player
+  // outside the map"): held inside after every move, after every resize (leaving fullscreen shrinks the
+  // map at once) and before every drawing, so not even a paused frame shows it outside.
+  function keepInside(){
+    var p = RPG.player, k = Can.dpr(), pad = 14 * k, w = canvas.width, h = canvas.height;
+    if (!(p.x === p.x) || !(p.y === p.y)){ p.x = w / 2; p.y = h / 2; }      // NaN: back to the middle
+    p.x = Math.max(pad, Math.min(w - pad, p.x));
+    p.y = Math.max(pad, Math.min(h - pad, p.y));
   }
   function cdReady(id, base, dt){
     // haste comes from the passive AND from how hard the track is going
@@ -530,6 +537,7 @@
   }
   function rpgDraw(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), p = RPG.player, lv = RPG.lv;
+    keepInside();
     G.gameBackdrop(true);
 
     for (var z = 0; z < RPG.zones.length; z++){
@@ -557,12 +565,8 @@
       ctx.fillStyle = sh.color;
       ctx.beginPath();
       if (sh.big){
-        ctx.save();
-        ctx.translate(sh.x, sh.y);
-        ctx.rotate(A.t * 9);
-        ctx.fillRect(-sh.big * k, -sh.big * k * 0.32, sh.big * 2 * k, sh.big * 0.64 * k);
-        ctx.fillRect(-sh.big * k * 0.32, -sh.big * k, sh.big * 0.64 * k, sh.big * 2 * k);
-        ctx.restore();
+        // the boomerang flies as its own emoji, spinning (GAME-AUDIT S7: it was a plain cross)
+        Can.stampEmoji(Can.getEmojiSprite('🥏'), sh.x, sh.y, A.t * 9, sh.big * k, 1);
       } else {
         ctx.arc(sh.x, sh.y, 3 * k, 0, 6.283);
         ctx.fill();
@@ -673,10 +677,7 @@
     if (money) money.textContent = '';
   }
 
-  App.canvas.addResizeHook(function(){
-    RPG.player.x = Math.min(RPG.player.x, canvas.width - 20);
-    RPG.player.y = Math.min(RPG.player.y, canvas.height - 20);
-  });
+  App.canvas.addResizeHook(keepInside);
 
   canvas.addEventListener('pointerdown', function(ev){
     if (App.modes.current !== 'rpg') return;
@@ -716,6 +717,9 @@
       g.evo = d.evo || {};
     },
     renderShop: renderShop,
+    // for checks in the browser (play-testing GAME-AUDIT rows by script), never read by the app
+    probe: function(){ return { evos: RPG_EVOS, items: RPG_ITEMS, api: { update: rpgUpdate, draw: rpgDraw, spawn: rpgSpawn, keepInside: keepInside,
+                                satelliteCount: satelliteCount, laserBeamAngles: laserBeamAngles } }; },
     onLevelUp: function(item, newLv){
       if (item.type === 'spell' && newLv === EVO_AT && !RPG.evo[item.id] && RPG_EVOS[item.id]){
         G.rollEvolutionChoice(RPG_EVOS[item.id], function(id){ RPG.evo[item.id] = id; }, item.emoji);

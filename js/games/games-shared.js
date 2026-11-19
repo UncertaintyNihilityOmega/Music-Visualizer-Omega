@@ -37,10 +37,15 @@
   function diff(){ return DIFFS[Cfg.CFG.games.difficulty] || DIFFS.normal; }
   G.diff = diff;
 
-  var GSPEED = 1, shiftBoost = false;
-  function gameSpeed(){ return shiftBoost ? 3 : GSPEED; }
+  // 3x speed is a switch (the X key), not a held key: on Windows, holding Shift for 8 s opens the Filter
+  // Keys box and pressing it 5 times opens Sticky Keys; either takes the focus and ends fullscreen (the
+  // user, 2026-11-19). It goes off when the window loses the focus, so it can never be left stuck on.
+  var GSPEED = 1, boost = false;
+  function gameSpeed(){ return boost ? 3 : GSPEED; }
   G.gameSpeed = gameSpeed;
-  G.setShiftBoost = function(v){ shiftBoost = v; };
+  G.toggleBoost = function(){ boost = !boost; return boost; };
+  G.setBoost = function(v){ boost = !!v; };
+  window.addEventListener('blur', function(){ boost = false; });
   G.cycleSpeed = function(){ GSPEED = GSPEED >= 3 ? 1 : GSPEED + 1; return GSPEED; };
 
   // shape and colour are fixed per enemy type - never random

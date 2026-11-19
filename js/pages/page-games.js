@@ -43,7 +43,7 @@ App.pages.define('games', {
       '</div>' +
       '<div id="gridInfo" class="grid-info"></div>' +
       '<div id="shopBody" class="shop-list"></div>' +
-      '<p class="game-help">Click the canvas to play. <b>Artificium</b> (tower defence): buy towers below (or press <b>1</b>–<b>9</b>), then tap a free cell to place them. Waves arrive on a timer and kills pay money. <b>Undarum</b> (survivor): WASD to move, spells cast themselves; pick upgrades by tapping a card or pressing <b>1 2 3</b>. <b>Dungeon of Echoes</b> (cards): tap a path on the dungeon map, then tap a card in your hand (or press number keys) to play it each turn. <b>P</b> pauses, hold <b>Shift</b> for 3x speed. Every item has its own level cap; once everything is maxed, each further level gives +1% damage instead of a hard wall.</p>' +
+      '<p class="game-help">Click the canvas to play. <b>Artificium</b> (tower defence): buy towers below (or press <b>1</b>–<b>9</b>), then tap a free cell to place them. Waves arrive on a timer and kills pay money. <b>Undarum</b> (survivor): WASD to move, spells cast themselves; pick upgrades by tapping a card or pressing <b>1 2 3</b>. <b>Dungeon of Echoes</b> (cards): tap a path on the dungeon map, then tap a card in your hand (or press number keys) to play it each turn. <b>P</b> pauses, <b>X</b> switches 3x speed on and off. Every item has its own level cap; once everything is maxed, each further level gives +1% damage instead of a hard wall.</p>' +
       '<div class="saves-title">Save slots</div>' +
       '<div id="savesBody"></div>' +
       '<div class="saves-actions">' +

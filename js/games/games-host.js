@@ -167,7 +167,7 @@
     var g = G.currentState();
     if (!g) return false;
     var key = e.key.toLowerCase();
-    if (key === 'shift'){ G.setShiftBoost(down); return true; }
+    if (key === 'x'){ if (down) G.toggleBoost(); return true; }     // 3x speed on and off (never Shift: see games-shared.js)
     var desc = G.registry[g.id];
     if (desc.handleKey && desc.handleKey(key, down)) return true;
     if (!down) return false;

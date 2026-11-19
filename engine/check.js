@@ -336,6 +336,15 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (/addResizeHook/.test(td)) err('game-tower-defense.js: the board must not be rebuilt on resize (view() zooms it)');
 }
 
+/* 8f. Undarum (item 31): no game binds Shift (on Windows a held or repeated Shift opens a system box and ends
+       fullscreen), and the player is held inside the map after every move, every resize and before drawing */
+{
+  for (const f of walk('js/games', '.js')) if (/key === 'shift'/.test(read(f))) err(`${f}: a game must not use the Shift key (Windows Filter Keys / Sticky Keys end fullscreen); 3x speed is the X key`);
+  const sv = read('js/games/game-survivor.js');
+  const calls = (sv.match(/keepInside\(\)/g) || []).length;
+  if (!/function keepInside\(\)/.test(sv) || calls < 2 || !/addResizeHook\(keepInside\)/.test(sv)) err('game-survivor.js: the player must be kept inside the map in update, draw and on resize (keepInside)');
+}
+
 /* 8c. piano sound (item 26): the song is kept off the speakers only while Piano asks for it, comes back when the
        page is hidden (no frames are drawn then, so nothing would play), and the piano never reaches the analysis */
 {

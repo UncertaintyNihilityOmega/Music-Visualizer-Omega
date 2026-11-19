@@ -107,6 +107,100 @@
     return { mean: +(sum / Math.max(1, n)).toFixed(1), worst: +worst.toFixed(1), drive: +App.audio.A.drive.toFixed(2) };
   };
 
+  // Undarum, every row of docs/GAME-AUDIT.md played by script (ROADMAP item 31); saves blocked as above
+  P.undarum = async function(){
+    var keep = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v){ if (/^viz\.(auto\.|saves)/.test(String(k))) return; return keep.call(this, k, v); };
+    var G = App.games, C = App.cfg.CFG.games, savedCfg = JSON.parse(JSON.stringify(C)), R = {}, e0 = P.errors.length;
+    try {
+      C.autoUpgrade = false; C.difficulty = 'normal';
+      App.modes.setMode('rpg'); await wait(150);
+      G.startGame(); await wait(50);
+      if (G.GAME.state === 'choosing') G.pickCard(0);
+      if (G.GAME.state === 'paused') G.togglePause();
+      var d = G.registry.rpg, RPG = d.state, pr = d.probe(), api = pr.api, cv = App.canvas.canvas;
+      var p = RPG.player;
+      function setOnly(lv){ Object.keys(RPG.lv).forEach(function(k){ RPG.lv[k] = 0; }); Object.keys(lv).forEach(function(k){ RPG.lv[k] = lv[k]; }); RPG.evo = {}; RPG.cds = {}; RPG.zones = []; RPG.shots = []; RPG.enemies = []; RPG.orbs = []; }
+      function foes(n, r){ for (var i = 0; i < n; i++){ api.spawn(false); var e = RPG.enemies[RPG.enemies.length - 1]; var a = i / n * 6.283; e.x = p.x + Math.cos(a) * (r || 60); e.y = p.y + Math.sin(a) * (r || 60); e.hp = e.maxHp = 1e6; } }
+      function frame(){ RPG.spawnT = 1e6; api.update(1 / 60); }
+      p.hp = p.maxHp = 1e9;
+
+      // S1: spells to 30 with an evolution choice at 15, passives to 10
+      var maxS = pr.items.filter(function(i){ return i.type === 'spell'; }).every(function(i){ return G.maxLvOf(RPG, i) === 30; });
+      var maxP = pr.items.filter(function(i){ return i.type === 'passive'; }).every(function(i){ return G.maxLvOf(RPG, i) === 10; });
+      setOnly({ meteor: 14 }); d.onLevelUp(pr.items.filter(function(i){ return i.id === 'meteor'; })[0], 15);
+      var choice = G.GAME.state === 'choosing' ? G.GAME.cards.length : 0; if (choice) G.pickCard(0);
+      R.S1 = { ok: maxS && maxP && choice === 3 && !!RPG.evo.meteor, spells30: maxS, passives10: maxP, choicesAt15: choice };
+
+      // S2 Satellite 2 orbs at level 1; S3 Fire Breath 3 circles; S4 Nature Bloom 4 patches; S6 Meteor 2
+      R.S2 = { ok: api.satelliteCount(1, null) === 2, orbsAtLevel1: api.satelliteCount(1, null) };
+      setOnly({ firebreath: 1 }); foes(3, 80); frame();
+      R.S3 = { ok: RPG.zones.length === 3, circles: RPG.zones.length };
+      setOnly({ nature: 1 }); foes(6, 80); frame();
+      R.S4 = { ok: RPG.zones.length === 4, patches: RPG.zones.length };
+      setOnly({ meteor: 1 }); foes(6, 80); frame();
+      R.S6 = { ok: RPG.zones.length === 2, meteors: RPG.zones.length };
+
+      // S5 one beam through the player, hurting on both sides
+      setOnly({ laser: 1 }); RPG.laserAng = 0;
+      api.spawn(false); var L = RPG.enemies[0]; L.x = p.x + 100; L.y = p.y; L.hp = L.maxHp = 1e6;
+      api.spawn(false); var Rr = RPG.enemies[1]; Rr.x = p.x - 100; Rr.y = p.y; Rr.hp = Rr.maxHp = 1e6;
+      RPG.laserAng = -1 / 60 * 1.15; frame();
+      R.S5 = { ok: api.laserBeamAngles(null).length === 1 && L.hp < 1e6 && Rr.hp < 1e6, beams: api.laserBeamAngles(null).length, hurtAhead: L.hp < 1e6, hurtBehind: Rr.hp < 1e6 };
+
+      // S7 the boomerang is big, pierces, and draws its emoji
+      setOnly({ boomerang: 10 }); foes(3, 90); frame();
+      var bm = RPG.shots.filter(function(s){ return s.boomer; })[0];
+      var stamped = 0, orig = App.canvas.stampEmoji; App.canvas.stampEmoji = function(){ stamped++; return orig.apply(this, arguments); };
+      api.draw(); App.canvas.stampEmoji = orig;
+      R.S7 = { ok: !!bm && bm.big >= 13 && bm.pierce && stamped > 0, size: bm && bm.big, emojiDrawn: stamped > 0 };
+
+      // S8 everything maxed: +1% a level, no choice screen
+      pr.items.forEach(function(i){ RPG.lv[i.id] = G.maxLvOf(RPG, i); });
+      var b0 = RPG.breaks; G.rollCards(RPG);
+      R.S8 = { ok: RPG.breaks === b0 + 1 && G.GAME.state !== 'choosing', breaks: RPG.breaks - b0, state: G.GAME.state };
+
+      // the player cannot leave the map: run hard at each edge at 3x speed, then shrink the map under it
+      setOnly({}); var out = 0;
+      ['w', 'a', 's', 'd'].forEach(function(key){
+        RPG.keys = { w: false, a: false, s: false, d: false }; RPG.keys[key] = true;
+        for (var i = 0; i < 300; i++){ api.update(3 / 60); if (p.x < 0 || p.y < 0 || p.x > cv.width || p.y > cv.height) out++; }
+      });
+      RPG.keys = { w: false, a: false, s: false, d: false };
+      p.x = cv.width * 5; p.y = cv.height * 5; App.canvas.resizeCanvas();
+      var afterResize = p.x <= cv.width && p.y <= cv.height && p.x >= 0 && p.y >= 0;
+      p.x = -500; p.y = 1e6; api.draw();
+      var afterDraw = p.x >= 0 && p.y <= cv.height;
+      R.inside = { ok: out === 0 && afterResize && afterDraw, framesOutside: out, afterResize: afterResize, afterDraw: afterDraw };
+
+      // X switches 3x speed; losing the focus switches it off
+      var s0 = G.gameSpeed(); G.toggleBoost(); var s1 = G.gameSpeed(); window.dispatchEvent(new Event('blur')); var s2 = G.gameSpeed();
+      R.speedKey = { ok: s1 === 3 && s2 === s0, before: s0, on: s1, afterBlur: s2 };
+
+      // every evolution: 3 s at level 15 among six tough enemies
+      var bad = [], each = {};
+      Object.keys(pr.evos).forEach(function(id){
+        pr.evos[id].forEach(function(ev){
+          var lv = {}; lv[id] = 15; setOnly(lv); RPG.evo[id] = ev.id; p.x = cv.width / 2; p.y = cv.height / 2; foes(6, 55);
+          var hp0 = RPG.enemies.reduce(function(s, e){ return s + e.hp; }, 0), ee = P.errors.length;
+          for (var i = 0; i < 180; i++){ frame(); RPG.enemies.forEach(function(e){ var a = Math.atan2(e.y - p.y, e.x - p.x); e.x = p.x + Math.cos(a) * 55; e.y = p.y + Math.sin(a) * 55; }); }
+          var hp1 = RPG.enemies.reduce(function(s, e){ return s + e.hp; }, 0);
+          each[id + '.' + ev.id] = Math.round(hp0 - hp1);
+          if (!(hp1 < hp0) || P.errors.length > ee) bad.push(id + '.' + ev.id);
+        });
+      });
+      R.evolutions = { ok: bad.length === 0, failed: bad, each: each };
+      G.setBoost(false);
+    } catch (err){
+      R.thrown = err.message + ' | ' + String(err.stack || '').split('\n').slice(1, 3).join(' ');
+    } finally {
+      Object.keys(savedCfg).forEach(function(k){ C[k] = savedCfg[k]; });
+      Storage.prototype.setItem = keep;
+    }
+    R.errors = P.errors.slice(e0);
+    return R;
+  };
+
   // Artificium, every row of docs/GAME-AUDIT.md played by script (ROADMAP item 30). Runs the game's own
   // update without drawing, so it is quick. Saves are blocked while it runs (the preview's tabs share
   // storage with the user's), and the game settings are put back after. Returns { D2: {ok, ...}, ... }.
