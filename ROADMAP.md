@@ -118,8 +118,6 @@
 
 **v0.8.0: mini-games**
 
-9. **Game audit, mini-games.** Play-test every Dungeon of Echoes and Solarium row of docs/GAME-AUDIT.md and fix
-   what fails. Done when: every C and B row says "confirmed" or "fixed" with the date.
 16. **Design pass on the mini-games.** Look at each as a player would and make it look better; the user's
     pictures are in `inspiration/` (`sandbox-example.jpg` for Solarium; read every file there first). Solarium
     first. One game per step, each with a before and after picture at desktop and 375 px. Done when: the user
@@ -145,6 +143,11 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 9 Mini-games played row by row (`Probe.dungeon()`, `Probe.solarium()`; saves, the pixel art in storage and
+  downloads kept out of the tests): every C and B row confirmed or fixed in docs/GAME-AUDIT.md, except C7 (how
+  good it looks), which is item 16. Fixed: Dungeon of Echoes' hand is 4 random cards from those owned, dealt
+  each turn (it showed all of them); Solarium gives a swatch every 30 to 60 s (the setting allowed 10 to 180).
+  Seen at 375 px, no console errors (2026-11-19).
 - 31 Undarum played row by row (`Probe.undarum()`): S1 to S8 confirmed or fixed in docs/GAME-AUDIT.md, all 30
   evolutions deal damage. Fixed: 3x speed is now the X key, a switch, not a held Shift (Windows opens Filter
   Keys / Sticky Keys on Shift and that ended fullscreen), and it goes off when the window loses focus; the
