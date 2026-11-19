@@ -84,8 +84,12 @@
     }
     ctx.fill();
   }
-  // send a fish up out of the water: it keeps its speed under the surface, then falls under gravity
+  // send a fish up out of the water: it keeps its speed under the surface, then falls under gravity.
+  // At most one leap every 1.2 s for the whole school (about 18 in 10 s in a loud passage was too busy).
+  var lastLeap = -1e9;
   function leap(f, ys, h, k){
+    if (A.t - lastLeap < 1.2) return;
+    lastLeap = A.t;
     var apex = Math.max(10 * k, h * 0.085 - (18 + Math.random() * 55) * k * (0.7 + f.size * 0.3));
     if (apex > ys - 14 * k) apex = ys - 14 * k;
     f.vy = -Math.sqrt(2 * 760 * k * Math.max(14 * k, ys - apex));
