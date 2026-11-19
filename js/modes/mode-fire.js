@@ -664,7 +664,7 @@
     ['life', 'Ember lifespan', 'range', 0.3, 3, 0.05],
     ['size', 'Ember size', 'range', 0.3, 2.5, 0.05],
     ['turb', 'Turbulence', 'range', 0, 3, 0.05],
-    ['source', 'Sway follows', 'select', Aud.SOURCES],
+    ['source', 'Sway follows', 'source'],
     ['sway', 'Sway amount', 'range', 0, 3, 0.05],
     ['sparks', 'Beat sparks', 'bool'],
     ['hatEmbers', 'Hi-hat embers', 'bool'],

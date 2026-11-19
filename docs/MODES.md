@@ -17,8 +17,12 @@ The research gave four ideas that apply to every mode:
 - **B. One job per sound.** Kick moves the big thing, snare flashes or cracks, hi-hat makes sparkle, level sets size.
 - **C. A picture layer.** Zoom, shake and brightness of the whole scene on strong hits, still when calm. Built
   as `js/core/fx.js`; each mode says how much of it it wants (`fx:` where the mode is registered).
-- **D. Mappings, not hard wiring.** Each mode gets "X follows: [source]" selectors like Rain's wind already has.
-  Not built yet (ROADMAP item 7).
+- **D. Mappings, not hard wiring.** "X follows: [a sound]" settings. Built 2026-11-19 (ROADMAP item 7) as the
+  setting type `'source'`: `['swell', 'Leaves swell with', 'source']` in a mode's schema, a default from
+  `Aud.SOURCES` in its defaults, and `Aud.sourceValue(cfg.swell)` where the mode used a fixed sound. Settings
+  shows every sound by a plain name (`Aud.SOURCE_NAMES`: kick drum, hi-hat, deepest bass, energy, ...). Used by
+  Rain ("Wind follows", treble), Fire ("Sway follows", bass) and Nature ("Leaves swell with", kick drum); each
+  default is what the mode did before. `check.js` guards the defaults and that no mode keeps its own list.
 
 ## Measured: calm in the quiet part, lively in the loud part
 Measured 2026-11-16 in the browser with `engine/probe.js` (`Probe.motion`): how much the picture changes from

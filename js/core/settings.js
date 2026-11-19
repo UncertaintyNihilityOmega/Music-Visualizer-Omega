@@ -168,12 +168,14 @@
             C.CFG[group.id][key] = input.checked;
             onSettingChanged(group.id, key);
           });
-        } else if (type === 'select'){
+        } else if (type === 'select' || type === 'source'){
+          // 'source': "X follows: [a sound]", every sound the engine reads (ROADMAP item 7)
+          var Aud = App.audio, opts = type === 'source' ? Aud.SOURCES : f[3];
           input = document.createElement('select');
-          f[3].forEach(function(opt){
+          opts.forEach(function(opt){
             var o = document.createElement('option');
             o.value = opt;
-            o.textContent = opt;
+            o.textContent = type === 'source' ? (Aud.SOURCE_NAMES[opt] || opt) : opt;
             input.appendChild(o);
           });
           input.value = C.CFG[group.id][key];

@@ -37,6 +37,13 @@
   Aud.wantPitch = 0;            // a mode sets this to 2 each frame it needs the fine spectrum
 
   Aud.SOURCES = ['sub', 'bass', 'lowmid', 'mid', 'treble', 'air', 'level', 'flux', 'intensity', 'kick', 'snare', 'hat', 'energy'];
+  // Plain names for the "follows" lists in Settings (a setting of type 'source', ROADMAP item 7): any mode
+  // property can be pointed at any of these with ['key', 'Label', 'source'] and read with Aud.sourceValue.
+  Aud.SOURCE_NAMES = {
+    sub: 'deepest bass', bass: 'bass', lowmid: 'low middle', mid: 'middle (voices)', treble: 'treble',
+    air: 'air (cymbal shimmer)', level: 'loudness', flux: 'change (new sounds)', intensity: 'intensity',
+    kick: 'kick drum', snare: 'snare drum', hat: 'hi-hat', energy: 'energy (the big parts)'
+  };
   Aud.A = An.A;
   var A = An.A;
   var MIN_DB = -90, MAX_DB = -12;   // engine/songtest.js feeds the analyser the same range

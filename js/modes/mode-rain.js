@@ -272,7 +272,7 @@
     ['drops', 'Drop count (in a downpour)', 'range', 0.2, 2.5, 0.05],
     ['follow', 'Drizzle when calm, downpour when loud', 'bool'],
     ['fall', 'Fall speed', 'range', 0.3, 2.5, 0.05],
-    ['source', 'Wind follows', 'select', Aud.SOURCES],
+    ['source', 'Wind follows', 'source'],
     ['wind', 'Wind strength', 'range', 0, 3, 0.05],
     ['gust', 'Beat gusts', 'range', 0, 3, 0.05],
     ['len', 'Streak length', 'range', 0.3, 2.5, 0.05],

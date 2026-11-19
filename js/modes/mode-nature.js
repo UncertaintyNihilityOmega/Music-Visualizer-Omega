@@ -338,6 +338,7 @@
       pick.age = pick.life + 1;
     }
     var occupied = {};
+    var swellBy = Aud.sourceValue(Cfg.CFG.nature.swell || 'kick');   // "Leaves swell with" (ROADMAP item 7)
     for (var li = natLeaves.length - 1; li >= 0; li--){
       var l = natLeaves[li];
       var tip = tipsById[l.id];
@@ -357,7 +358,7 @@
       l.y = tip.y;
       l.ang = tip.a + (swing > 0.01 ? Math.sin(A.t * 4.2 + l.id * 1.9) * 0.9 * swing : 0);   // leaves flutter in a lively passage
       var sz0 = l.size;
-      l.size = sz0 * (1 + 0.8 * A.kick * swing);   // every kick makes the leaves swell for a moment
+      l.size = sz0 * (1 + 0.8 * swellBy * swing);   // every kick (or the sound chosen) makes the leaves swell for a moment
       drawLeafShape(l, k, 0.9 * U.clamp01(l.age / 0.4) * (0.25 + 0.75 * (1 - U.clamp01((l.age - (l.life - 1)) / 1))));
       l.size = sz0;
     }
@@ -488,7 +489,7 @@
   App.cfg.registerDefaults('nature', {
     followTheme: true, growth: 1, decay: 1, depth: 8, angle: 1, ratio: 1, sway: 0, wind: 0.6,
     dayNight: true, fireflies: true, snareLeaves: true,
-    leafLife: 9, leafSize: 1, leafColor: '#5FA32E', leafMax: 200, leafRate: 1,
+    leafLife: 9, leafSize: 1, leafColor: '#5FA32E', leafMax: 200, leafRate: 1, swell: 'kick',
     bloomChance: 0.3, bloomColor: '#E8557F',
     flowers: true, flowerLife: 13, flowerMax: 22,
     bg1: '#E7F0F7', bg2: '#F9F0E1'
@@ -509,6 +510,7 @@
     ['leafRate', 'Leaf growth rate', 'range', 0.2, 3, 0.05],
     ['leafMax', 'Max leaves', 'range', 20, 400, 10],
     ['leafSize', 'Leaf size', 'range', 0.3, 2.5, 0.05],
+    ['swell', 'Leaves swell with', 'source'],
     ['bloomChance', 'Blossom chance', 'range', 0, 1, 0.02],
     ['flowers', 'Ground flowers', 'bool'],
     ['flowerMax', 'Flower count', 'range', 0, 60, 1],

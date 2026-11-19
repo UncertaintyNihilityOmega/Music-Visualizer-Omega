@@ -305,6 +305,27 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (late.join() !== 'js/modes/mode-piano.js') err('only Piano may ask for late sound (Aud.askLate); found in: ' + late.join(', '));
 }
 
+/* 8d. "X follows: [a sound]" (item 7): a setting of type 'source' lists every sound the engine reads; each one's
+       default is one of them; no mode keeps a hand-made list of sounds */
+{
+  const srcs = (/Aud\.SOURCES = \[([^\]]+)\]/.exec(read('js/core/audio-engine.js')) || [, ''])[1].split(',').map(s => s.trim().replace(/'/g, ''));
+  const names = read('js/core/audio-engine.js');
+  for (const s of srcs) if (!new RegExp('\\b' + s + ": '").test(names)) err(`audio-engine.js: Aud.SOURCE_NAMES has no plain name for "${s}"`);
+  const users = [];
+  for (const f of walk('js/modes', '.js')){
+    const t = read(f);
+    if (/'select', Aud\.SOURCES/.test(t)) err(`${f}: use the 'source' setting type, not a select of Aud.SOURCES`);
+    const re = /\['(\w+)', '[^']*', 'source'\]/g; let m, used = false;
+    while ((m = re.exec(t))){
+      used = true;
+      const d = new RegExp('\\b' + m[1] + ":\\s*'(\\w+)'").exec(t);
+      if (!d || !srcs.includes(d[1])) err(`${f}: the "${m[1]}" follows-setting needs a default that is one of Aud.SOURCES`);
+    }
+    if (used) users.push(f);
+  }
+  if (users.length < 3) err('at least three modes should use a "follows" setting (type \'source\'); found ' + users.length);
+}
+
 /* 8c. piano sound (item 26): the song is kept off the speakers only while Piano asks for it, comes back when the
        page is hidden (no frames are drawn then, so nothing would play), and the piano never reaches the analysis */
 {
