@@ -239,45 +239,182 @@ Judged fine on these numbers (calm against lively only; looks not checked): **Fi
 Omega, and Fire and Rain under Love. Their quiet passage changes 0.07 to 0.71 a frame and the loud one 3 to 12
 times more.
 
+### Review, second half (2026-11-19)
+Same song, windows and method as above (preview at 1280 px, picture 1200 x 320, "Want Some Fun", quiet 8 to 11 s,
+loud 58 to 61 s, 4 s of settling before each), now for every code. Codes were switched with
+`App.theme.apply(id, false)` (nothing saved). Cells read quiet / loud (ratio). Run to run the quiet numbers move
+by about 1 (Omega Basic read 3.51 / 9.64 on a repeat, Liquid 1.75 / 2.05), so only differences bigger than that
+count. A bigger loud number under one code than another partly means the form covers more of the picture, so
+compare ratios, not loud numbers, across codes. No console errors in any run. Clock: left to items 24 and 25.
+
+| Mode | Omega | Love | Tessa | New Year | Halloween |
+| --- | --- | --- | --- | --- | --- |
+| Basic | 4.67 / 10.64 (2.3) | 0.76 / 1.66 (2.2) | 0.62 / 1.26 (2.0) | 0.92 / 1.87 (2.0) | 1.10 / 5.04 (4.6) |
+| String | 6.69 / 10.17 (1.5) | 3.78 / 5.85 (1.5) | 2.41 / 2.04 (0.8) | 6.22 / 10.09 (1.6) | 4.91 / 8.32 (1.7) |
+| Emoji | 12.42 / 18.05 (1.5) | 23.06 / 26.99 (1.2) | 14.56 / 18.17 (1.2) | 14.84 / 22.52 (1.5) | 18.39 / 26.30 (1.4) |
+| Fire | 0.71 / 2.23 (3.1) | 0.11 / 1.27 (11.5) | 1.17 / 1.69 (1.4) | 0.21 / 3.32 (15.8) | 0.38 / 1.87 (4.9) |
+| Rain | 0.30 / 2.07 (6.9) | 0.26 / 0.80 (3.1) | 0.59 / 5.39 (9.1) | 0.76 / 3.61 (4.8) | 1.06 / 5.31 (5.0) |
+| Nature | 0.17 / 0.63 (3.7) | 0.30 / 0.40 (1.3) | 0.87 / 2.15 (2.5) | 0.68 / 1.16 (1.7) | 0.45 / 1.37 (3.0) |
+| Liquid | 1.75 / 1.76 (1.0) | 0.46 / 0.53 (1.2) | 2.16 / 3.46 (1.6) | 1.66 / 1.58 (1.0) | 1.45 / 1.31 (0.9) |
+
+| Mode | Solarpunk | Cyberpunk | Decensus Ad Nihilum | Ascensus Ad Incertum |
+| --- | --- | --- | --- | --- |
+| Basic | 1.01 / 1.87 (1.9) | 1.26 / 1.89 (1.5) | 0.93 / 1.43 (1.5) | 2.38 / 2.82 (1.2) |
+| String | 4.85 / 7.95 (1.6) | 5.35 / 9.32 (1.7) | 2.99 / 5.68 (1.9) | 4.64 / 7.52 (1.6) |
+| Emoji | 19.34 / 26.71 (1.4) | 13.67 / 19.76 (1.4) | 11.12 / 15.39 (1.4) | 19.14 / 24.65 (1.3) |
+| Fire | 0.91 / 1.57 (1.7) | 1.06 / 2.78 (2.6) | 1.21 / 1.83 (1.5) | 0.42 / 2.01 (4.8) |
+| Rain | 0.41 / 1.57 (3.8) | 0.70 / 3.48 (5.0) | 0.49 / 3.06 (6.2) | 0.32 / 1.83 (5.7) |
+| Nature | 0.28 / 0.36 (1.3) | 0.41 / 0.67 (1.6) | 0.52 / 0.78 (1.5) | 0.26 / 0.32 (1.2) |
+| Liquid | 0.71 / 0.82 (1.2) | 1.51 / 1.86 (1.2) | 1.51 / 1.71 (1.1) | 0.85 / 0.77 (0.9) |
+
+Speed, ms a frame, the higher of the two windows (limit 6 ms). At 1280 px, every code, in the order of the two
+tables above:
+
+| Mode | Omega | Love | Tessa | New Year | Halloween | Solarpunk | Cyberpunk | Nihilum | Incertum |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Basic | 1.35 | 2.13 | 1.46 | 3.71 | 4.67 | 4.50 | 1.29 | 0.35 | 0.41 |
+| String | 0.95 | 0.72 | 0.82 | 1.77 | 2.39 | 1.27 | 0.83 | 0.92 | 0.62 |
+| Emoji | 1.47 | 0.59 | 1.31 | 0.96 | 1.20 | 0.94 | 0.43 | 0.58 | 0.93 |
+| Fire | 1.29 | 0.65 | 0.85 | 2.49 | 1.96 | 1.70 | 0.69 | 2.50 | 0.79 |
+| Rain | 1.01 | 0.62 | 0.68 | 1.64 | 1.21 | 1.25 | 0.49 | 0.95 | 0.57 |
+| Nature | 1.44 | 1.84 | 1.44 | 4.67 | 2.77 | 2.15 | 2.94 | 2.70 | 1.07 |
+| Liquid | 0.60 | 0.64 | 1.49 | 1.05 | 1.58 | 0.59 | 0.63 | 0.92 | 0.71 |
+
+At 375 px (viewport 375 x 812, picture 515 x 300 at 2 device pixels), Omega and the two costliest codes at 1280 px
+(New Year, Halloween): Basic 0.56 / 1.51 / 0.79, String 0.76 / 1.03 / 0.76, Emoji 0.47 / 0.59 / 0.47, Fire 2.25 /
+1.96 / 0.82, Rain 0.58 / 0.37 / 0.38, Nature 1.61 / 1.79 / 1.79, Liquid 0.75 / 1.12 / 0.68. Worst case 2.25 ms
+(Fire, Omega). Phone speed is no problem. At 1280 px the worst are 4.67 ms (Basic under Halloween, Nature under
+New Year), 78 % of the limit; the three Basic codes with three glyphs (New Year, Halloween, Solarpunk) cost 3.7 to
+4.7 ms against 0.35 to 1.5 for the others.
+
+Song 2, "Decensus Ad Nihilum", Omega (quiet 8 to 11 s, `drive` 0.00; loud 70 to 73 s, `drive` 1.00; this song sits
+at `drive` 1.00 from 54 s to 200 s apart from a dip near 100 s, so the loud window is the song's usual state):
+
+| Mode | Quiet | Loud | Ratio | ms |
+| --- | --- | --- | --- | --- |
+| Basic | 1.11 | 10.30 | 9.3 | 0.45 |
+| String | 4.34 | 12.18 | 2.8 | 0.80 |
+| Emoji | 3.08 | 21.86 | 7.1 | 0.84 |
+| Fire | 0.06 | 3.05 | 50.8 | 3.42 |
+| Rain | 0.44 | 5.08 | 11.5 | 1.24 |
+| Nature | 0.67 | 1.15 | 1.7 | 2.58 |
+| Liquid | 1.06 | 2.57 | 2.4 | 1.08 |
+
+What this shows: on this song Basic is fine (1.11 against 10.30; the old note, 5.13 against 8.95, used other
+windows), and Emoji is 3.08 quiet against 12.42 on song 1. The two quiet windows differ in what the music does:
+song 1's quiet seconds still carry a soft tune (`drive` 0.00 to 0.01, spectrum alive), song 2's are nearly
+silent. So Emoji follows the shape of the spectrum, not how loud it is. That is the Emoji fault below.
+
+Burnt-out white (`Probe.white`, loud, worst frame of 3 s, share of the picture): Fire 0 to 4.8 % under every code
+(Omega 4.8, Nihilum 3.6, Tessa 3.1, Solarpunk 1.9, Halloween 1.0), under the 10 % limit. Liquid, Basic, Rain, Nature
+and String are 0 under every dark code. Emoji is 12.1 (Tessa), 15.7 (Halloween), 1.4 (New Year, Cyberpunk): these
+are white skulls and ghosts, not glow. The probe cannot judge Love (up to 27.5 %) and Incertum (up to 84.1 %):
+their background is nearly white, so it counts the background. Nothing burnt out was seen by eye.
+
+Looks: 7 screenshots (5 sheets, each putting 3 to 6 canvas copies side by side): Love Emoji, Tessa String and
+Omega Liquid, quiet and loud; Solarpunk Basic, Solarpunk Nature, Love Rain; Love, Tessa and Cyberpunk Liquid;
+Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (loud unless stated).
+- Does the code change more than the colours? Basic yes (four layouts: mirror, edges, rise, ring; glyph bars),
+  String yes (Jacob's ladder under Tessa, square steps under Cyberpunk, glyph beads), Fire yes (nine forms), Rain
+  yes (snow, glyphs, streaks; Tessa adds forked bolts), Nature yes (the Tessa tree is a lightning tree with
+  sparks, plainly not the Omega tree). **Emoji: only the five emoji change**; the shape, the motion and the busyness
+  are the same under every code. **Liquid: mostly colours**; see its note.
+- Readability on the pale codes: Love Liquid, Love Rain, Solarpunk Nature and String read well. Solarpunk Basic
+  does not (see Basic). No text over text was seen in these pictures.
+
 ### Liquid
-- [ ] Quiet and loud move the same: 1.75 against 1.76 under Omega (ratio 1.0), the only mode with no difference
-  at all. Likely causes, read from the code and not confirmed by eye: the whirlpool turns at 0.12 rad/s even at
-  `drive` 0 (`spin` in `mode-liquid.js`), and the edge keeps a quarter of its swing at `drive` 0 (`big = 0.25 +
-  0.75 * drive`). Fixed when the quiet window changes a third or less of the loud one (ratio 3 or more), with
-  the loud number not lower than now.
+- [ ] Quiet and loud move the same under every code: 1.75 / 1.76 (ratio 1.0) under Omega (1.75 / 2.05 on a
+  repeat), 1.66 / 1.58 under New Year, 1.45 / 1.31 under Halloween, 0.85 / 0.77 under Incertum (loud lower than
+  quiet), 1.2 to 1.6 under the rest; it is the only mode with no difference at all. On song 2 the ratio is 2.4
+  (1.06 / 2.57), so it follows the music a little when the quiet is real silence. Likely causes, read from the
+  code and not confirmed by eye: the whirlpool turns at 0.12 rad/s even at `drive` 0 (`spin` in `mode-liquid.js`);
+  the edge keeps a quarter of its swing at `drive` 0 (`big = 0.25 + 0.75 * drive`); the edge bars come from the
+  spectrum's shape (`Aud.bars`), which stays tall in a soft passage. Fixed when the quiet window changes a third or
+  less of the loud one (ratio 3 or more) under Omega, Tessa and Cyberpunk, with the loud number not lower than
+  now (1.76, 3.46, 1.86).
+- [ ] Codes change mostly the colours. Five of nine codes use kind `ink` (Omega, New Year, Love, Solarpunk,
+  Incertum). In the pictures of Love, Tessa and Cyberpunk the drop has the same outline with the same two horns,
+  the same rings and whirlpool; only the colours and the centre mark differ (plasma adds jitter, mercury adds
+  steps, slime adds drips, all small). Fixed when each of the nine codes has one thing in its picture that a
+  grey-scale copy would still show (an outline, a second drop, a different whirlpool or a different kind of
+  droplet), not only a colour or the centre mark.
 
 ### Emoji
-- [ ] The old note still holds and is worse under Love: quiet 12.42 (Omega) and 23.06 (Love), against loud 18.05
-  and 26.99 (ratio 1.5 and 1.2). Love's quiet passage changes more than any other mode's loud one. In the "line"
-  layout, scale the column wobble and the size swing by `drive` so a calm passage holds nearly still. Fixed when
-  quiet is under 4 under every code and the ratio is 3 or more.
+- [ ] Quiet is busier than any other mode's loud, under every code: quiet / loud 11.12 / 15.39 (Nihilum) up to
+  23.06 / 26.99 (Love); Omega 12.42 / 18.05; ratio 1.2 to 1.5 everywhere. On song 2 (nearly silent start) the
+  same mode reads 3.08 / 21.86 (7.1), so it follows the spectrum's shape, not the loudness. In the "line" layout
+  (`mode-emoji.js`, the `cfg.shape === 'line'` branch) the column height `v * maxHeight`, the size `12 + v * 46`
+  and the choice of glyph `set[floor(v * set.length)]` all come from the spectrum `v` alone: scale `v` by
+  `0.15 + 0.85 * drive`, and keep each column's glyph fixed (or change it only with hysteresis), since a glyph
+  that changes by threshold swaps a whole emoji between two frames (not confirmed by eye). The "circle" and
+  "heart" layouts use the same `v2`: do the same. Fixed when quiet is under 4 under every one of the nine codes
+  and the ratio is 3 or more on "Want Some Fun" in the "line" layout.
+- [ ] The codes change only the five emoji. Fixed when at least Tessa, Halloween, Cyberpunk and Nihilum also change
+  a form or a motion (for instance Tessa's emoji crackle in steps, Cyberpunk's fall in a grid, Halloween's float up
+  like bats, Nihilum's drift inward), as String does.
+- [ ] Under Halloween, loud, the big skulls and pumpkins in the top and bottom rows are cut by the picture's edge
+  (seen in the picture),. Fixed when the glyph's centre stays at least half its size
+  from the edge.
 
 ### String
-- [ ] Moves a lot when quiet: 6.69 under Omega (the second-highest quiet number), ratio 1.5; 3.78 against 5.85
-  under Love. The doc says calm music gives nearly straight strings; the numbers say the picture still changes
-  a lot. Check by eye what moves at `drive` 0 (glow, beads, the reflection) and tie it to `drive`. Fixed when
-  the ratio is 3 or more under Omega and Love.
+- [ ] Moves a lot when quiet, under every code: quiet / loud 6.69 / 10.17 (Omega), 6.22 / 10.09 (New Year), 5.35 /
+  9.32 (Cyberpunk), 4.91 / 8.32, 4.85 / 7.95, 4.64 / 7.52, 3.78 / 5.85 (Love), 2.99 / 5.68 (Nihilum); the ratio is
+  1.5 to 1.9 for all of them, 2.8 on song 2. The doc says calm music gives nearly straight strings; the numbers
+  say the picture still changes a lot. Read from `mode-strings.js`, not seen by eye: each string's wave is divided
+  by its own recent peak (`norm = 1 / peaks[li]`), so a soft passage is drawn at full shape, and the strings
+  never drop below `big = 0.35` of their swing. Tie the wave to `drive`, not only to the peak. Fixed when the
+  ratio is 3 or more under Omega, Love, New Year, Cyberpunk and Nihilum.
+- [ ] Under Tessa (the Jacob's ladder) the quiet window is the livelier one: 2.41 quiet against 2.04 loud (ratio
+  0.8). Fixed when the ladder's arcs (`drawLadder`) come more often and climb faster with `drive`: ratio 3 or
+  more with the loud number at least 2.04.
 
 ### Basic
-- [ ] Quiet 4.67 against loud 10.64 under Omega (ratio 2.3); 0.76 against 1.66 under Love (ratio 2.2). The bars
-  follow the spectrum, so some motion in a quiet verse is right, but a ratio of 3 would match Fire and Rain.
-  Low priority.
-- [ ] Old note, song 2 ("Decensus Ad Nihilum", quiet 5.13 against loud 8.95 in the 2026-11-16 table): **not
-  re-checked** in this review. Still open.
-- [ ] Under Love Basic costs 2.0 to 2.1 ms a frame against 0.8 to 1.4 ms under Omega (the heart glyphs). Under the
-  limit; only a note.
+- [ ] Ratio under the quiet codes: Incertum 2.38 / 2.82 (1.2), Nihilum 0.93 / 1.43 (1.5), Cyberpunk 1.26 / 1.89
+  (1.5), Solarpunk 1.9, Tessa and New Year 2.0, Omega 2.3 (1.1 against 10.3 on song 2, ratio 9.3), Love 2.2.
+  Some motion in a quiet verse is right, since bars follow the spectrum, but the rainbow code is nearly as busy
+  quiet as loud (the hue probably keeps cycling). Fixed when Incertum's ratio is 2 or more. Low priority.
+- [ ] Solarpunk Basic is hard to read (picture): the flower glyph stems are thin, small and pale green on cream,
+  and a faint grey wavy line crosses the top of the picture over the tallest bars (also seen under Incertum). If the
+  line is meant (a waveform or peak line), keep it; otherwise remove it. Fixed when the glyph colour has a contrast of
+  at least 3 to 1 against the cream background and the line is either gone or named in the mode's doc.
+- [ ] In both Basic pictures with "Want Some Fun" the left 27 % of the width stays flat at the floor (seen under
+  Solarpunk and Incertum). It may be the song (little low sound), not a fault. Check the left edge on song 2 under Omega and on one more
+  song: fixed when the bars at the left carry sound, or the lowest band starts where the sound does.
+- [ ] Cost: three-glyph codes (New Year 3.71, Halloween 4.67, Solarpunk 4.50 ms at 1280 px) against 0.35 to 1.5 for
+  the solid codes; 78 % of the 6 ms limit. At 375 px it is 0.79 to 1.51. Fixed when none is above 3 ms at 1280 px
+  on a measurement with nothing else running (one sample each so far; other agents were running).
+- [ ] Old note, song 2: now measured, 1.11 / 10.30 under Omega (ratio 9.3); closed.
+
+### Fire
+- [ ] Quiet is not quiet under Tessa (plasma globe) 1.17 / 1.69 (ratio 1.4), Nihilum (vortex) 1.21 / 1.83 (1.5)
+  and Solarpunk (sun) 0.91 / 1.57 (1.7), against 0.06 / 3.05 on song 2 under Omega and 0.11 / 1.27 under Love.
+  Their quiet floor is about 1, ten times Love's. Likely a form that turns or pulses at a fixed speed. Fixed when
+  the ratio is 3 or more under all nine codes (Cyberpunk, now 2.6, included).
+
+### Rain
+- Fine under every code: quiet 0.26 to 1.06, ratio 3.1 to 9.1 (Love is the lowest at 3.1, 0.80 loud), no burnt-out
+  white. Note only: under Love, a thin tan bolt line is drawn over the hearts in the picture. Check that a bolt in a
+  heart rain is meant.
 
 ### Nature
-- [ ] Under Love: quiet 0.30 against loud 0.40 (ratio 1.3); under Omega 0.17 against 0.63 (ratio 3.7). A 3 s
-  window is short for Nature, which needs about 10 s to grow or die back, so this needs a longer measurement
-  (10 s windows) before it counts as a fault. The petals shed by the cherry tree may keep the quiet picture busy.
+- [ ] Loud is nearly as still as quiet under the pale codes: Solarpunk 0.28 / 0.36 (ratio 1.3) and Incertum 0.26 /
+  0.32 (1.2), Love 0.30 / 0.40 (1.3); Cyberpunk 0.41 / 0.67, Nihilum 0.52 / 0.78. Under Tessa it is 0.87 / 2.15
+  (2.5), clearly more than Omega's 0.17 / 0.63 (3.7), because the sparks fly. At 375 px under Omega the quiet
+  window was the busier one (1.71 / 0.99). The old note stands: a 3 s window is short for Nature (about 10 s to
+  grow or die back), so first measure with 10 s windows. Fixed when, in 10 s windows, loud changes at least 3 times
+  what quiet does under Solarpunk and Incertum, and the loud number is not below 0.6.
+- [ ] Nature costs 4.67 ms under New Year and 2.7 to 2.9 under Halloween, Cyberpunk and Nihilum, against 1.0 to 1.8
+  under the rest (375 px: 1.6 to 1.8). Fixed when none is above 3 ms at 1280 px on a quiet machine.
+
+### Clock
+Clock: left to items 24 and 25.
 
 ### Not done in this review (still to do)
-- Codes not measured: Tessa, New Year, Halloween, Solarpunk, Cyberpunk, Decensus Ad Nihilum, and the rainbow
-  code (`incertum`). Clock and Liquid were not measured under Love.
-- Song 2 ("Decensus Ad Nihilum") not measured.
-- Point 2 (does each code change more than the colours), point 3 (looks: leftovers, clutter, edges, text over
-  text, burnt-out white, readability on the light codes) and the comparison with Nature under Tessa: not done,
-  no pictures were looked at.
-- Point 4 (phone): nothing at 375 px or in phone fullscreen held sideways (812 x 375).
-- Speed at 375 px.
+- The Clock (items 24 and 25).
+- Nature with 10 s windows (see Nature).
+- Quiet pictures were looked at only for Love Emoji, Tessa String and Omega Liquid; most of the looks were taken
+  loud. Fire, Rain and Nature under most codes, and every code under Emoji and String, were judged on numbers.
+- Phone fullscreen held sideways (812 x 375): not done. Speed was measured at 375 px upright only.
+- Songs: only songs 1 and 2, and song 2 only under Omega. The other three songs were not used.
+- The white probe cannot tell a pale background from burn-out under Love and Incertum; a probe that ignores the
+  background colour is still to be made.
