@@ -513,6 +513,91 @@
     var handH = Math.max(h * 0.24, 90 * k);
     return { arenaH: h - handH, handY: h - handH, handH: handH };
   }
+  /* ---------- the chamber (ROADMAP item 16, the design pass) ----------
+     A stone-brick wall and a flagstone floor, drawn once per size and
+     copied; two wall torches whose flames grow with the music (small in a
+     quiet passage, tall in a big one); in a fight, a warm ring of sound
+     bars round the enemy. Before it: the shared plain game backdrop. */
+  var roomCv = null, roomKey = '';
+  function roomImage(w, h, floorY, k){
+    var key = w + 'x' + h + '|' + Math.round(floorY);
+    if (roomCv && roomKey === key) return roomCv;
+    roomCv = roomCv || document.createElement('canvas');
+    roomCv.width = w; roomCv.height = h; roomKey = key;
+    var c = roomCv.getContext('2d');
+    var g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#1B1526'); g.addColorStop(1, '#0D0A13');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    // bricks: rows offset by half a brick, each a little lighter or darker (the same every time)
+    var bh = 15 * k, bw = 38 * k, seed = 7;
+    function rnd(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var row = 0, y = 0; y < floorY; row++, y += bh){
+      for (var x = (row % 2) ? -bw / 2 : 0; x < w; x += bw){
+        var l = 12 + rnd() * 7;
+        c.fillStyle = 'hsl(258,14%,' + l.toFixed(1) + '%)';
+        U.roundRect(c, x + k, y + k, bw - 2 * k, bh - 2 * k, 2.5 * k); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.045)';
+        c.fillRect(x + 2 * k, y + k, bw - 4 * k, Math.max(1, k));
+      }
+    }
+    // the floor: flagstones running toward the back wall
+    if (floorY < h){
+      var fg = c.createLinearGradient(0, floorY, 0, h);
+      fg.addColorStop(0, '#2B2233'); fg.addColorStop(1, '#130F1A');
+      c.fillStyle = fg; c.fillRect(0, floorY, w, h - floorY);
+      c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = Math.max(1, k);
+      c.beginPath();
+      for (var i = -6; i <= 6; i++){ c.moveTo(w / 2 + i * w * 0.05, floorY); c.lineTo(w / 2 + i * w * 0.2, h); }
+      for (var j = 1; j < 4; j++){ var fy = floorY + (h - floorY) * (j * j) / 16; c.moveTo(0, fy); c.lineTo(w, fy); }
+      c.stroke();
+      c.fillStyle = 'rgba(0,0,0,0.4)'; c.fillRect(0, floorY - 2 * k, w, 3 * k);
+    }
+    var v = c.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.2, w / 2, h * 0.45, Math.max(w, h) * 0.75);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.6)');
+    c.fillStyle = v; c.fillRect(0, 0, w, h);
+    return roomCv;
+  }
+  function drawTorch(x, y, k){
+    var mo = Cfg.CFG.look.motion, life = 0.35 + 0.65 * Math.max(A.drive, A.level * 0.8);
+    var glow = ctx.createRadialGradient(x, y - 6 * k, 2 * k, x, y - 6 * k, 70 * k);
+    glow.addColorStop(0, 'rgba(255,170,90,' + (0.16 + 0.16 * life).toFixed(3) + ')');
+    glow.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = glow; ctx.fillRect(x - 70 * k, y - 76 * k, 140 * k, 140 * k);
+    ctx.fillStyle = '#3A2C22'; ctx.fillRect(x - 3 * k, y, 6 * k, 14 * k);
+    ctx.fillStyle = '#58412F'; ctx.fillRect(x - 6 * k, y - 2 * k, 12 * k, 4 * k);
+    var fl = (7 + 13 * life + A.punch * 5) * k * (1 + 0.12 * Math.sin(A.t * 11 * mo + x));
+    var layers = [['#C2401F', 1, 1], ['#F28A2E', 0.72, 0.8], ['#FFE08A', 0.42, 0.55]];
+    for (var i = 0; i < layers.length; i++){
+      var L = layers[i], fh = fl * L[1], fw = 5.5 * k * L[2];
+      ctx.fillStyle = L[0];
+      ctx.beginPath();
+      ctx.moveTo(x - fw, y - 2 * k);
+      ctx.quadraticCurveTo(x - fw * 1.1, y - fh * 0.55, x + Math.sin(A.t * 7 * mo + i) * 1.5 * k, y - 2 * k - fh);
+      ctx.quadraticCurveTo(x + fw * 1.1, y - fh * 0.55, x + fw, y - 2 * k);
+      ctx.fill();
+    }
+  }
+  function drawRoom(w, h, floorY, k){
+    ctx.drawImage(roomImage(w, h, floorY, k), 0, 0);
+    var ty = Math.min(floorY * 0.42, 70 * k);
+    drawTorch(w * 0.14, ty, k);
+    drawTorch(w * 0.86, ty, k);
+  }
+  // the sound round the enemy: warm bars, short and dim in a quiet passage
+  function drawSoundRing(cx, cy, base, k){
+    var bars = 56, m = Math.min(base * 0.9, 60 * k);
+    ctx.lineWidth = Math.max(1.5, (6.283 * base / bars) * 0.5);
+    ctx.lineCap = 'round';
+    for (var i = 0; i < bars; i++){
+      var f = i / bars, v = Aud.specAt(f < 0.5 ? f * 2 : (1 - f) * 2), a = f * 6.283 - Math.PI / 2;
+      ctx.strokeStyle = 'rgba(255,190,120,' + (0.06 + v * 0.38).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * base, cy + Math.sin(a) * base);
+      ctx.lineTo(cx + Math.cos(a) * (base + v * m), cy + Math.sin(a) * (base + v * m));
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  }
   function drawHPBar(x, y, w, h, frac, k){
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     U.roundRect(ctx, x, y, w, h, h / 2); ctx.fill();
@@ -552,7 +637,9 @@
 
   function drawMap(w, h, k){
     Can.backdrop(1);
-    G.gameBackdrop(false);
+    drawRoom(w, h, h, k);
+    ctx.fillStyle = 'rgba(8,6,14,0.35)';          // a little darker, so the paths read
+    ctx.fillRect(0, 0, w, h);
     var f = CARDS.frontier;
     if (!f) return;
     var tier1 = f.children;
@@ -566,8 +653,9 @@
       var n = tiers[t].length;
       for (var i = 0; i < n; i++) positions[t].push({ x: w * (i + 1) / (n + 1), y: rowY[t] });
     }
-    ctx.strokeStyle = 'rgba(150,190,255,0.3)';
-    ctx.lineWidth = 1.4 * k;
+    ctx.strokeStyle = 'rgba(255,200,140,0.35)';     // torch-lit trails between the rooms
+    ctx.lineWidth = 1.8 * k;
+    ctx.setLineDash([4 * k, 5 * k]);
     for (t = 1; t < 4; t++){
       for (i = 0; i < tiers[t].length; i++){
         var pp = positions[t - 1][Math.floor(i / 2)], cp = positions[t][i];
@@ -577,6 +665,7 @@
         ctx.stroke();
       }
     }
+    ctx.setLineDash([]);
     CARDS.nodeRects = [];
     for (t = 0; t < 4; t++){
       for (i = 0; i < tiers[t].length; i++){
@@ -617,7 +706,6 @@
   function drawBattle(w, h, k){
     var lay = layout(w, h, k);
     Can.backdrop(1);
-    G.gameBackdrop(true);
     var e = CARDS.enemy;
     var sx = (Math.random() - 0.5) * CARDS.shake * 8 * k, sy = (Math.random() - 0.5) * CARDS.shake * 8 * k;
     ctx.save();
@@ -627,6 +715,19 @@
     var minCy = rad + 36 * k, maxCy = Math.max(minCy, lay.arenaH - rad - 26 * k);
     var cy = Math.max(minCy, Math.min(maxCy, lay.arenaH * 0.52));
     e.x = cx; e.y = cy;
+    ctx.restore();
+    drawRoom(w, h, Math.min(lay.arenaH, cy + rad * 0.95), k);
+    drawSoundRing(cx, cy, rad * 1.45, k);
+    ctx.save();
+    ctx.translate(sx, sy);
+    // its shadow on the floor, and a golden ring under a boss
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + rad * 0.95, rad * 0.95, rad * 0.22, 0, 0, 6.283); ctx.fill();
+    if (e.boss){
+      ctx.strokeStyle = 'rgba(255,214,102,' + (0.45 + A.punch * 0.4).toFixed(3) + ')';
+      ctx.lineWidth = 2 * k;
+      ctx.beginPath(); ctx.ellipse(cx, cy + rad * 0.95, rad * 1.1, rad * 0.28, 0, 0, 6.283); ctx.stroke();
+    }
     var glow = ctx.createRadialGradient(cx, cy, rad * 0.1, cx, cy, rad * 1.9);
     glow.addColorStop(0, U.rgba(U.hexRGB(e.def.color), 0.35));
     glow.addColorStop(1, 'rgba(0,0,0,0)');
@@ -659,17 +760,25 @@
     }
     ctx.restore();
 
-    drawHPBar(16 * k, lay.arenaH - 20 * k, w * 0.4, 11 * k, CARDS.hp / CARDS.maxHp, k);
+    // your bar stops short of the "incoming" line under the enemy (on a phone they ran into each other)
+    var barW = Math.max(60 * k, Math.min(w * 0.4, cx - 16 * k - 62 * k));
+    drawHPBar(16 * k, lay.arenaH - 20 * k, barW, 11 * k, CARDS.hp / CARDS.maxHp, k);
     ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
     ctx.font = (10.5 * k) + 'px Karla, sans-serif';
     ctx.fillStyle = '#EAF2FF';
     ctx.fillText('You: ' + Math.round(CARDS.hp) + '/' + Math.round(CARDS.maxHp) + (CARDS.shield > 0 ? '  🛡' + Math.round(CARDS.shield) : ''), 16 * k, lay.arenaH - 24 * k);
 
     if (CARDS.logT > 0){
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       ctx.font = 'bold ' + (12 * k) + 'px Karla, sans-serif';
       ctx.fillStyle = 'rgba(255,230,180,' + Math.min(1, CARDS.logT) + ')';
-      ctx.fillText(CARDS.log, w / 2, 8 * k);
+      // at the top, unless the enemy's name is up there (a short picture, as on a phone): then at the left
+      if (cy - rad - 26 * k - 14 * k > 8 * k + 14 * k){
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(CARDS.log, w / 2, 8 * k);
+      } else {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(CARDS.log, 16 * k, cy - 14 * k, Math.max(40 * k, cx - rad - 30 * k));
+      }
     }
     drawHand(w, lay, k);
   }
@@ -685,8 +794,12 @@
 
   function drawHand(w, lay, k){
     var hand = handCards();
-    ctx.fillStyle = 'rgba(6,10,20,0.55)';
+    var tray = ctx.createLinearGradient(0, lay.handY, 0, lay.handY + lay.handH);
+    tray.addColorStop(0, 'rgba(30,22,40,0.94)'); tray.addColorStop(1, 'rgba(12,9,18,0.97)');
+    ctx.fillStyle = tray;
     ctx.fillRect(0, lay.handY, w, lay.handH);
+    ctx.fillStyle = 'rgba(255,200,140,0.18)';
+    ctx.fillRect(0, lay.handY, w, Math.max(1, k));
     var interactive = CARDS.turn === 'player';
     var n = hand.length;
     var cols = Math.min(n, 5) || 1;
@@ -703,19 +816,35 @@
       CARDS.handRects.push({ x: x, y: y, w: cw, h: ch, card: card });
       ctx.save();
       ctx.globalAlpha = interactive ? 1 : 0.55;
-      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      // the card: its colour washing down from the top, a brighter frame (gold once evolved)
+      var rgb = U.hexRGB(card.color), cg = ctx.createLinearGradient(0, y, 0, y + ch);
+      cg.addColorStop(0, U.rgba(rgb, '0.42')); cg.addColorStop(0.55, 'rgba(26,20,36,0.96)'); cg.addColorStop(1, 'rgba(14,10,20,0.98)');
+      ctx.fillStyle = cg;
       U.roundRect(ctx, x, y, cw, ch, 8 * k); ctx.fill();
-      ctx.strokeStyle = card.color;
-      ctx.lineWidth = 1.6 * k;
+      ctx.strokeStyle = ev ? '#FFD666' : U.rgba(rgb, '0.95');
+      ctx.lineWidth = (ev ? 2 : 1.6) * k;
       U.roundRect(ctx, x, y, cw, ch, 8 * k); ctx.stroke();
-      Can.stampEmoji(Can.getEmojiSprite(card.emoji), x + cw / 2, y + ch * 0.32, 0, 15 * k, 1);
+      // the emoji in a round window
+      var ex = x + cw / 2, ey = y + ch * 0.34, er = Math.min(ch * 0.24, cw * 0.22);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath(); ctx.arc(ex, ey, er, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = U.rgba(rgb, '0.6'); ctx.lineWidth = Math.max(1, k);
+      ctx.beginPath(); ctx.arc(ex, ey, er, 0, 6.283); ctx.stroke();
+      Can.stampEmoji(Can.getEmojiSprite(card.emoji), ex, ey, 0, er * 1.15, 1);
+      // its key number in a small badge
+      var br = 6.5 * k;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath(); ctx.arc(x + br + 3 * k, y + br + 3 * k, br, 0, 6.283); ctx.fill();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold ' + (8 * k) + 'px Karla, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(String(i + 1), x + br + 3 * k, y + br + 3 * k + 0.5 * k);
       ctx.font = 'bold ' + (8.6 * k) + 'px Karla, sans-serif';
-      ctx.fillStyle = '#EAF2FF';
-      ctx.fillText((i + 1) + ' ' + (ev ? ev.name : card.name), x + cw / 2, y + ch * 0.68, cw * 0.9);
-      ctx.font = (8 * k) + 'px Karla, sans-serif';
-      ctx.fillStyle = 'rgba(234,242,255,0.7)';
-      ctx.fillText('Lv ' + lv, x + cw / 2, y + ch * 0.85);
+      ctx.fillStyle = '#F4EEFF';
+      ctx.fillText((ev ? '✦ ' : '') + (ev ? ev.name : card.name), x + cw / 2, y + ch * 0.7, cw * 0.92);
+      ctx.font = (7.6 * k) + 'px Karla, sans-serif';
+      ctx.fillStyle = 'rgba(244,238,255,0.65)';
+      ctx.fillText('Lv ' + lv, x + cw / 2, y + ch * 0.87);
       ctx.restore();
     }
     if (!n){
