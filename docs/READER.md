@@ -30,6 +30,9 @@ None found.
 - **Piano mode and sound.** The Guide says Piano plays piano notes instead of the song. On the phone the song
   kept playing (audio was not muted), so it is unclear which one to expect. The Guide is the only place this is
   explained, and a new user will not have read it.
+  *Organizer, 2026-11-19:* the Reader's tab was a background tab (the page was hidden), and a hidden page gets
+  the song back on purpose: no frames are drawn then, so no piano notes could sound. Not a fault; the point that
+  only the Guide explains it stands (a short note on the picture when Piano first starts would help).
 - **Settings names.** "Auto level matching", "Loud / quiet difference", "Contrast curve", "Rise speed",
   "Hit threshold (kick / snare / hat)", "FFT smoothing" have no help text. A beginner cannot tell what to change.
   The "Code / Type a word... / Enter" box says only "Some words change how the whole app looks", with no example.

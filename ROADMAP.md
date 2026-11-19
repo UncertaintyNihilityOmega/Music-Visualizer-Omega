@@ -1,15 +1,13 @@
 # ROADMAP: build queue and current state
 
 ## Now
-- USER: every item left waits on you (a look, a listen, a phone check or a decision); see "For the user".
+- Next: item 32 (v0.9.0), the Reader's findings at phone width; it needs nothing from you. Every other item
+  left waits on you (a look, a listen, a phone check or a decision); see "For the user".
 - v0.1.0 is tagged. No later snapshot can be tagged yet: v0.2.0 waits on items 22 and 23 (your checks).
 - Built and waiting on you: 22, 23 (v0.2.0); 24, 25 (v0.3.0); 26 piano sound, 29 fish (v0.4.0); 30 Artificium
   balance, D16 (v0.6.0); 16 mini-game looks (v0.8.0).
 - Done in the run of 2026-11-19 (afternoon): 6 song map, 7 "follows" settings, 9 mini-game audit, 20 special
-  modes, 27 piano note icons, 31 Undarum (see "Done").
-- v0.9.0 item 11 (phone pass), part done: touch targets of 40 px on touch screens, no sideways scroll, folder
-  and microphone fallbacks checked, Fire and Nature light enough on a PC. Left: a real phone (you) and the
-  Reader's findings (`docs/READER.md`, a Reader agent's pass at 375 px).
+  modes, 27 piano note icons, 31 Undarum, 11 phone pass (see "Done").
 - v1.0.0 (items 12, 18) comes after every snapshot before it is finished.
 
 ## Rules
@@ -133,18 +131,14 @@
 
 **v0.9.0: phone pass**
 
-11. **Phone pass.** Measure the two heaviest modes first (Nature with a full tree, Fire's hearth style: about
-    15 ms a frame on the desktop, see engine/README.md) and make them lighter if a phone drops frames. Every
-    page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways scroll, microphone
-    over https, folder fallback where the folder API is missing. Done when: a Reader session finds nothing
-    blocking.
-    **Part done 2026-11-19.** Fire and Nature on the PC in a loud passage: 1.65 and 1.37 ms a frame (reading a
-    pixel back every frame made Fire read 207 ms: that forces the canvas off the graphics card, so it is not a
-    real number; a phone must be measured on the phone). Touch targets: at 375 px with every Settings group
-    open, many were under 40 px; on a touch screen every control is now 40 px or more and a Settings row's
-    words work its control (`check.js` rule 8g); no page scrolls sideways. "Open a music folder" falls back
-    to the browser's folder chooser and hides where there is none; the microphone says it needs https. Left:
-    the Reader's findings (`docs/READER.md`) and a real phone.
+32. **Reader findings at phone width** (`docs/READER.md`, 2026-11-19: nothing blocking). Work through its
+    "Confusing" list: the first screen shows no way to add music (the page tabs start below it); Settings far
+    from the picture; the game controls below the board; hints written only for a keyboard (say what a tap
+    does); Undarum's upgrade cards overflow; a first-time note in Piano that it plays piano, not the song;
+    plain-word help for the Audio settings and an example code; a question before "Reset everything" and
+    Solarium's Clear; Solarium's swatches (about 21 px) and buttons (20 px) too small for a finger; a Guide
+    section on getting started. Then the "Small" list. Done when: every Confusing line is fixed or answered
+    in docs/READER.md, seen at 375 px.
 
 **v1.0.0: release**
 
@@ -158,6 +152,11 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 11 Phone pass: on a touch screen every control is 40 px or more (many were 18 to 37 px at 375 px) and a
+  Settings row's words work its control (`check.js` rule 8g); no page scrolls sideways at 375 px; the folder
+  and microphone fallbacks are in place; Fire and Nature cost 1.65 and 1.37 ms a frame on the PC. A Reader
+  agent used the app at 375 px and found nothing blocking (`docs/READER.md`; its Confusing list is item 32).
+  A check on your own phone is under "For the user" (2026-11-19).
 - 9 Mini-games played row by row (`Probe.dungeon()`, `Probe.solarium()`; saves, the pixel art in storage and
   downloads kept out of the tests): every C and B row confirmed or fixed in docs/GAME-AUDIT.md, except C7 (how
   good it looks), which is item 16. Fixed: Dungeon of Echoes' hand is 4 random cards from those owned, dealt
