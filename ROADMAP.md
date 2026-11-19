@@ -2,7 +2,8 @@
 
 ## Now
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
-- Snapshot in hand: **v0.2.0**. Item 21 done; item 22 built (waits on your phone check); next item 23.
+- Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks); every other v0.2.0 item is done, so
+  work goes on with v0.3.0 (item 17).
 - Item 17 (v0.3.0) is half done: the "## Review" section of docs/MODES.md has motion and speed numbers for Omega
   and Love and the three worst faults (Liquid moves the same quiet and loud; Emoji and String move a lot when
   quiet). Not yet looked at: the other seven codes, looks, 375 px, phone fullscreen.
@@ -40,6 +41,11 @@
     storage) and use it; where a browser still asks, explain on the Music page and point to "Keep a copy".
     Facts in FACTS.md. Done when: on Chrome on PC and Android, after one "Allow on every visit", the songs load
     on start with no question (the user checks the phone).
+    **Built 2026-11-19, waiting on the user's check.** Facts in FACTS.md "Remembering songs": Chrome's prompt
+    offers "Allow on every visit" and grants every remembered item at once; an installed app keeps the
+    permission by itself. Reconnect now asks once and only checks the rest (it asked for each one, and a second
+    ask after the tap was used up could be refused); the Music page says to choose "Allow on every visit".
+    Page loads with no console errors; the prompt itself cannot be shown in the preview pane.
 
 **v0.3.0: custom modes**
 
@@ -158,6 +164,9 @@
 - **Screen stays on (item 22).** Update the app on your phone (see below), play a song in fullscreen and leave
   the phone alone: the screen should stay on to the end of the song and fullscreen should stay. Pause: the
   screen may then go off as usual.
+- **One question (item 23).** On the PC (Chrome or Edge), open the app with remembered songs and tap
+  Reconnect: in the browser's question choose "Allow on every visit". Close the app, open it again: the songs
+  should be there with no question. Installing the app (Music > Install the app) should do the same by itself.
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
 - **Google Search Console** comes at the very end, before v1.0.0 (item 18). It needs your Google account:
   nothing to do until a run asks for the verification file or tag.

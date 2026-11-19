@@ -231,12 +231,30 @@
   };
   // Must be called from a tap: asks again for each thing that is waiting.
   // Resolves { count, left }: songs brought back, things still waiting.
+  // One question for all of them (ROADMAP item 23): Chrome's prompt lists every
+  // handle the app had last time and grants them together, so the first thing
+  // is asked for and the rest are only checked; one is asked for again only if
+  // the check says no (that later ask may be refused, as the tap is used up:
+  // it then stays waiting for the next tap). In that prompt "Allow on every
+  // visit" makes the browser stop asking; an installed app keeps the
+  // permission by itself (FACTS.md "Remembering songs").
+  var asked = false;
+  function ask(rec){
+    var first = !asked;
+    asked = true;
+    var check = first ? Promise.resolve('prompt') : permission(rec.handle);
+    return check.then(function(p){
+      if (p === 'granted') return p;
+      return rec.handle.requestPermission({ mode: 'read' }).catch(function(){ return 'denied'; });
+    });
+  }
   L.reconnect = function(){
     var todo = waiting.slice(), count = 0, singles = [], chain = Promise.resolve();
     waiting = [];
+    asked = false;
     todo.forEach(function(rec){
       chain = chain.then(function(){
-        return rec.handle.requestPermission({ mode: 'read' }).catch(function(){ return 'denied'; });
+        return ask(rec);
       }).then(function(p){
         if (p !== 'granted'){ waiting.push(rec); return; }
         if (rec.kind === 'folder') return loadFolder(rec, true).then(function(n){ count += n; }, function(){ waiting.push(rec); });

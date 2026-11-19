@@ -10,6 +10,9 @@ ROADMAP.md "Done" is emptied for the next one.
 - **The screen stays on while music plays**, like a video: the phone no longer dims and locks in the middle
   of a song (which also threw it out of fullscreen). Paused, the screen goes off as usual. Settings >
   Performance & feel > "Keep the screen on while music plays".
+- **One question brings back every remembered song.** Reconnect asks the browser once for all of them. Choose
+  "Allow on every visit" in that question (Chrome and Edge) and the app stops asking; an installed app keeps
+  the permission by itself.
 
 ## v0.1.0 (2026-11-19): everything built so far
 

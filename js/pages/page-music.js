@@ -123,11 +123,14 @@ App.pages.define('music', {
       reRow.hidden = !list.length;
       if (list.length) reBtn.textContent = '↻ Reconnect ' + waitingWords(list);
     }
+    // what makes the question stop (FACTS.md "Remembering songs")
+    var EVERY_VISIT = ' When the browser asks, choose "Allow on every visit" and it will not ask again. An installed app' +
+      ' keeps the permission by itself; songs kept as copies inside the app need no question at all.';
     reBtn.addEventListener('click', function(){
       Lib.reconnect().then(function(res){
         paintWaiting();
         note.textContent = plural(res.count, 'song is', 'songs are') + ' back.' +
-          (res.left ? ' The browser did not give permission for the rest: tap Reconnect again.' : '');
+          (res.left ? ' The browser did not give permission for the rest: tap Reconnect again.' + EVERY_VISIT : '');
       }).catch(function(err){ note.textContent = err.message; });
     });
     document.getElementById('forgetFolderBtn').addEventListener('click', function(){
@@ -136,9 +139,9 @@ App.pages.define('music', {
     Lib.restore().then(function(res){
       paintWaiting();
       if (res.loaded) note.textContent = plural(res.loaded, 'song', 'songs') + ' from last time.' +
-        (res.waiting.length ? ' Tap Reconnect for the rest: the browser asks for permission again after the app was closed.' : '');
+        (res.waiting.length ? ' Tap Reconnect for the rest: one question brings them all back.' + EVERY_VISIT : '');
       else if (res.waiting.length) note.textContent = 'Tap Reconnect to bring back ' + waitingWords(res.waiting) +
-        ' from last time. The browser asks for permission again after the app was closed; copies kept inside the app need no question.';
+        ' from last time: one question brings them all back.' + EVERY_VISIT;
     });
 
     /* ----- keep a copy inside the app ----- */

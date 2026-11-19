@@ -75,3 +75,12 @@ One home per fact. Measured numbers about our own tools are in engine/README.md.
   minor (1A, 6m), energy 7 of 10, BPM confidence 62%.
 - Want Some Fun: 85 BPM (half 42, double 170), B minor (10A, 3m), energy 7 of 10, BPM confidence 64%.
   (The user, 2026-11-19.)
+
+## Remembering songs
+- Chrome 122 and later: when an app calls `requestPermission()` on a file or folder handle it kept in IndexedDB
+  from the last visit, Chrome shows a three-way prompt: "Allow this time", "Allow on every visit", "Don't allow".
+  "Allow on every visit" keeps the access until it is taken back, and later files and folders get it too. The
+  prompt lists every handle the app had last time, not only the one asked for. Installed apps keep the
+  permission by themselves once it is given, with no three-way prompt. After more than three refusals the
+  plain prompt comes back. There are no changes for developers. (Chrome for Developers, "Persistent
+  permissions for the File System Access API", read 2026-11-19.)

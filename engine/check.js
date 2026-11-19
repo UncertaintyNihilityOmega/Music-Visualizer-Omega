@@ -344,6 +344,16 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!/'pause'/.test(bg) || !/visibilitychange', syncAwake/.test(bg)) err('background.js: pause and visibilitychange must call syncAwake');
 }
 
+/* 9d. one question brings back everything remembered (ROADMAP item 23): Reconnect asks once, then only checks
+       the rest, because Chrome's prompt grants every remembered handle together; the Music page names
+       "Allow on every visit" */
+{
+  const lib = read('js/player/library.js'), mu = read('js/pages/page-music.js');
+  const rc = (lib.match(/L\.reconnect = function\(\)\{[\s\S]*?\n  \};/) || [''])[0];
+  if (!/return ask\(rec\)/.test(rc) || /requestPermission/.test(rc)) err('library.js: Reconnect must go through ask(), which asks once and then only checks the rest');
+  if (!/Allow on every visit/.test(mu)) err('page-music.js: the Music page must say that "Allow on every visit" stops the question');
+}
+
 /* 10. every script the offline list (sw.js) caches is tracked by git, so the published site can install it
        (found 2026-11-17: sw.js was pushed listing js/player/folders.js before that file was committed) */
 {
