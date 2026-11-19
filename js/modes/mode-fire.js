@@ -27,6 +27,8 @@
   var P = null;              // the colours in use this frame (see palette)
   var RAINBOW = 6;           // how many ember colours a rainbow fire has
   var burstCd = 0;
+  var ringSpin = 0;          // how far the vortex has turned (advances slowly in a calm passage)
+  var calm = 1;              // 0.1 in a quiet passage, 1 in a loud one (follows drive): scales what moves on its own
 
   // place: where the flames stand (left out = a row on the floor)
   // glyphs: embers are these characters instead of glowing dots
@@ -63,7 +65,7 @@
       return { x: rg.x + Math.cos(th) * rg.r, y: rg.y + Math.sin(th) * rg.r, ang: th + Math.PI / 2, s: 0.62, ws: 0.8 };
     }
     if (st.place === 'vortex'){
-      rg = ringOf(st, w, h); th = f * 6.283 + A.t * 0.25;
+      rg = ringOf(st, w, h); th = f * 6.283 + ringSpin;
       return { x: rg.x + Math.cos(th) * rg.r, y: rg.y + Math.sin(th) * rg.r, ang: th - Math.PI / 2, s: 0.5, ws: 0.7 };
     }
     return { x: w * 0.5 + (f - 0.5) * w * (0.34 + A.intensity * 0.2) * (st.narrow || 1) + swayPx, y: baseY, ang: 0, s: st.low || 1, ws: st.narrow ? 0.8 : 1 };
@@ -147,23 +149,23 @@
 
     plasmaPull.t = Math.max(0, plasmaPull.t - dt);
     var pullAng = Math.atan2(plasmaPull.y - cy, plasmaPull.x - cx);
-    var jt = Math.floor(A.t * 18), mo = Cfg.CFG.look.motion;
+    var jt = Math.floor(A.t * (2 + 16 * calm)), mo = Cfg.CFG.look.motion;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     for (i = 0; i < n; i++){
-      var v = plasmaVals[i];
+      var v = plasmaVals[i] * calm;
       // each thread wanders round the ball; a touch pulls the nearest ones over
-      plasmaAng[i] += (Math.sin(A.t * (0.31 + i * 0.07) + i * 2.1) * 0.5 + (i % 2 ? 0.12 : -0.12)) * dt * mo * (0.5 + A.drive * 1.6) * cfg.sway;
+      plasmaAng[i] += (Math.sin(A.t * (0.31 + i * 0.07) + i * 2.1) * 0.5 + (i % 2 ? 0.12 : -0.12)) * dt * mo * (0.06 + A.drive * 1.6) * cfg.sway;
       if (plasmaPull.t > 0){
         var dA = Math.atan2(Math.sin(pullAng - plasmaAng[i]), Math.cos(pullAng - plasmaAng[i]));
         if (Math.abs(dA) < 1.3) plasmaAng[i] += dA * Math.min(1, dt * 5);
       }
       var a = plasmaAng[i], px = -Math.sin(a), py = Math.cos(a);
-      var bend = Math.sin(A.t * 0.8 + i * 1.7) * 0.35;
-      var wig = R * 0.05 * cfg.turb * (0.4 + v * 1.6 + A.drive);
-      var width = (0.9 + v * 2.2 + A.kick * 1.8) * k * cfg.size;
+      var bend = Math.sin(A.t * 0.8 + i * 1.7) * 0.35 * (0.15 + 0.85 * calm);
+      var wig = R * 0.05 * cfg.turb * (0.4 + v * 1.6 + A.drive) * calm;
+      var width = (0.9 + v * 2.2 + A.kick * 1.8 * calm) * k * cfg.size;
       for (var pass = 0; pass < 2; pass++){
         ctx.beginPath();
         ctx.moveTo(cx, cy);
@@ -184,7 +186,7 @@
         ctx.stroke();
       }
       // the bright spot where the thread meets the glass
-      var ex = cx + Math.cos(a) * R * 0.985, ey = cy + Math.sin(a) * R * 0.985, er = (5 + v * 12 + A.kick * 6) * k;
+      var ex = cx + Math.cos(a) * R * 0.985, ey = cy + Math.sin(a) * R * 0.985, er = (5 + v * 12 + A.kick * 6 * calm) * k;
       var sp = ctx.createRadialGradient(ex, ey, 0, ex, ey, er);
       sp.addColorStop(0, fireCol(2, 0.7, (0.5 + v * 0.4).toFixed(3)));
       sp.addColorStop(1, 'rgba(0,0,0,0)');
@@ -192,7 +194,7 @@
       ctx.fillRect(ex - er, ey - er, er * 2, er * 2);
     }
     // the electrode
-    var er0 = R * (0.09 + A.kick * 0.03);
+    var er0 = R * (0.09 + A.kick * 0.03 * calm);
     var el = ctx.createRadialGradient(cx, cy, 0, cx, cy, er0 * 2.2);
     el.addColorStop(0, 'rgba(255,255,255,0.95)');
     el.addColorStop(0.35, fireCol(2, 0.6, 0.8));
@@ -216,6 +218,8 @@
   function drawFire(){
     var w = canvas.width, h = canvas.height, k = Can.dpr(), dt = A.dt, cfg = Cfg.CFG.fire;
     var mo = Cfg.CFG.look.motion;
+    calm = 0.1 + 0.9 * Math.min(1, A.drive * 2.2);
+    ringSpin += dt * 0.25 * calm;
     palette();
     if (spriteKey !== P.key){
       warmSprites = [];
@@ -246,7 +250,7 @@
     if (P.rainbow) expo *= 0.6;
 
     fireSway = U.env(fireSway, (Math.sin(A.t * 1.1 * mo) * 0.4 + (Aud.sourceValue(cfg.source) - 0.3) * 1.8), 6, 6, dt);
-    var swayPx = fireSway * w * 0.035 * cfg.sway * (0.4 + A.intensity);
+    var swayPx = fireSway * w * 0.035 * cfg.sway * (0.4 + A.intensity) * (0.25 + 0.75 * calm);
     var baseY = h - 3 * k;
     // idea A: a small fire in a calm passage, a tall one in a loud passage
     var flameH = h * (0.17 + A.level * 0.34 + A.drive * 0.3 + A.punch * 0.14) * cfg.height;
@@ -281,8 +285,8 @@
       var f = tongues === 1 ? 0.5 : (st.place === 'vortex' ? ti / tongues : ti / (tongues - 1));
       var band = flameVals[Math.min(halfT - 1, Math.round(Math.abs(f - 0.5) * 2 * (halfT - 1)))];
       var pl = placeFlame(st, f, w, h, baseY, swayPx);
-      var wave = Math.sin(A.t * (2.1 + ti * 0.41) * mo + ti * 1.7) * w * 0.022 * (0.35 + A.intensity * 1.6) * haze * pl.s;
-      var hgt = flameH * (0.3 + band * 1.05) * (ring ? 1 : 0.8 + Math.sin(f * Math.PI) * 0.36) * pl.s;
+      var wave = Math.sin(A.t * (2.1 + ti * 0.41) * mo + ti * 1.7) * w * 0.022 * (0.35 + A.intensity * 1.6) * haze * pl.s * calm;
+      var hgt = flameH * (0.3 + band * 1.05 * (0.25 + 0.75 * calm)) * (ring ? 1 : 0.8 + Math.sin(f * Math.PI) * 0.36) * pl.s;
       var halfW = w * (0.032 + band * 0.028) * (0.7 + A.level * 0.6) * pl.ws;
 
       // a rainbow fire: the colour wheel runs across the flames and turns slowly
@@ -341,7 +345,8 @@
     }
 
     var cap = Math.round(300 * cfg.spawn);
-    var spawn = Math.round((A.level * 4 + A.drive * 5 + A.punch * 16 * (0.3 + 0.7 * A.drive)) * cfg.spawn);
+    var spawnF = (A.level * 4 + A.drive * 5 + A.punch * 16 * (0.3 + 0.7 * A.drive)) * cfg.spawn * calm;   // a quiet passage sheds few embers
+    var spawn = Math.floor(spawnF) + (Math.random() < spawnF % 1 ? 1 : 0);
     // characters are counted one by one by the eye, so far fewer of them are needed
     if (st.glyphs) spawn = Math.random() < spawn * 0.16 ? 1 + (A.punch > 0.5 ? 1 : 0) : 0;
     for (var s = 0; s < spawn && fireParts.length < cap; s++){
@@ -421,7 +426,7 @@
     ctx.globalAlpha = 1;
 
     if (cfg.sparks && !st.place && A.beat && A.beatStrength > 0.18){
-      var n = Math.round((3 + A.beatStrength * 20) * cfg.sparkAmt);
+      var n = Math.round((3 + A.beatStrength * 20) * cfg.sparkAmt * calm);
       for (var q = 0; q < n && fireSparks.length < 220; q++){
         fireSparks.push({
           x: w * 0.5 + (Math.random() - 0.5) * w * 0.3 * (st.narrow || 1) + swayPx,

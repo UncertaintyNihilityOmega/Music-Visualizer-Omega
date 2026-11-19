@@ -389,10 +389,12 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
 - [ ] Old note, song 2: now measured, 1.11 / 10.30 under Omega (ratio 9.3); closed.
 
 ### Fire
-- [ ] Quiet is not quiet under Tessa (plasma globe) 1.17 / 1.69 (ratio 1.4), Nihilum (vortex) 1.21 / 1.83 (1.5)
+- [x] (2026-11-19: quiet 0.04 to 0.66, ratio 5.5 to 44 under all nine codes, 1280 px) Quiet is not quiet under Tessa (plasma globe) 1.17 / 1.69 (ratio 1.4), Nihilum (vortex) 1.21 / 1.83 (1.5)
   and Solarpunk (sun) 0.91 / 1.57 (1.7), against 0.06 / 3.05 on song 2 under Omega and 0.11 / 1.27 under Love.
   Their quiet floor is about 1, ten times Love's. Likely a form that turns or pulses at a fixed speed. Fixed when
   the ratio is 3 or more under all nine codes (Cyberpunk, now 2.6, included).
+
+- Fire: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Tessa 1.04 / 1.62 (1.6) -> 0.10 / 1.61 (16), Nihilum 1.22 / 1.91 (1.6) -> 0.27 / 1.95 (7.2), Solarpunk 0.76 / 1.62 (2.1) -> 0.32 / 1.77 (5.5), Omega 1.05 / 2.09 (2.0) -> 0.66 / 3.83 (5.8), Cyberpunk 0.55 / 3.16 (5.7) -> 0.29 / 2.90 (10), Love 0.21 / 1.68 (8.0) -> 0.04 / 1.77 (44); after only: New Year 0.16 / 3.07, Halloween 0.11 / 1.37, Incertum 0.12 / 1.86 (ratio 12 to 19). Cause: the plasma threads' wander, jitter and widths, the vortex's turn, the flames' sideways wave and sway, the spectrum's part in each flame's height, beat sparks and the ember count ran at a fixed or spectrum-only rate even at `drive` 0; they are now scaled by `calm = 0.1 + 0.9 * min(1, drive * 2.2)` (the vortex turns at 0.025 rad/s quiet, 0.25 loud). Loud numbers are within run-to-run noise (Omega 2.09 to 3.83 came with `drive` 0.66 against 0.5). Speed 0.36 to 2.34 ms at 1280 px (Nihilum highest), 0.37 to 1.74 at 375 px. Not looked at by eye.
 
 ### Rain
 - Fine under every code: quiet 0.26 to 1.06, ratio 3.1 to 9.1 (Love is the lowest at 3.1, 0.80 loud), no burnt-out
