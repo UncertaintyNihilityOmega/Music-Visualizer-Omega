@@ -290,3 +290,26 @@ input[type=range]::-moz-range-thumb{ width:14px; height:14px; border-radius:50%;
 .playlist-empty{ text-align:center; color:var(--muted); font-style:italic; font-size:.85rem; padding:18px 0; margin:0; }
 
 #file-input, #folder-input{ display:none; }
+
+/* Touch screens (ROADMAP item 11, the phone pass): every control at least 40 px tall, measured at 375 px
+   wide (mode buttons were 33, page tabs 36, sliders 5, checkboxes 18, the small Settings buttons 25).
+   Only where the pointer is a finger, so the look with a mouse stays as it was. */
+@media (pointer: coarse){
+  .mode-btn, .tab-btn, .pill-btn, .folder-menu-item, .set-reset, .set-reset-all, .set-row button.set-input,
+  .set-input[type=color], .set-input[type=text], select.set-input, .set-group select, .set-group summary,
+  details > summary, .link-btn, .folder-link, .check-row, #urlInput, #loadUrlBtn, #codeInput, .page-text a{ min-height:40px; }
+  .folder-link, .link-btn, .page-text a{ display:inline-flex; align-items:center; }
+  .set-group summary, details > summary{ display:flex; align-items:center; }
+  .check-row{ display:flex; align-items:center; gap:10px; }
+  .check-row input[type=checkbox], .set-input[type=checkbox]{ width:24px; height:24px; }
+  .set-row{ min-height:48px; }
+  .set-input[type=file]{ min-height:40px; }
+  .set-row label{ align-self:stretch; display:flex; align-items:center; }
+  .viz-fs{ width:40px; height:40px; }
+  /* a slider is a 40 px tall strip to grab, with the same thin track drawn in its middle */
+  input[type=range]{ height:40px; background:transparent; }
+  input[type=range]::-webkit-slider-runnable-track{ height:5px; border-radius:999px; background:rgba(var(--accent-rgb),.26); }
+  input[type=range]::-moz-range-track{ height:5px; border-radius:999px; background:rgba(var(--accent-rgb),.26); }
+  input[type=range]::-webkit-slider-thumb{ width:22px; height:22px; margin-top:-8.5px; }
+  input[type=range]::-moz-range-thumb{ width:22px; height:22px; }
+}

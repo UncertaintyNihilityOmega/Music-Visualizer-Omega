@@ -345,6 +345,16 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!/function keepInside\(\)/.test(sv) || calls < 2 || !/addResizeHook\(keepInside\)/.test(sv)) err('game-survivor.js: the player must be kept inside the map in update, draw and on resize (keepInside)');
 }
 
+/* 8g. touch targets (item 11): on a touch screen every control is at least 40 px tall (measured at 375 px
+       with every Settings group open: none smaller), and a Settings row's words work its control */
+{
+  const css = read('css/styles.css');
+  const coarse = (/@media \(pointer: coarse\)\{([\s\S]*?)\n\}/.exec(css) || [, ''])[1];
+  for (const sel of ['.mode-btn', '.tab-btn', '.pill-btn', 'input[type=range]{ height:40px', '.viz-fs{ width:40px'])
+    if (!coarse.includes(sel)) err(`styles.css: the touch-screen block (@media (pointer: coarse)) must keep ${sel} at 40 px or more`);
+  if (!/lab\.htmlFor = input\.id/.test(read('js/core/settings.js'))) err('settings.js: a Settings row\'s words must be the label of its control (lab.htmlFor), so a tap on them works it');
+}
+
 /* 8c. piano sound (item 26): the song is kept off the speakers only while Piano asks for it, comes back when the
        page is hidden (no frames are drawn then, so nothing would play), and the piano never reaches the analysis */
 {

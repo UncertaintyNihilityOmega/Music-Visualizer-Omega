@@ -207,6 +207,8 @@
           });
         }
         input.className = 'set-input';
+        // the words are part of the control: a tap on them works the switch (a bigger target on a phone)
+        if (input.tagName !== 'BUTTON'){ input.id = 'set-' + group.id + '-' + key; lab.htmlFor = input.id; }
         row.appendChild(input);
         if (out) row.appendChild(out);
         det.appendChild(row);
