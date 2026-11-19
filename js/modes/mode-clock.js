@@ -30,7 +30,7 @@
                                  by a thin stream, like an hourglass
                         garden   hills and two vines that grow and sway
                         grid     a perspective grid, circuit traces, glitches
-                        sky      clouds, a pair of feathered wings, motes
+                        sky      clouds, two unlike flat wings (blades, plumes), motes
    Every design takes its colours from the palette, so it reads in every
    code; only materials (metal, sand, leaf green) are fixed colours, and
    they are mixed with the palette.
@@ -1284,7 +1284,7 @@
     ctx.globalAlpha = 1;
   }
 
-  /* ---------- Sky: clouds, a pair of feathered wings, feathers and motes ---------- */
+  /* ---------- Sky: clouds, two unlike wings, feathers and motes ---------- */
   var clouds = [], cloudsReady = false, skyDrive = 0;
   function ensureClouds(w, h){
     if (cloudsReady) return;
@@ -1314,25 +1314,224 @@
       drawCloud(c.x, c.y, c.scale, k);
     }
   }
-  // The wing, in units of the dial's radius, x outward, y down: a leading edge
-  // from the shoulder through the elbow and the wrist to the tip of the hand,
-  // and four layers of feathers drawn back to front: long primaries fanning
-  // from the hand, secondaries along the arm, then two rows of coverts.
-  var ARM = [[0, 0], [0.5, -0.3], [0.95, -0.42], [1.3, -0.36]];
-  function armAt(u){
-    var i = Math.min(2, Math.floor(u)), t = u - i, a = ARM[i], b = ARM[i + 1];
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  }
-  var FEATHERS = (function(){
-    var out = [], i;
-    for (i = 0; i < 10; i++) out.push({ layer: 0, n: i, u: 3 - i / 9, ang: -0.3 + i * 0.12, len: 0.95 - i * 0.03, wid: 0.1 });
-    for (i = 0; i < 11; i++) out.push({ layer: 1, n: i, u: 2 - i * 0.17, ang: 0.95 + i * 0.05, len: 0.66 - i * 0.02, wid: 0.12 });
-    for (i = 0; i < 12; i++) out.push({ layer: 2, n: i, u: 2.6 - i * 0.21, ang: 0.7 + i * 0.06, len: 0.34, wid: 0.11 });
-    for (i = 0; i < 10; i++) out.push({ layer: 3, n: i, u: 2.3 - i * 0.23, ang: 0.9 + i * 0.04, len: 0.18, wid: 0.09 });
+  // The wings, redrawn flat (item 24, after inspiration/wing-example.webp), and not a mirror pair:
+  //   left   three long mechanical blades: a pale body with a darker lower facet, a dark spine and a
+  //          long dark spear of a tip, a band of colour and a small claw near the root, hung on a
+  //          strut from the shoulder with a thin hoop under it. They move stiffly: the wing tilts as
+  //          one, and on a kick the blades snap apart like a fan.
+  //   right  a fan of nine long, thin plumes from a pale shoulder plate, each in three flat bands
+  //          (pale at the root, a middle tone, the full colour out to the tip) with a vein and two
+  //          small splits in the trailing edge. They move softly: each plume follows the beat a
+  //          little later than the one above it and flutters on its own.
+  // Units: the dial's radius scaled to fit (unit), x outward from the shoulder, y down. Every part is
+  // painted once into a small picture of its own (wingSprites) and only turned and placed each frame,
+  // so the pair costs about fifteen copies a frame instead of hundreds of curves.
+  var BLADES = [
+    { x: 0.44, y: -0.30, ang: -0.5, len: 1.5, wid: 0.1, spread: -1 },
+    { x: 0.56, y: -0.05, ang: -0.1, len: 1.68, wid: 0.11, spread: 0 },
+    { x: 0.48, y: 0.22, ang: 0.32, len: 1.45, wid: 0.095, spread: 1 }
+  ];
+  var PLUMES = (function(){
+    var out = [], n = 9;
+    for (var i = 0; i < n; i++){
+      var t = i / (n - 1);
+      out.push({ t: t, x: 0.36 + 0.07 * Math.sin(t * Math.PI), y: -0.2 + 0.4 * t, ang: -0.55 + 1.4 * t,
+                 len: 1.3 + 0.45 * Math.sin(Math.PI * (0.12 + 0.8 * t)), wid: 0.06 + 0.014 * Math.sin(t * Math.PI) });
+    }
     return out;
   })();
+  // a picture of one part: bounds in wing units (x0, y0, x1, y1), the pivot at the origin
+  function partSprite(unit, x0, y0, x1, y1, paint){
+    var cv = document.createElement('canvas');
+    cv.width = Math.max(2, Math.ceil((x1 - x0) * unit));
+    cv.height = Math.max(2, Math.ceil((y1 - y0) * unit));
+    var c = cv.getContext('2d');
+    c.setTransform(unit, 0, 0, unit, -x0 * unit, -y0 * unit);
+    c.lineJoin = 'round';
+    c.lineCap = 'round';
+    paint(c);
+    return { cv: cv, ox: x0 * unit, oy: y0 * unit };
+  }
+  function paintBlade(c, L, W, col, lw){
+    // body
+    c.beginPath();
+    c.moveTo(0, -0.35 * W);
+    c.bezierCurveTo(0.15 * L, -1.1 * W, 0.45 * L, -1.0 * W, 0.62 * L, -0.55 * W);
+    c.lineTo(0.66 * L, 0.2 * W);
+    c.bezierCurveTo(0.45 * L, 0.75 * W, 0.2 * L, 0.8 * W, 0, 0.35 * W);
+    c.closePath();
+    c.fillStyle = col.body; c.fill();
+    c.strokeStyle = col.edge; c.lineWidth = lw; c.stroke();
+    // the lower facet, one flat shade
+    c.beginPath();
+    c.moveTo(0, 0.05 * W);
+    c.bezierCurveTo(0.2 * L, 0.25 * W, 0.45 * L, 0.32 * W, 0.66 * L, 0.2 * W);
+    c.bezierCurveTo(0.45 * L, 0.75 * W, 0.2 * L, 0.8 * W, 0, 0.35 * W);
+    c.closePath();
+    c.fillStyle = col.shade; c.fill();
+    // a line of colour along the lower edge
+    c.beginPath();
+    c.moveTo(0.12 * L, 0.6 * W);
+    c.bezierCurveTo(0.3 * L, 0.82 * W, 0.5 * L, 0.66 * W, 0.64 * L, 0.3 * W);
+    c.strokeStyle = col.band; c.lineWidth = 0.14 * W; c.stroke();
+    // the dark spine along the upper edge
+    c.beginPath();
+    c.moveTo(0.08 * L, -0.72 * W);
+    c.bezierCurveTo(0.25 * L, -1.16 * W, 0.45 * L, -1.06 * W, 0.57 * L, -0.68 * W);
+    c.lineTo(0.53 * L, -0.52 * W);
+    c.bezierCurveTo(0.42 * L, -0.86 * W, 0.25 * L, -0.92 * W, 0.1 * L, -0.52 * W);
+    c.closePath();
+    c.fillStyle = col.dark; c.fill();
+    // the long dark spear of the tip
+    c.beginPath();
+    c.moveTo(0.5 * L, -0.64 * W);
+    c.quadraticCurveTo(0.76 * L, -0.42 * W, L, 0);
+    c.quadraticCurveTo(0.76 * L, 0.2 * W, 0.53 * L, 0.6 * W);
+    c.quadraticCurveTo(0.63 * L, 0.02 * W, 0.5 * L, -0.64 * W);
+    c.closePath();
+    c.fillStyle = col.dark; c.fill();
+    c.strokeStyle = col.edge; c.lineWidth = lw; c.stroke();
+    // a light glint along the spear
+    c.beginPath();
+    c.moveTo(0.6 * L, -0.28 * W);
+    c.quadraticCurveTo(0.8 * L, -0.16 * W, 0.94 * L, 0);
+    c.strokeStyle = col.glint; c.lineWidth = 0.1 * W; c.stroke();
+    // the band near the root, with a ribbon end hanging from it
+    c.beginPath();
+    c.moveTo(0.05 * L, -0.98 * W); c.lineTo(0.115 * L, -0.98 * W); c.lineTo(0.155 * L, 0.98 * W); c.lineTo(0.09 * L, 0.98 * W);
+    c.closePath();
+    c.moveTo(0.11 * L, 0.9 * W);
+    c.quadraticCurveTo(0.1 * L, 1.55 * W, 0.02 * L, 1.95 * W);
+    c.quadraticCurveTo(0.17 * L, 1.5 * W, 0.16 * L, 0.9 * W);
+    c.closePath();
+    c.fillStyle = col.band; c.fill();
+    c.strokeStyle = col.edge; c.lineWidth = lw; c.stroke();
+    // a small claw above the band
+    c.beginPath();
+    c.moveTo(0.125 * L, -0.9 * W);
+    c.quadraticCurveTo(0.2 * L, -1.55 * W, 0.11 * L, -1.95 * W);
+    c.quadraticCurveTo(0.25 * L, -1.5 * W, 0.19 * L, -0.85 * W);
+    c.closePath();
+    c.fillStyle = col.dark; c.fill();
+  }
+  function paintPlume(c, L, W, colr, pale, edge, lw){
+    function outline(){
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.quadraticCurveTo(0.35 * L, -1.4 * W, 0.8 * L, -0.65 * W);
+      c.quadraticCurveTo(0.95 * L, -0.25 * W, L, 0.45 * W);
+      c.quadraticCurveTo(0.85 * L, 0.42 * W, 0.6 * L, 0.88 * W);
+      c.quadraticCurveTo(0.25 * L, 1.1 * W, 0, 0);
+      c.closePath();
+    }
+    // three flat bands, hard edges: pale at the root, a middle tone, the full colour
+    var g = c.createLinearGradient(0, 0, L, 0), mid = mix(pale, colr, 0.55);
+    g.addColorStop(0, pale); g.addColorStop(0.3, pale);
+    g.addColorStop(0.3, mid); g.addColorStop(0.56, mid);
+    g.addColorStop(0.56, colr); g.addColorStop(1, colr);
+    outline();
+    c.fillStyle = g; c.fill();
+    // two small splits in the trailing edge
+    c.save();
+    c.globalCompositeOperation = 'destination-out';
+    c.beginPath();
+    c.moveTo(0.5 * L, 1.2 * W); c.lineTo(0.43 * L, 0.35 * W); c.lineTo(0.47 * L, 1.2 * W); c.closePath();
+    c.moveTo(0.74 * L, 0.9 * W); c.lineTo(0.66 * L, 0.3 * W); c.lineTo(0.7 * L, 0.9 * W); c.closePath();
+    c.fill();
+    c.restore();
+    outline();
+    c.strokeStyle = edge; c.lineWidth = lw; c.stroke();
+    // the vein
+    c.beginPath();
+    c.moveTo(0.02 * L, 0.05 * W);
+    c.quadraticCurveTo(0.5 * L, 0.05 * W, 0.92 * L, 0.2 * W);
+    c.strokeStyle = edge; c.lineWidth = lw * 1.2; c.stroke();
+  }
+  var wingCache = null, wingKey = '';
+  function wingSprites(unit, pal, pid){
+    var key = unit.toFixed(1) + '|' + pid;
+    if (wingCache && wingKey === key) return wingCache;
+    var lw = Math.max(0.0035, 1 / unit);   // a hairline of about one pixel, in wing units
+    var wA = pal.light ? '#FFFFFF' : mix(pal.numeral, '#FFFFFF', 0.3);
+    var dark = pal.light ? pal.numeral : mix(pal.faceCenter, pal.rim, 0.45);
+    var edge = pal.light ? mix(pal.numeral, '#FFFFFF', 0.25) : mix(pal.rim, '#FFFFFF', 0.15);
+    var out = { blades: [], plumes: [] }, i;
+    for (i = 0; i < BLADES.length; i++){
+      var B = BLADES[i], L = B.len, W = B.wid;
+      var col = { body: wA, shade: mix(wA, pal.rim, pal.light ? 0.16 : 0.3), dark: dark, edge: edge,
+                  band: pal.rainbow ? rbCol(0.04 + i * 0.3, pal) : (i === 1 ? pal.secondHand : pal.accent),
+                  glint: rgba(wA, 0.45) };
+      out.blades.push(partSprite(unit, -0.03, -2.1 * W, L + 0.03, 2.1 * W, (function(L, W, col){
+        return function(c){ paintBlade(c, L, W, col, lw); };
+      })(L, W, col)));
+    }
+    for (i = 0; i < PLUMES.length; i++){
+      var Pm = PLUMES[i], colr = pal.rainbow ? rbCol(0.02 + Pm.t * 0.8, pal) : mix(pal.accent, pal.rim, Pm.t);
+      var pale = mix(wA, colr, 0.18), pedge = mix(colr, pal.light ? '#000000' : '#FFFFFF', 0.3);
+      out.plumes.push(partSprite(unit, -0.03, -1.6 * Pm.wid - 0.02, Pm.len * 1.06 + 0.03, 1.3 * Pm.wid + 0.02, (function(L, W, colr, pale, pedge){
+        return function(c){ paintPlume(c, L, W, colr, pale, pedge, lw); };
+      })(Pm.len, Pm.wid, colr, pale, pedge)));
+    }
+    // the left wing's strut from the shoulder to the three blade roots, with a thin hoop under it
+    out.strut = partSprite(unit, -0.12, -0.45, 0.72, 0.68, function(c){
+      c.beginPath();
+      c.arc(0.26, 0.3, 0.3, -0.4, 2.3);
+      c.strokeStyle = edge; c.lineWidth = 0.012; c.stroke();
+      c.beginPath();
+      c.moveTo(-0.04, 0.02);
+      c.quadraticCurveTo(0.24, -0.4, BLADES[0].x, BLADES[0].y);
+      c.moveTo(-0.04, 0.02);
+      c.quadraticCurveTo(0.3, -0.14, BLADES[1].x, BLADES[1].y);
+      c.moveTo(-0.04, 0.02);
+      c.quadraticCurveTo(0.22, 0.2, BLADES[2].x, BLADES[2].y);
+      c.strokeStyle = edge; c.lineWidth = 0.055 + 2 * lw; c.stroke();
+      c.strokeStyle = wA; c.lineWidth = 0.055; c.stroke();
+      // joints
+      c.beginPath();
+      for (var j = 0; j < BLADES.length; j++){ c.moveTo(BLADES[j].x + 0.035, BLADES[j].y); c.arc(BLADES[j].x, BLADES[j].y, 0.035, 0, 6.283); }
+      c.moveTo(0.03, 0.02); c.arc(-0.02, 0.02, 0.05, 0, 6.283);
+      c.fillStyle = dark; c.fill();
+      c.strokeStyle = edge; c.lineWidth = lw; c.stroke();
+    });
+    // the right wing's shoulder plate
+    out.plate = partSprite(unit, -0.13, -0.45, 0.6, 0.3, function(c){
+      c.scale(1.25, 1.2);
+      c.beginPath();
+      c.moveTo(-0.06, -0.1);
+      c.quadraticCurveTo(0.16, -0.34, 0.42, -0.25);
+      c.lineTo(0.33, -0.12);
+      c.quadraticCurveTo(0.4, -0.02, 0.38, 0.1);
+      c.quadraticCurveTo(0.16, 0.2, -0.05, 0.1);
+      c.closePath();
+      c.fillStyle = wA; c.fill();
+      c.strokeStyle = edge; c.lineWidth = lw; c.stroke();
+      c.beginPath();
+      c.moveTo(-0.05, 0.03);
+      c.quadraticCurveTo(0.18, 0.02, 0.36, 0.04);
+      c.quadraticCurveTo(0.37, 0.08, 0.38, 0.1);
+      c.quadraticCurveTo(0.16, 0.2, -0.05, 0.1);
+      c.closePath();
+      c.fillStyle = mix(wA, pal.rim, pal.light ? 0.16 : 0.3); c.fill();
+      c.beginPath();
+      c.moveTo(-0.04, -0.13);
+      c.quadraticCurveTo(0.16, -0.36, 0.42, -0.25);
+      c.lineTo(0.39, -0.21);
+      c.quadraticCurveTo(0.17, -0.29, -0.01, -0.1);
+      c.closePath();
+      c.fillStyle = dark; c.fill();
+    });
+    wingKey = key;
+    return (wingCache = out);
+  }
+  function placeSprite(s, x, y, ang){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
+    ctx.drawImage(s.cv, s.ox, s.oy);
+    ctx.restore();
+  }
   var flapEnv = 0, flapPhase = 0, flapBeat = 0, flapAmpNow = 0;
-  function drawWings(cx, cy, R, w, pal, k, dt){
+  function drawWings(cx, cy, R, w, pal, k, dt, pid){
     // a breath when calm; a real beat of the wings in a big passage, a fast strong one on a kick
     flapEnv = U.env(flapEnv, A.drive, 1.5, 0.5, dt);
     if (A.kickHit > 0.5 && A.drive > 0.2) flapBeat = Math.max(flapBeat, A.kickHit * A.drive);
@@ -1340,68 +1539,45 @@
     flapPhase += dt * (0.7 + 3 * flapEnv + 5 * flapBeat);
     var amp = 0.015 + 0.32 * flapEnv * flapEnv + 0.25 * flapBeat;
     flapAmpNow = amp;
-    var lift = amp * Math.sin(flapPhase);
-    // the wings fit the picture: across a narrow one, and up to the top of a low one when raised
-    var ws = Math.min(1, (w * 0.5 - 4 * k) / (R * 2.3), (cy - R * 0.2) / (R * 1.75)), unit = R * ws, lw = Math.max(0.9 * k / unit, 0.004);
-    var wA = pal.light ? '#FFFFFF' : mix(pal.numeral, '#FFFFFF', 0.3);
-    var layerC = [mix(wA, pal.rim, 0.2), mix(wA, pal.rim, 0.11), mix(wA, pal.rim, 0.04), wA];
-    var shade = rgba(pal.rim, pal.light ? 0.16 : 0.22), edgeC = rgba(pal.rim, pal.light ? 0.5 : 0.4), shaft = rgba(pal.rim, 0.35);
-    for (var sd = -1; sd <= 1; sd += 2){
-      ctx.save();
-      ctx.translate(cx + sd * R * 0.45, cy - R * 0.2);
-      ctx.scale(sd * unit, unit);
-      ctx.rotate(-0.12 - lift);
-      ctx.globalAlpha = 0.96;
-      ctx.lineJoin = 'round';
-      for (var f = 0; f < FEATHERS.length; f++){
-        var F = FEATHERS[f], at = armAt(F.u), len = F.len * (F.layer === 0 ? 1 + 0.06 * flapEnv : 1), wid = F.wid;
-        var ang = F.ang + (F.layer === 0 ? lift * 0.5 : F.layer === 1 ? lift * 0.25 : 0);
-        ctx.save();
-        ctx.translate(at[0], at[1] + (F.layer === 3 ? -0.02 : 0));
-        ctx.rotate(ang);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(len * 0.45, -wid, len, -wid * 0.15);
-        ctx.quadraticCurveTo(len * 1.03, wid * 0.25, len * 0.9, wid * 0.45);
-        ctx.quadraticCurveTo(len * 0.45, wid * 0.9, 0, 0);
-        ctx.fillStyle = layerC[F.layer];
-        ctx.fill();
-        // the rainbow code: each feather edged in its own hue
-        if (pal.rainbow){
-          ctx.strokeStyle = rbCol(F.n / (F.layer === 0 ? 10 : F.layer === 1 ? 11 : 12) * 0.9 + F.layer * 0.07, pal);
-          ctx.lineWidth = lw * (F.layer < 2 ? 2.4 : 1.6);
-        } else {
-          ctx.strokeStyle = edgeC;
-          ctx.lineWidth = lw;
-        }
-        ctx.stroke();
-        // soft shading: the half behind the shaft is a little darker
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(len * 0.5, wid * 0.08, len * 0.95, wid * 0.12);
-        ctx.quadraticCurveTo(len * 0.45, wid * 0.85, 0, 0);
-        ctx.fillStyle = shade;
-        ctx.fill();
-        if (F.layer < 2){
-          ctx.strokeStyle = shaft;
-          ctx.lineWidth = lw * 0.8;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.quadraticCurveTo(len * 0.5, wid * 0.08, len * 0.95, wid * 0.12);
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-      // the leading edge, smooth over the roots of the feathers
-      ctx.strokeStyle = wA;
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 0.08;
-      ctx.beginPath();
-      ctx.moveTo(ARM[0][0] + 0.05, ARM[0][1] - 0.02);
-      for (var q = 1; q < ARM.length; q++) ctx.lineTo(ARM[q][0], ARM[q][1] - 0.02);
-      ctx.stroke();
-      ctx.restore();
+    var lift = amp * Math.sin(flapPhase), lift2 = amp * Math.sin(flapPhase - 0.5);
+    // the wings fit the picture: across a wide one, and up to the top of a low one when raised. On a tall,
+    // narrow one (a phone held upright) they are raised towards the free space above and may run off
+    // the sides a little rather than shrink to nothing behind the crown
+    var h = canvas.height, raise = h > w * 1.15 ? Math.min(0.6, 0.25 + (h / w - 1.15) * 0.8) : 0;
+    var fitX = (w * 0.5 - R * 0.7 - 4 * k) / (R * 1.95 * (1 - 0.35 * raise));
+    var ws = Math.min(1.1, Math.max(fitX, raise ? 0.85 : 0), (cy - R * 0.12) / (R * 1.6)), unit = R * ws;
+    var S = wingSprites(unit, pal, pid), i, a, open;
+    ctx.save();
+    ctx.globalAlpha = 0.97;
+
+    // left: the blades, then the strut over their roots
+    ctx.save();
+    ctx.translate(cx - R * 0.7, cy - R * 0.12);
+    ctx.scale(-1, 1);
+    ctx.rotate(-0.06 - raise - lift * 0.6);
+    open = 0.14 * flapEnv * flapEnv + 0.24 * flapBeat;
+    for (i = 0; i < BLADES.length; i++){
+      var B = BLADES[i];
+      a = B.ang + B.spread * open - lift * (0.1 + 0.1 * i);
+      placeSprite(S.blades[i], B.x * unit, B.y * unit, a);
     }
+    ctx.drawImage(S.strut.cv, S.strut.ox, S.strut.oy);
+    ctx.restore();
+
+    // right: the plumes, each a little behind the one above it, then the shoulder plate
+    ctx.save();
+    ctx.translate(cx + R * 0.7, cy - R * 0.12);
+    ctx.rotate(-0.06 - raise - lift2 * 0.6);
+    open = 0.12 * flapEnv * flapEnv + 0.16 * flapBeat;
+    var flut = 0.008 + 0.05 * flapEnv * flapEnv;
+    for (i = 0; i < PLUMES.length; i++){
+      var Pm = PLUMES[i], lag = amp * Math.sin(flapPhase - 0.5 - Pm.t * 1.2);
+      a = Pm.ang * (1 + open) - lag * (0.2 + 0.4 * Pm.t) + flut * Math.sin(A.t * (1.6 + 3 * flapEnv) + i * 1.7);
+      placeSprite(S.plumes[i], Pm.x * unit, Pm.y * unit, a);
+    }
+    ctx.drawImage(S.plate.cv, S.plate.ox, S.plate.oy);
+    ctx.restore();
+    ctx.restore();
   }
   var motes = [];
   function spawnMote(x, y){
@@ -1499,7 +1675,7 @@
 
     if (cfg.orbits) drawOrbits(cx, cy, R, pal, k);
     stepChimes(cx, cy, R, pal, k, dt);
-    if (design === 'sky') drawWings(cx, cy, R, w, pal, k, dt);
+    if (design === 'sky') drawWings(cx, cy, R, w, pal, k, dt, pid);
     drawRing(cx, cy, R, pal, form, cfg, k, dt);
     if (cfg.songRing) drawSongRing(cx, cy, R, pal, k);
     drawFace(cx, cy, R, pal, form, cfg, k, pid);
