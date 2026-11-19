@@ -1530,6 +1530,46 @@
     ctx.drawImage(s.cv, s.ox, s.oy);
     ctx.restore();
   }
+  // Where the wings sit and how big they are, found once per picture size by trying a few poses: the
+  // shoulders beside the dial or above it, the wing raised (th) and its fan folded (fold). The pose kept is
+  // the one whose tips reach furthest past the loudest crown while the whole wing stays in the picture.
+  // On a wide picture that is the open pair beside the dial; on an upright phone, where there is little
+  // room at the sides, the wings stand folded above the dial.
+  var WING_SHOULDERS = [[0.7, -0.12], [0.55, -0.6], [0.45, -0.95]];
+  function wingReach(th, fold){
+    var phi = -0.06 - th, c = Math.cos(phi), s = Math.sin(phi), o = { X: 0, I: 0, U: 0, D: 0, T: [] }, i, a;
+    function pt(x, y, tip){
+      var X2 = x * c - y * s, Y2 = x * s + y * c;
+      o.X = Math.max(o.X, X2); o.I = Math.max(o.I, -X2); o.U = Math.max(o.U, -Y2); o.D = Math.max(o.D, Y2);
+      if (tip) o.T.push(X2, Y2);
+    }
+    for (i = 0; i < BLADES.length; i++){ var B = BLADES[i]; a = -0.1 + (B.ang + 0.1) * fold; pt(B.x, B.y); pt(B.x + Math.cos(a) * B.len, B.y + Math.sin(a) * B.len, 1); }
+    for (i = 0; i < PLUMES.length; i++){ var Pm = PLUMES[i]; a = 0.15 + (Pm.ang - 0.15) * fold; pt(Pm.x, Pm.y); pt(Pm.x + Math.cos(a) * Pm.len * 1.03, Pm.y + Math.sin(a) * Pm.len * 1.03, 1); }
+    // room for the beat: tips swing out and up a little in a big passage
+    o.X *= 1.04; o.I = o.I * 1.25 + 0.05; o.U *= 1.12; o.D *= 1.05;
+    return o;
+  }
+  var wingFitCache = null, wingFitKey = '';
+  function wingFit(w, h, cy, R, k){
+    var key = w + 'x' + h + '|' + R.toFixed(1);
+    if (wingFitCache && wingFitKey === key) return wingFitCache;
+    var best = null;
+    for (var si = 0; si < WING_SHOULDERS.length; si++) for (var th = 0; th < 1.15; th += 0.1) for (var fo = 0; fo < 3; fo++){
+      var fold = [1, 0.8, 0.6][fo], sx = WING_SHOULDERS[si][0], sy = WING_SHOULDERS[si][1], r = wingReach(th, fold);
+      var ws = Math.min(1.1, (w * 0.5 - R * sx - 4 * k) / (R * r.X), (R * sx - 2 * k) / (R * r.I),
+                        (cy + R * sy - 4 * k) / (R * r.U), (h - cy - R * sy - 4 * k) / (R * r.D));
+      if (ws <= 0.05) continue;
+      // how far the tips reach past the loudest crown (1.52 radii), on average
+      var vis = 0;
+      for (var t = 0; t < r.T.length; t += 2) vis += Math.max(0, Math.hypot(sx + r.T[t] * ws, sy + r.T[t + 1] * ws) - 1.52);
+      vis /= r.T.length / 2;
+      var score = vis * (1 - 0.3 * (1 - fold)) - 0.02 * th - 0.03 * si;
+      if (!best || score > best.score) best = { sx: sx, sy: sy, th: th, fold: fold, ws: ws, score: score };
+    }
+    if (!best) best = { sx: 0.7, sy: -0.12, th: 0, fold: 1, ws: 0.3, score: 0 };
+    wingFitKey = key;
+    return (wingFitCache = best);
+  }
   var flapEnv = 0, flapPhase = 0, flapBeat = 0, flapAmpNow = 0;
   function drawWings(cx, cy, R, w, pal, k, dt, pid){
     // a breath when calm; a real beat of the wings in a big passage, a fast strong one on a kick
@@ -1540,25 +1580,21 @@
     var amp = 0.015 + 0.32 * flapEnv * flapEnv + 0.25 * flapBeat;
     flapAmpNow = amp;
     var lift = amp * Math.sin(flapPhase), lift2 = amp * Math.sin(flapPhase - 0.5);
-    // the wings fit the picture: across a wide one, and up to the top of a low one when raised. On a tall,
-    // narrow one (a phone held upright) they are raised towards the free space above and may run off
-    // the sides a little rather than shrink to nothing behind the crown
-    var h = canvas.height, raise = h > w * 1.15 ? Math.min(0.6, 0.25 + (h / w - 1.15) * 0.8) : 0;
-    var fitX = (w * 0.5 - R * 0.7 - 4 * k) / (R * 1.95 * (1 - 0.35 * raise));
-    var ws = Math.min(1.1, Math.max(fitX, raise ? 0.85 : 0), (cy - R * 0.12) / (R * 1.6)), unit = R * ws;
+    // the pose and size that fit this picture (wingFit)
+    var fit = wingFit(w, canvas.height, cy, R, k), raise = fit.th, fold = fit.fold, unit = R * fit.ws;
     var S = wingSprites(unit, pal, pid), i, a, open;
     ctx.save();
     ctx.globalAlpha = 0.97;
 
     // left: the blades, then the strut over their roots
     ctx.save();
-    ctx.translate(cx - R * 0.7, cy - R * 0.12);
+    ctx.translate(cx - R * fit.sx, cy + R * fit.sy);
     ctx.scale(-1, 1);
     ctx.rotate(-0.06 - raise - lift * 0.6);
     open = 0.14 * flapEnv * flapEnv + 0.24 * flapBeat;
     for (i = 0; i < BLADES.length; i++){
       var B = BLADES[i];
-      a = B.ang + B.spread * open - lift * (0.1 + 0.1 * i);
+      a = -0.1 + (B.ang + 0.1) * fold + B.spread * open - lift * (0.1 + 0.1 * i);
       placeSprite(S.blades[i], B.x * unit, B.y * unit, a);
     }
     ctx.drawImage(S.strut.cv, S.strut.ox, S.strut.oy);
@@ -1566,13 +1602,13 @@
 
     // right: the plumes, each a little behind the one above it, then the shoulder plate
     ctx.save();
-    ctx.translate(cx + R * 0.7, cy - R * 0.12);
+    ctx.translate(cx + R * fit.sx, cy + R * fit.sy);
     ctx.rotate(-0.06 - raise - lift2 * 0.6);
     open = 0.12 * flapEnv * flapEnv + 0.16 * flapBeat;
     var flut = 0.008 + 0.05 * flapEnv * flapEnv;
     for (i = 0; i < PLUMES.length; i++){
       var Pm = PLUMES[i], lag = amp * Math.sin(flapPhase - 0.5 - Pm.t * 1.2);
-      a = Pm.ang * (1 + open) - lag * (0.2 + 0.4 * Pm.t) + flut * Math.sin(A.t * (1.6 + 3 * flapEnv) + i * 1.7);
+      a = (0.15 + (Pm.ang - 0.15) * fold) * (1 + open) - lag * (0.2 + 0.4 * Pm.t) + flut * Math.sin(A.t * (1.6 + 3 * flapEnv) + i * 1.7);
       placeSprite(S.plumes[i], Pm.x * unit, Pm.y * unit, a);
     }
     ctx.drawImage(S.plate.cv, S.plate.ox, S.plate.oy);
