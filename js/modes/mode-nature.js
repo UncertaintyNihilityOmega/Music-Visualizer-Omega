@@ -33,7 +33,7 @@
   // stretch brings dusk and stars, a loud one brings the day back.
   function drawSky(w, h, k, dt){
     var cfg = Cfg.CFG.nature;
-    natDay = cfg.dayNight ? U.env(natDay, A.drive, 0.22, 0.1, dt) : 1;
+    natDay = cfg.dayNight ? U.env(natDay, A.drive, 0.22, 0.04, dt) : 1;
     var L = look();
     var night = L.dark ? 1 : U.clamp01(1 - natDay * 1.5);
     if (night > 0.01){
@@ -126,7 +126,7 @@
     // wind leans the whole tree: thin outer branches bend most, the trunk hardly at all
     if (depth > 0) a += natWind * (0.012 + depth * 0.011);
     // a lively passage rocks the branches, the outer ones most, each at its own pace
-    if (swing > 0.01) a += Math.sin(A.t * (1.3 + depth * 0.45) + seed * 6.283) * (0.03 + depth * 0.05) * swing;
+    if (swing > 0.01) a += Math.sin(A.t * (1.3 + depth * 0.45) + seed * 6.283) * (0.03 + depth * 0.065) * swing;
     var x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L;
     var cx = x + Math.cos(a - 0.13) * L * 0.55, cy = y + Math.sin(a - 0.13) * L * 0.55;
 
@@ -300,8 +300,11 @@
     var gustNow = Math.sin(A.t * 0.23) * 0.35 + A.trebleTilt * 2.4;
     natWind = U.env(natWind, gustNow * (0.08 + A.drive * 1.5) * cfg.wind, 2.2, 2.2, dt);
 
-    natVit = U.env(natVit, U.clamp01(A.level * 0.8 + A.intensity * 0.35), 2.2 * cfg.growth, 0.5 * cfg.decay, dt);
-    natGrowth = U.env(natGrowth, 0.12 + natVit * 1.15, 0.55 * cfg.growth, 0.3 * cfg.decay, dt);
+    // in a quiet passage the tree grows and dies back at a quarter of the pace (full pace from a drive of 0.45 up), so a calm
+    // picture holds still and the tree still changes over a whole song
+    var pace = 0.25 + 0.75 * Math.min(1, A.drive * 2.2);
+    natVit = U.env(natVit, U.clamp01(A.level * 0.8 + A.intensity * 0.35), 2.2 * cfg.growth * pace, 0.5 * cfg.decay * pace, dt);
+    natGrowth = U.env(natGrowth, 0.12 + natVit * 1.15, 0.55 * cfg.growth * pace, 0.3 * cfg.decay * pace, dt);
     natGrowth = Math.max(0.06, Math.min(1, natGrowth));
 
     // how lively the passage is: 0 below a drive of 0.15, 1 from 0.5 up. The tree sways and the leaves flutter by it, so a loud
@@ -325,9 +328,9 @@
     /* --- leaves: attached until their lifespan runs out, then they fall --- */
     // a snare shakes a few leaves loose (more of them in a loud passage)
     var shed = cfg.snareLeaves && A.snareHit > 0.4 && natLeaves.length > 6 ? 1 + Math.round(A.snareHit * 3 * (0.3 + A.drive)) : 0;
-    // and in a lively passage a few leaves let go on their own, about five a second (they grow back quickly)
+    // and in a lively passage a few leaves let go on their own, about nine a second (they grow back quickly)
     if (swing > 0.01 && natLeaves.length > 6){
-      var letGo = swing * 5 * dt;
+      var letGo = swing * 9 * dt;
       shed += Math.floor(letGo) + (Math.random() < letGo % 1 ? 1 : 0);
     }
     for (var sh = 0; sh < shed; sh++){
@@ -338,7 +341,7 @@
     for (var li = natLeaves.length - 1; li >= 0; li--){
       var l = natLeaves[li];
       var tip = tipsById[l.id];
-      l.age += dt;
+      l.age += dt * pace;   // leaves live longer and are replaced more slowly in a quiet passage
       if (!tip || l.age > l.life){
         if (natFalling.length > 110) natFalling.shift();
         natFalling.push({
@@ -354,12 +357,12 @@
       l.y = tip.y;
       l.ang = tip.a + (swing > 0.01 ? Math.sin(A.t * 4.2 + l.id * 1.9) * 0.9 * swing : 0);   // leaves flutter in a lively passage
       var sz0 = l.size;
-      l.size = sz0 * (1 + 0.6 * A.kick * swing);   // every kick makes the leaves swell for a moment
+      l.size = sz0 * (1 + 0.8 * A.kick * swing);   // every kick makes the leaves swell for a moment
       drawLeafShape(l, k, 0.9 * U.clamp01(l.age / 0.4) * (0.25 + 0.75 * (1 - U.clamp01((l.age - (l.life - 1)) / 1))));
       l.size = sz0;
     }
     if (natLeaves.length < cfg.leafMax){
-      var want = cfg.leafRate * (0.4 + natVit * 3) * 24 * dt;
+      var want = cfg.leafRate * (0.4 + natVit * 3) * 24 * dt * pace;
       for (var sp = 0; sp < natTips.length && natLeaves.length < cfg.leafMax; sp++){
         if (Math.random() > want / Math.max(1, natTips.length)) continue;
         var t2 = natTips[sp];
