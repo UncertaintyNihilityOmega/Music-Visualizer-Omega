@@ -143,7 +143,8 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
   scripts with the file tool, then run them.
 - The preview server answers on `localhost` and `[::1]`, not on `127.0.0.1`. A page opened on `localhost:8123`
   sees `http://[::1]:8123/...` as another site that blocks reading: a ready-made test for such addresses.
-- `git push` to GitHub works with the credentials stored on this machine. Without `gh`, read a workflow's
+- `git push` to GitHub works with the credentials stored on this machine, from PowerShell; in an automatic run
+  Git Bash may fail with "Could not resolve host: github.com" (push from PowerShell then). Without `gh`, read a workflow's
   result from `https://api.github.com/repos/<owner>/<repo>/actions/runs` with `curl`.
 - The user may be using the preview's first tab during a run: test in a tab of your own (`tabs_create`). Both
   tabs share saved settings, so do not save test values.
