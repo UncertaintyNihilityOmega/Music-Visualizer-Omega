@@ -1,14 +1,16 @@
 # ORGANIZER: how this project is run
 
-Read this first in every session, then ROADMAP.md. State lives in files, never in a chat.
+Read this first in every session, then ROADMAP.md. State lives in files, never in a chat. This file holds the
+project's current structure and rules, without dates; dates belong only to finished roadmap items, finished
+snapshots and versions (ROADMAP.md "Done", CHANGELOG.md).
 
 ## The project
-Music Visualiser Omega: a music player and visualiser for phone, PC and web that plays songs already on the
-device, listens to the microphone, and works offline. Plain HTML, CSS and JavaScript, no build step: opening
-`index.html` runs it. Repository: https://github.com/UncertaintyNihilityOmega/Music-Visualizer-Omega
+Music Visualiser Omega: a fun and beautiful music player and visualiser for phone, PC and web that plays songs
+already on the device, listens to the microphone, and works offline. Plain HTML, CSS and JavaScript, no build
+step: opening `index.html` runs it. Repository: https://github.com/UncertaintyNihilityOmega/Music-Visualizer-Omega
 
 ## Roles
-The project is small (4 areas, under 20 units each), so one session plays one role at a time and never mixes two.
+One session plays one role at a time and never mixes two.
 
 | Role | Does | Owns |
 | --- | --- | --- |
@@ -17,14 +19,14 @@ The project is small (4 areas, under 20 units each), so one session plays one ro
 | Writer | builds one package (2 to 3 units) to the gold unit's standard | the unit files of that package |
 | Reader | uses the finished app as a new user on a phone-width screen; files what confuses | notes under "Reader" in the area's doc |
 
-A Writer never reviews its own package.
+A Writer never reviews its own package. The Organizer is the chat session itself (Opus), never an agent.
 
 ## Areas and units
 | Area | Folder | A unit is | Gold unit |
 | --- | --- | --- | --- |
 | Core | `js/core/` | one engine feature | the analysis engine (`analysis.js`) |
-| Modes | `js/modes/` | one visual mode (custom or special, see "User decisions") | **Basic** (`mode-basic.js`) |
-| Games | `js/games/`, `js/tools/` | one game | Defense, after its audit |
+| Modes | `js/modes/` | one visual mode (see "Kinds of mode") | **Basic** (`mode-basic.js`) |
+| Games | `js/games/`, `js/tools/` | one game | Artificium, after its audit |
 | App | `js/pages/`, `js/player/`, `css/` | one page | Music page |
 
 ## The four gates before a unit counts
@@ -34,131 +36,101 @@ A Writer never reviews its own package.
 4. Seen working in a browser with a real song, at desktop and at 375 px wide, with no console errors.
 A review by a fresh session every 4 packages; a Reader pass before a release.
 
+## Working with the user
+- **A prompt from the user goes into the queue.** Unless they say "immediately", what they ask for becomes queue
+  items (placed in the version where it fits), and the run continues from where the queue stood. Questions are
+  answered at once; changes to these rules take effect at once.
+- **Suggestions in the chat.** At the end of a run, write in the chat any suggestion about how the project is
+  going, what the user could do, and what could be better.
+- **Preview first.** The project is visual: every run starts the preview server ("static-server") at its start.
+- **Explain from zero.** Plain words, short sentences, numbers over adjectives; British spelling in what the
+  user reads ("Visualiser"). File and repository names keep their spelling.
+
+## Versions and snapshots
+- The plan runs in snapshots v0.1.0, v0.2.0, ..., v0.9.0, then v1.0.0. ROADMAP.md "Queue" lists each
+  snapshot's items. Version by version: every item of a snapshot before any item of the next.
+- **When a snapshot is finished:** write a short summary of it in CHANGELOG.md under its version and date, set
+  the version in `js/core/app.js` and `package.json`, run `node engine/sw-build.js`, commit, tag `v0.N.0`, push,
+  then empty ROADMAP "Done" for the next snapshot (the summary in CHANGELOG.md is the record).
+- Between snapshots the app says `<next version>-dev`.
+- After v1.0.0: v1.x grows Undarum into a large survivor game whose spells are visualisers (HTML + JavaScript,
+  no separate engine; docs/GAME-PLAN.md); v2.x grows Artificium. The other two games stay mini-games.
+- Google Search Console is the last step before v1.0.0. A Play Store version (a native Android shell) may come
+  later, not now.
+
+## Standing approvals
+- **Runs may push to GitHub on their own** after each step's commit; never force-push. A push to `main`
+  publishes the site (GitHub Pages, "Deploy from a branch").
+- Runs may use the preview server, and do several steps until the usage gate stops them (AGENT-RUN.md).
+- Agents are allowed within AGENT-RUN.md's limits (default per run: at most 2 Sonnet agents and 1 Opus agent).
+- Unused files may be deleted; `node engine/unused.js` lists candidates. User files never.
+- The scheduled task `music-visualiser-omega-next-step` may run; the user switches it on or starts it by hand.
+
+## The app as it stands
+- **Pages:** one app shell (`index.html`: canvas, mode rows, transport) plus four pages in `js/pages/` (Music,
+  Games, Settings, Guide) switched by tabs, so the music never stops on a page change.
+- **Kinds of mode.** Custom modes change with the theme codes (Basic, String, Emoji, Fire, Rain, Nature, Clock,
+  Liquid) and stand left of a small line in the mode row. Special modes keep an art style of their own and never
+  follow the codes (Ice, Aquatic, Piano). A code must change more than a mode's colours (String is the model);
+  each code-following mode has a "Follow theme" switch. A mode's layout or design is chosen in the bar at the
+  top of the Settings page (a setting of type `'layout'`, one per mode), not in its settings list.
+- **Clock designs are not the codes.** The Clock's own designs (Classic, Gears, Garden, Grid, Sky) are chosen in
+  the layout bar; the theme code sets the palette and forms of whichever design is on. Under the rainbow code it
+  is rainbow.
+- **Games row:** Undarum and Artificium (the complex games), a line, then the mini-games Dungeon of Echoes and
+  Solarium. Ids in the code stay `rpg`, `td`, `cards`, `sandbox`.
+- **Theme codes:** Omega is the default (dark purple). "Love" is the old look. "Tessa" is electric; its button
+  stands next to Omega's. The README lists every code word and does not say what any of them does.
+- **Buttons** carry a small drawn icon left of the text (modes, codes, layouts, the four page tabs). No settings
+  icon on the picture: the Settings tab is enough (the S key opens it).
+- **Behaviour:** visuals stay calm in quiet passages and move a lot in active ones. An example video shows how a
+  visualiser behaves, not its palette: a mode keeps its colours unless the user asks. For a mode built from a
+  video, look hardest at the moments the music booms.
+- **Playing in place.** Music is played from where it is on the device. "Keep a copy of added songs inside the
+  app" is a switch, off by default, in every browser.
+- **Remembered songs** (`js/player/library.js`): folders and single files are kept as handles in IndexedDB where
+  the browser has the File System Access API; with "Keep a copy" on, a song is kept as a copy (a Blob) instead.
+  On start: copies and anything with permission still held load at once; the rest wait for one tap on
+  "Reconnect". The last song and its second come back paused. `check.js` guards: the switch is off by default,
+  copies only behind it, nothing from last time autoplays.
+- **Folders inside the app** (`js/player/folders.js`): lists of song keys in localStorage; nothing is copied.
+- **Volume** is applied after the analyser, so turning the music down does not shrink the visuals.
+- **Web addresses:** one whose server blocks reading is played on a second, plain player (`S.plainAudio`),
+  because the browser silences such a source once it is wired into the analysis.
+- **Offline and install:** `sw.js` keeps a copy of the app's files under a name that holds a hash of their
+  contents (`node engine/sw-build.js` writes it; `check.js` fails when it is stale or caches an untracked file).
+  It is not registered on localhost unless the address ends in `?sw=1`. To test offline: load with `?sw=1`,
+  stop the preview server, reload.
+- **Background play:** lock-screen and headphone controls (Media Session). On iPhone and iPad a song moves to the
+  plain player while the page is hidden (`js/player/background.js`), because Safari silences analysed sound in
+  the background. "Repeat one" is the player's own loop (`el.loop`); every start of sound goes through
+  `P.safePlay`; a start refused while the page is hidden is made up for when it is seen again.
+- **Late sound** (`audio-engine.js`): while Piano is on screen the speakers get the song 2.3 s after the analysis
+  hears it, so a note can fall and land as it is heard. Only Piano asks for it (`check.js`). Pause holds the
+  delayed sound; a seek or a new song mutes what is still in the delay.
+- **Fullscreen:** one set of rules for real fullscreen and the iPhone stand-in (class "is-full"). The picture
+  fills the screen; the buttons lie over its lower edge in one sliding line and fade out after 3.5 s without a
+  touch; a phone held upright turns the picture sideways (a setting, on by default). Every mode must look right
+  in fullscreen on a phone.
+- **iPhone:** sound session "playback" (the silent switch does not mute), the fullscreen button fills the window,
+  text boxes use 16 px letters. `check.js` guards all three. Checked by the user on a real iPhone: all working.
+- **GitHub:** `.github/workflows/pages.yml` only runs the two checks; Pages publishes `main` as it is (the tools
+  and notes are public too). `.nojekyll` keeps GitHub from rewriting the files.
+
 ## Rules
-- One step per session: read ROADMAP "Now", do the next queue item (or the user's request), run the gates,
-  commit only that step's files, update ROADMAP.
+- One step at a time: do the next queue item, run the gates, commit only that step's files, update ROADMAP.
 - A rule lives in one file; other files point to it. Numbers that shape the sound live in
   `js/core/analysis.js` `DEFAULT_CFG` and nowhere else.
-- Never type bulky assets by hand: the app icon comes from `engine/icons.js`. The small button icons are short
-  line drawings in `js/core/icons.js`; a new mode, game, code or page needs one (`check.js` enforces it).
-- A new theme code needs a look for every mode left of the line (`look.fire`, `rain`, `nature`, `clock`,
-  `liquid` in `themes.js`); `check.js` enforces it. After any change to a file the app loads, run
-  `node engine/sw-build.js`.
-- Facts come from a source and go in FACTS.md with the date. Measured numbers go in `engine/README.md`.
+- Never type bulky assets by hand: the app icon comes from `engine/icons.js` (icon 12 "Bold Layers"). The small
+  button icons are short line drawings in `js/core/icons.js`; a new mode, game, code or page needs one
+  (`check.js` enforces it).
+- A new theme code needs a look for every custom mode (`look.fire`, `rain`, `nature`, `clock`, `liquid` in
+  `themes.js`); `check.js` enforces it. After any change to a file the app loads, run `node engine/sw-build.js`.
+- Facts come from a source and go in FACTS.md. Measured numbers go in `engine/README.md`.
 - A fault found by hand becomes a check in `engine/check.js`, `engine/test.js` or `engine/songtest.js`.
 - The app must work with no network: no web fonts, no CDN scripts (`check.js` enforces it).
 - Classic scripts, not modules, so `index.html` opens from disk. Load order is in `index.html` and checked.
-- British spelling in what the user reads ("Visualiser"). File and repository names keep their spelling.
-- Writing style for docs and UI text: plain words, short sentences, numbers over adjectives.
-
-## User decisions (date, decision)
-- 2026-11-15: **No subagents for now.** Sessions do the work themselves until the user says otherwise.
-  **Lifted 2026-11-16** ("continue with agents", when the session moved from Fable to Opus 5.5): agents are
-  allowed within AGENT-RUN.md's limits. The scheduled task's stored prompt still says "no subagents"; it is
-  left as the user wrote it. 2026-11-17: an agent sees and edits only its own files and uses the preview server.
-- 2026-11-15: Title is "Music Visualiser Omega" (was "Our Playlist"). The old look is the theme code "Love".
-- 2026-11-15: Music is played from where it already is on the device; nothing is copied into the app.
-- 2026-11-15: The work of this plan, when the queue's release item is done, is snapshot **v0.1.0**.
-- 2026-11-15: v1.x will add a large survivor game whose spells are visualisers. Engine not chosen: docs/GAME-PLAN.md.
-- 2026-11-16: Visuals should stay calm in quiet passages and move a lot in active ones (seen in the test videos).
-- 2026-11-16: Gold unit (Basic mode and engine v2) approved. Icon 12 "Bold Layers" chosen.
-- 2026-11-16: v1.x game stays on HTML + JavaScript (no separate engine).
-- 2026-11-16: Old files deleted: `Music_Visualizer-Project.html`, `serve.ps1`.
-- 2026-11-16: Runs may use the preview server, and may do several steps: keep going until the 5-hour meter is
-  at 75% or the weekly one at 95% (AGENT-RUN.md). No agents. The 95% weekly limit is confirmed.
-- 2026-11-16: The scheduled task stays switched off; the user starts runs by hand. Its plan stays as written.
-- 2026-11-16: Publishing approved (ROADMAP items 3 and 2): the repository was pushed to GitHub and the user
-  switched on GitHub Pages.
-- 2026-11-16: **Runs may push to GitHub on their own** (standing approval). Push after each step's commit;
-  never force-push. A push to `main` publishes the site.
-- 2026-11-16: No settings icon on the picture: the Settings tab is enough (the S key still opens it).
-- 2026-11-16: A mode's layout is chosen in a bar at the top of the Settings page, above the codes, that looks
-  like the page tabs; it is not a row in the mode's settings list.
-- 2026-11-16: A theme code must change more than a mode's colours. String is the model: "Strings look really
-  good with all theme codes, but fire only changes color". Fire now has a form of its own per code.
-
-- 2026-11-16: The app must be installable ("download the app") and keep playing in the background on a phone.
-- 2026-11-16: Mode row: modes that follow the codes on the left, a small vertical line, the rest on the right.
-  Games row: Undarum (was Survivor) first, Artificium (was Defense) second, a line, then the mini-games
-  Dungeon of Echoes (was Cards) and Solarium (was Sandbox). v1.x grows Undarum, v2.x grows Artificium; the
-  other two stay mini-games. Ids in the code stay `rpg`, `td`, `cards`, `sandbox`.
-- 2026-11-16: Omega is the default theme, so the default look of Fire, Nature, Clock (and Rain) fits Omega.
-- 2026-11-16: The code "Tessa" is an electric theme; its button stands next to Omega's.
-- 2026-11-16: Buttons carry a small icon left of the text: modes, codes, layouts, and the four page tabs.
-- 2026-11-16: Unused files may be deleted (the icon options were); `node engine/unused.js` lists candidates.
-- 2026-11-16: For a mode built from an example video, look hardest at the moments the music booms.
-- 2026-11-16: **Four kinds of mode.** Custom modes change with the codes (Basic, String, Emoji, Fire, Rain,
-  Nature, Clock, Liquid). Special modes keep an art style of their own and never follow the codes (Ice,
-  Aquatic, Piano). Complex games are improved deeply in v1.x and v2.x (Undarum, Artificium). Mini-games stay
-  small (Dungeon of Echoes, Solarium). So there is no "more themes" item: queue item 10 was withdrawn.
-- 2026-11-16: **Versions.** v0.1.0: all custom modes improved, phone adaptations, engine updates, and Google
-  Search Console as the very last step. v0.2.0: all special modes improved, remembering folders and songs,
-  folders inside the app. v0.3.0: all mini-games improved.
-- 2026-11-16: The README lists every code word and does not say what any of them does.
-- 2026-11-16: An example video shows how a visualiser behaves; it is not a palette. Piano keeps its colours.
-- 2026-11-16: Checked by the user on their phone: the app installs, works online and offline, plays in the
-  background, and repeat and shuffle work. The Tessa looks are approved ("especially ... the nature section").
-- 2026-11-16: The app is prepared for iPhone and Safari too; the check on a real iPhone waits under "For the
-  user" until the user can do it.
-- 2026-11-16 (fourth list): checked on the user's phone: "repeat one" and "repeat all" both keep playing; the
-  folder comes back with "Reconnect" (the browser asks for permission again, as expected).
-- 2026-11-16: **Keep a copy** of added songs inside the app is a switch the user turns on, in every browser,
-  not only on iPhone (useful later for the folders inside the app). Off by default, so the decision of
-  2026-11-15 ("nothing is copied") still holds until the user turns it on.
-- 2026-11-16: Piano should look like the piano video in behaviour: notes fall onto the keys and land as they
-  are heard. The colours stay Piano's own.
-- 2026-11-16: Every mode must look right in fullscreen on a phone. The Clock design was judged ugly and is
-  redrawn.
-- 2026-11-16: The app may go to the Play Store later (a native Android shell); not now.
-- 2026-11-17: Checked by the user: fullscreen on the phone turns sideways and looks right; "Keep a copy" works.
-  Piano still differs from a real piano video, "okay for now".
-- 2026-11-17: **Clock designs are not the codes.** The Clock's style list holds its own designs (Classic, Gears,
-  Garden, Grid, Sky); the theme code sets the palette and forms of whichever design is on. Under the rainbow
-  code it must be rainbow. Leftovers that look random (Solarpunk's panels, still leaves) go.
-- 2026-11-17: The scheduled task may use agents (its prompt was updated to match AGENT-RUN.md).
-- 2026-11-17: Runs keep going through the queue with the preview server until a limit stops them.
-- 2026-11-17: **Version by version.** Every v0.1.0 item before any v0.2.0 item, and so on. (Item 19 c, a v0.2.0
-  item, was built out of order on 2026-11-17 before this was said; it was finished and kept.)
-
-## Decisions the Organizer made (the user can reverse any of them)
-- 2026-11-15: "Divide all pages into their own files" is done as one app shell (`index.html`: canvas, mode rows,
-  transport) plus four pages in `js/pages/` (Music, Games, Settings, Guide) switched by tabs. Separate HTML
-  documents were rejected because music would stop on every page change.
-- 2026-11-15: Default theme is the dark purple "Omega" look taken from `inspiration/example-icon`.
-- 2026-11-16: Volume is applied after the analyser, so turning the music down does not shrink the visuals.
-- 2026-11-16: Commits were local only until the user approved publishing; they did so the same day (see above).
-- 2026-11-16: GitHub Pages publishes the `main` branch as it is (the user's setting: "Deploy from a branch"),
-  so the tools and project notes are public too. `.github/workflows/pages.yml` only runs the two checks; it
-  does not deploy, because two deployers raced each other. `.nojekyll` keeps GitHub from rewriting the files.
-- 2026-11-16: A setting of type `'layout'` in a mode's schema is that mode's layout choice: `settings.js`
-  draws it in the layout bar and leaves it out of the mode's list. One per mode.
-- 2026-11-16: A web address whose server blocks reading is played on a second, plain player
-  (`S.plainAudio`), because the browser silences such a source once it is wired into the analysis.
-
-- 2026-11-16: Offline: `sw.js` keeps a copy of the app's files under a name that holds a hash of their contents
-  (`node engine/sw-build.js` writes it; `check.js` fails when it is stale). It is not registered on localhost
-  unless the address ends in `?sw=1`. To test offline: load with `?sw=1`, stop the preview server, reload.
-- 2026-11-16: On iPhone and iPad a song moves to the plain player while the page is hidden
-  (`js/player/background.js`), because Safari silences analysed sound in the background. Not tested on a device.
-- 2026-11-16: "Repeat one" (and "repeat all" with one song) is the player's own loop (`el.loop`), not a restart
-  from script when the song ends: with the screen off a phone may refuse or delay that restart. Every start of
-  sound goes through `P.safePlay`; a start refused while the page is hidden is made up for when it is seen again.
-- 2026-11-16: **Remembered songs** (`js/player/library.js`): folders and single files are kept as handles in
-  IndexedDB where the browser has the File System Access API; with "Keep a copy" on, a song is kept as a copy
-  (a Blob) instead, which every browser supports. On start: copies and anything with permission still held
-  load at once; the rest wait for one tap on "Reconnect". The last song and its second come back paused.
-  `check.js` guards: the switch is off by default, copies only behind it, nothing from last time autoplays.
-- 2026-11-16: **Late sound** (`audio-engine.js`): while Piano is on screen the speakers get the song 2.3 s
-  after the analysis hears it, so a note can fall for 2.3 s and land as it is heard. Only Piano asks for it
-  (`check.js`); every other mode, and the microphone, get the sound at once. Pause holds the delayed sound
-  (the sound engine is suspended); a seek or a new song mutes what is still in the delay.
-- 2026-11-16: **Fullscreen**: one set of rules for real fullscreen and the iPhone stand-in (class "is-full").
-  The picture fills the screen; the buttons lie over its lower edge in one sliding line and fade out after
-  3.5 s without a touch; a phone held upright turns the picture sideways (setting "Fullscreen on a phone
-  turns the picture sideways", on by default; an iPhone cannot be turned by a page).
-- 2026-11-16: iPhone: the sound session is set to "playback" (the silent switch no longer mutes the music); the
-  fullscreen button fills the window where a page element cannot go fullscreen; text boxes use 16 px letters
-  there so tapping one does not zoom the page. `check.js` guards all three. Not tested on a device.
+- Never publish `test-songs/` or `inspiration/`; never delete user files; never create accounts.
 
 ## Environment (this machine)
 - Windows 10, PowerShell. Node 24. **No Python** (the `python` command is the Store stub): tools are Node only.
@@ -179,11 +151,11 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 ## Files
 | File | What |
 | --- | --- |
-| ROADMAP.md | the only status record: Now, Rules, Queue, Done, For the user |
+| ROADMAP.md | the only status record: Now, Rules, Queue (by snapshot), Done, For the user |
 | AGENT-RUN.md | how scheduled and manual runs work |
 | PROMPTS.md | one copy-paste prompt per kind of session |
 | FACTS.md | facts with sources |
-| CHANGELOG.md | what a user would notice, per release |
+| CHANGELOG.md | what a user would notice, one summary per snapshot |
 | docs/HOW-IT-WORKS.md | how sound becomes a picture, for a beginner |
 | docs/RESEARCH.md | the science, Specterr, Vizzy, the measured videos |
 | docs/MODES.md | every mode: what it listens to, ideas |

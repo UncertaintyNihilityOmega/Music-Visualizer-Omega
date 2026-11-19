@@ -1,140 +1,154 @@
 # ROADMAP: build queue and current state
 
 ## Now
-- Run closed on 2026-11-17 to save the weekly limit (the user's word). Everything finished is committed and
-  pushed; no lock is left. GitHub checks pass.
-- Gates at the last commit: `test.js` 25 of 25, `check.js` 0 errors, browser checks of the Clock and the
-  folders at 1280 px and 375 px: no errors.
-- **Item 17 in hand.** Clock is done (designs apart from the codes). The review of the eight custom modes is
-  half done: the "## Review" section of docs/MODES.md has numbers for Omega and Love and the three worst
-  faults (Liquid moves the same quiet and loud; Emoji moves a lot when quiet, worst under Love; String moves a
-  lot when quiet). Not yet looked at: the other seven codes, looks (no contact sheets), 375 px and phone
-  fullscreen. Next: finish the review, then fix Liquid, Emoji and String, one per step.
-- **Item 6 started, not committed.** The pure maths is in `.run/wip/song-map.js` (git-ignored, kept out of
-  `js/` so `check.js` passes): tempo, beat grid, hits, sections, energy curve, and the sliced browser part.
-  Not started: `engine/songmap.js`, tests, the seek-bar drawing, the docs. First numbers: a 128 a minute click
-  track reads 128.0; the biggest drop is among the top three hits in 1 of 3 songs (fix idea: weight a hit at
-  a section start by how much louder the section is); confidence reads too high. To resume: move the file
-  back to `js/core/` and add it to `index.html` in the same commit.
-- Version by version: v0.1.0 items only until they are done (17, 6, 7, 11, 12, then 18).
+- v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
+- Next snapshot: **v0.2.0**, first item 21.
+- Item 17 (v0.3.0) is half done: the "## Review" section of docs/MODES.md has motion and speed numbers for Omega
+  and Love and the three worst faults (Liquid moves the same quiet and loud; Emoji and String move a lot when
+  quiet). Not yet looked at: the other seven codes, looks, 375 px, phone fullscreen.
+- Item 6 (v0.5.0) is started, not committed: the pure maths is in `.run/wip/song-map.js` (git-ignored). The
+  user's beat counts agree with it (see item 6). To resume: move the file back to `js/core/` and add it to
+  `index.html` in the same commit.
 
 ## Rules
 - After each step: `node engine/test.js`, `node engine/check.js`, `node engine/songtest.js` if sound changed,
   browser check, commit that step's files, update "Now".
 - The queue holds unfinished items only. At the end of every run finished items move to "Done", finished lines
-  leave "Now", and anything only the user can do goes under "For the user". Queue numbers never change.
+  leave "Now", and anything only the user can do goes under "For the user". Queue numbers never change; a new
+  item takes the next free number.
 - An item is done only when its "Done when" line is true.
-- Version by version (user, 2026-11-17): take the next item of the lowest version that still has items.
-- Version: the app says `0.1.0-dev` until item 12, which sets `0.1.0` and tags it.
+- Version by version: take the next item of the lowest snapshot that still has items.
+- A finished snapshot: summary in CHANGELOG.md, version set and tagged, "Done" emptied (ORGANIZER.md
+  "Versions and snapshots"). Between snapshots the app says `<next version>-dev`.
+- A prompt from the user becomes queue items unless they say "immediately" (ORGANIZER.md).
 
 ## Queue
 
-**v0.1.0: custom modes, phone, engine, then Google**
+**v0.2.0: everyday playing** (things the user meets every time they listen)
+
+21. **Tap the picture to pause and play.** In fullscreen (and on the picture outside it) one tap or click pauses
+    or plays the song, so fullscreen need not be closed to stop the music. Modes that use touch (Fire's plasma
+    globe, Liquid's splash, Piano's keys, Solarium) keep their touch: decide per mode (for example a short tap
+    toggles only where the mode does nothing with a tap, or a double tap elsewhere) and say it on the Guide
+    page. Done when: in fullscreen on desktop and at 375 px, a tap pauses and a second tap plays, in every mode.
+22. **Keep the screen on while the visualiser plays.** Use the Screen Wake Lock API while a song plays and the
+    picture is on screen (like a video site); let go on pause and when the page is hidden; ask for it again
+    when the page is seen again. That also stops the phone dropping out of fullscreen when the screen goes off.
+    A setting, on by default. Done when: on the user's phone the screen stays on through a whole song in
+    fullscreen ("For the user" check), and `check.js` guards that the lock is released on pause.
+23. **One permission is enough.** Today the browser asks again on every start before remembered songs load.
+    Find what each browser allows (Chrome's "Allow on every visit" for files, an installed app, persistent
+    storage) and use it; where a browser still asks, explain on the Music page and point to "Keep a copy".
+    Facts in FACTS.md. Done when: on Chrome on PC and Android, after one "Allow on every visit", the songs load
+    on start with no question (the user checks the phone).
+
+**v0.3.0: custom modes**
+
+17. **Custom modes pass.** First finish the review (open notes under "Review" in docs/MODES.md, by a session that
+    did not write the modes; prompt in PROMPTS.md). Then one step per custom mode (Basic, String, Emoji, Fire,
+    Rain, Nature, Clock, Liquid): two songs, every code, calm part against loud part measured, the weakest thing
+    fixed. Worst first: Liquid, Emoji, String. Done when: the review's notes are closed and each of the eight
+    has a dated line in docs/MODES.md.
+    Clock notes left for a later look: the time in figures is crowded beside VIII and IV in the Roman skins,
+    the hands can pass over it, Golden's sand covers the bottom of the crown on a phone, Cyberpunk is busy,
+    Solarpunk's solar panels are left over.
+24. **Clock under Ascensus Ad Incertum: speed and wings** (user check). It is laggy: measure ms per frame and
+    find the cost. Redraw the wings in 2D after `inspiration/wing-example.webp` (feathered wings like it, but
+    flat); the left and right wings are different from each other. Done when: under 2 ms a frame at 1280 px
+    and 375 px, and the user says the wings look right.
+25. **Clock: Gears and Sand as two designs** (user check). Gears: flat gears like gear icons (fits the Clock's
+    art style), more gears, all meshing in time. Sand: its own design in the layout bar. The sand can be
+    grabbed and thrown (mouse and touch) and lands in piles that stay apart; it slowly fills the whole screen
+    in 10 minutes. Done when: both designs are in the layout bar, work with every code, under 2 ms a frame
+    (sand measured near full), and the user says they look right.
+
+**v0.4.0: special modes**
+
+20. **Special modes pass: Ice, Aquatic, Piano.** They keep their own look (no theme codes). Piano's falling
+    notes are built and checked by the user on phone, web and PC. Ice is left, plus items 26 to 29. Done when:
+    each of the three has a dated line in docs/MODES.md.
+26. **Piano plays piano sounds.** In Piano mode the speakers play real piano notes for the keys the analysis
+    picks from the song, instead of the song itself; touching a key plays that key too. Offline, so the sound
+    is made in the app (synthesised with Web Audio) or from a small free sample set kept in the repository
+    (licence in FACTS.md). A setting switches back to the song. With the late sound, a note sounds as it lands
+    on its key. Done when: a piano song in Piano mode is heard as piano notes that match the falling notes,
+    touch plays notes, and the setting brings back the song.
+27. **Piano: note icons on touch.** The touch effect draws music-note icons (line drawings, not emoji such as
+    "🎶") in the colour of the key that was pressed. Done when: seen at 1280 px and 375 px.
+28. **Aquatic: the edges.** A fish that swims past the left or right edge comes back from the other side; one
+    that swims up out of the water jumps and falls back in (it does not come from the bottom); the bottom is a
+    wall. Done when: checked by stepping frames with fish forced to each edge.
+29. **Aquatic: better fish** after `inspiration/fish-example.jpg` (shape and style like it). Done when: seen at
+    1280 px and 375 px and the user says they look right.
+
+**v0.5.0: song map**
 
 6. **Song map (whole-song analysis).** `js/core/song-map.js`, pure like `analysis.js`: decode a local file, find
    tempo, beat grid, strongest hits, sections and an energy curve (format in docs/GAME-PLAN.md). Runs in small
    slices so the page never freezes; also `node engine/songmap.js <file>` writes the JSON. Show the energy curve
-   and hits behind the seek bar. Done when: tempo is within 3% (or exactly half/double) of a hand count on the
-   five test songs and the biggest drop of each song is among its top three hits.
+   and hits behind the seek bar. Done when: tempo is within 3% (or exactly half/double) of the user's counts
+   and the biggest drop of each song is among its top three hits.
+   The user's counts (vibesdj.io, 2026-11-19): Decensus Ad Nihilum 77.70 BPM (C minor), To Be Human 109.30
+   (A flat minor), Want Some Fun 85 (B minor). The song map read 77.5, 109.4 and 84.9: all within 0.3%. Left:
+   the drop check (fix idea: weight a hit at a section start by how much louder the section is) and confidence,
+   which reads too high.
 7. **Mapping selectors.** A generic "follows: [source]" setting type, like Rain's wind, so any mode property can
    be pointed at any source (docs/MODES.md idea D). Done when: three modes use it and it is documented.
-17. **Custom modes pass** (the user's v0.1.0 line "all custom modes improved"; takes over what item 8 left).
-    First the review after P4, by a session that did not write the modes (prompt in PROMPTS.md; open notes
-    under "Review" in docs/MODES.md; Liquid and the theme looks belong to it). Then one step per custom mode
-    (Basic, String, Emoji, Fire, Rain, Nature, Clock, Liquid): two songs, every code, calm part against loud
-    part measured, the weakest thing fixed. Done when: the review's notes are closed and each of the eight has
-    a dated line in docs/MODES.md.
-    Clock is done (2026-11-17); notes left from its check for a later look: the time in figures is crowded
-    beside VIII and IV in the Roman skins, the hands can pass over it, Golden's sand covers the bottom of the
-    crown on a phone, Cyberpunk is busy, Heaven's wings are faint, Solarpunk's solar panels are left over.
+
+**v0.6.0: Artificium**
+
+30. **Artificium: the old prompt, played and fixed.** Every Artificium row of docs/GAME-AUDIT.md (D1 to D17,
+    and G1) is in the code but not play-tested: Shock Pylon (1 s stun, never faster than one hit per 2 s),
+    grid selection by click, tap and WASD, one upgrade per tower, the info panel with Upgrade and Enter,
+    Positioning mode, the trash can and "Selling Price", the four Techs to level 10, towers to level 30 with
+    the 27 evolutions at 15, enemy HP per wave, +1% after everything is maxed. Known failure (user check): the
+    window size still changes the road length, so enemies jump and towers reach too far; the board must keep
+    its size in board units and zoom to fit. Done when: every D row says "confirmed" or "fixed" with the date,
+    and resizing the window changes neither range nor road length (a check in `test.js` or `check.js`).
+
+**v0.7.0: Undarum**
+
+31. **Undarum: the old prompt, played and fixed.** Every Undarum row of docs/GAME-AUDIT.md (S1 to S8): magic to
+    level 30 with an evolution at 15, passives to 10, Satellite from 2 orbs, Fire Breath 3 circles, Nature
+    Bloom 4, one big Sweeping Laser through the player, Meteor 2, a bigger Boomerang with an emoji that shows,
+    +1% after everything is maxed and no more choice screen. Known failures (user check): holding Shift in
+    fullscreen throws the player out of fullscreen (likely Windows: Shift held 8 s opens the Filter Keys box,
+    Shift pressed 5 times opens Sticky Keys; both take the focus), so the dash needs another key or a way
+    round; spamming Shift while running down puts the player outside the map. Losing one game must not count
+    as losing another (D4). Done when: every S row says "confirmed" or "fixed" with the date, and the player
+    cannot leave the map (a check).
+
+**v0.8.0: mini-games**
+
+9. **Game audit, mini-games.** Play-test every Dungeon of Echoes and Solarium row of docs/GAME-AUDIT.md and fix
+   what fails. Done when: every C and B row says "confirmed" or "fixed" with the date.
+16. **Design pass on the mini-games.** Look at each as a player would and make it look better; the user's
+    pictures are in `inspiration/` (`sandbox-example.jpg` for Solarium; read every file there first). Solarium
+    first. One game per step, each with a before and after picture at desktop and 375 px. Done when: the user
+    has seen both and says they look right.
+
+**v0.9.0: phone pass**
+
 11. **Phone pass.** Measure the two heaviest modes first (Nature with a full tree, Fire's hearth style: about
-    15 ms a frame on the desktop, see engine/README.md) and make them lighter if a phone drops frames. Every page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways
-    scroll, microphone over https, folder fallback where the folder API is missing. iPhone and Safari are part
-    of it once the user can check one ("For the user"). Done when: a Reader session finds nothing blocking.
-12. **Debug pass and release v0.1.0.** Full routine: self-test, check, songtest, every mode for 10 s with two
-    songs and no console errors, every page at 375 px, external links. Then set version `0.1.0`, write the
-    CHANGELOG entry, tag `v0.1.0`. Done when: the tag exists and the published site shows v0.1.0.
-18. **Google Search Console** (asked by the user, 2026-11-16: "just at the end of the v0.1.0"). After item 12.
-    A run prepares `sitemap.xml` and checks the page's title and description; the user adds the site in
-    Search Console as a "URL prefix" property and passes on the verification file or tag, which a run commits;
-    then the user presses Verify and submits the sitemap (FACTS.md "Phones"). Done when: Search Console shows
-    the site as verified and the sitemap as read.
+    15 ms a frame on the desktop, see engine/README.md) and make them lighter if a phone drops frames. Every
+    page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways scroll, microphone
+    over https, folder fallback where the folder API is missing. Done when: a Reader session finds nothing
+    blocking.
 
-**v0.2.0: special modes, remembering, folders inside the app**
+**v1.0.0: release**
 
-20. **Special modes pass: Ice, Aquatic, Piano.** They keep their own look (no theme codes). One step per mode.
-    Piano's falling notes are built (see Done); Ice and Aquatic are left. Done when: each of the three has a dated
-    line in docs/MODES.md and Piano's notes land on the keys as they sound, at 375 px too.
-
-**v0.3.0: mini-games**
-
-9. **Game audit.** Play-test every row of docs/GAME-AUDIT.md and fix what fails. The mini-games' rows (Dungeon
-   of Echoes, Solarium) are v0.3.0; the rows of Undarum and Artificium wait for v1.x and v2.x. Done when: every
-   mini-game row says "confirmed" or "fixed" with the date.
-16. **Design pass on the games** (asked by the user, 2026-11-16). Look at every game as a player would and make
-    it look better. The user's pictures of how things should look are in `inspiration/` (`sandbox-example.jpg`
-    for Solarium; read every file there first). v0.3.0 does the two mini-games, Solarium first; Undarum and
-    Artificium are improved deeply in v1.x and v2.x. One game per step, each with a before and after picture
-    at desktop and 375 px. Done when: the user has seen both mini-games and says they look right.
+12. **Debug pass and release v1.0.0.** Full routine: self-test, check, songtest, every mode for 10 s with two
+    songs and no console errors, every page at 375 px, external links. Then the snapshot steps (CHANGELOG,
+    version `1.0.0`, tag). Done when: the tag exists and the published site shows v1.0.0.
+18. **Google Search Console**, the very last step. A run prepares `sitemap.xml` and checks the page's title and
+    description; the user adds the site in Search Console as a "URL prefix" property and passes on the
+    verification file or tag, which a run commits; then the user presses Verify and submits the sitemap
+    (FACTS.md "Phones"). Done when: Search Console shows the site as verified and the sitemap as read.
 
 ## Done
-- 0a Project structure: ORGANIZER.md, this file, AGENT-RUN.md, PROMPTS.md, FACTS.md, CHANGELOG.md, `docs/`, `engine/` (2026-11-16).
-- 0b Research: the science, Specterr, Vizzy, and both test videos measured frame by frame; written in docs/RESEARCH.md; beginner explainer in docs/HOW-IT-WORKS.md and on the Guide page (2026-11-16).
-- 0c Engine v2: pure `analysis.js` shared with Node; analyser range fixed (-90..-12 dB), loudness curve, treble lift, soft ceiling, long auto-level memory; kick / snare / hat / onset / energy; `Aud.bars()` (2026-11-16).
-- 0d Tools: `engine/serve.js` (Range requests, test-songs list), `test.js` (16 checks), `check.js`, `songtest.js` (5 real songs pass), `icons.js` (2026-11-16).
-- 0e Pages split into files: shell + Music, Games, Settings, Guide in `js/pages/` (2026-11-16).
-- 0f Title "Music Visualiser Omega"; eight theme codes that restyle the page and Basic mode (2026-11-16).
-- 0g Play in place: remembered music folder (File System Access API), files, drag and drop, video files' sound; nothing copied (2026-11-16).
-- 0h Microphone mode (2026-11-16).
-- 0i Piano mode works: the fine spectrum is now read; note picking redone in real signal strength (2026-11-16).
-- 0j Basic mode rebuilt as the gold unit: four layouts, three ranges, rounded peaks, reflection, theme looks (2026-11-16).
-- 0k Volume and mute no longer shrink the visuals (2026-11-16).
-- 0l README.md, LICENSE, ten icon options in `icons/gallery.html` (2026-11-16).
-- 0m Old game prompt: every requirement located in the code and listed in docs/GAME-AUDIT.md; difficulty explained on the Games page from the live numbers. Play-testing is item 9 (2026-11-16).
-- 1 Gold unit approved by the user: Basic mode and engine v2 (2026-11-16).
-- 2 (first part) Icon 12 "Bold Layers" chosen by the user and set; ten more options (11 to 20) in the gallery; PNG sizes made in the browser with `engine/icon-png.html` (ffmpeg cannot read SVG here) and listed in the manifest (2026-11-16).
-- 5 Picture layer: `js/core/fx.js` zooms on a kick, shakes on a strong beat, brightens on a snare, scaled by drive squared so calm passages hold still; every mode is wrapped in it and sets its own share; "Picture punch" setting; gentler with reduced motion; five checks in `test.js` (2026-11-16).
-- 8 P1 to P4: String, Emoji, Rain, Fire, Ice, Aquatic, Nature and Clock rebuilt on the ideas in docs/MODES.md, plus the Basic and Piano ideas that need no song map. Each uses at least two of kick / snare / hat / drive. Calm against lively measured on two songs (table in docs/MODES.md); checked at 375 px. Fire's white burn-out was found in the browser check and fixed (2026-11-16).
-- 0n `A.drive` and the one-frame events `kickHit` / `snareHit` / `hatHit` in `analysis.js`; idle "ghost song" with a calm part, a build and a full part; String, Emoji and Clock follow the theme codes; settings version 3 (2026-11-16).
-- 0o `engine/probe.js`: browser probes that work while the pane is hidden (2026-11-16).
-- 0p Runs: several steps per run, usage gate 75% / 95%, lock with session id; the scheduled task's prompt rewritten to match AGENT-RUN.md (2026-11-16).
-- 14 v1.x game engine decided by the user: stay on HTML + JavaScript; no prototypes needed (2026-11-16).
-- 15 Fire follows the theme codes (asked by the user): `look.fire` in `themes.js` gives each code a flame colour, a hot core and a dark hearth; the rainbow theme gives each flame its own hue; the default theme keeps the user's own colours; "Follow theme" switch; `check.js` checks every theme's fire and that its hearth is dark. White share in a loud passage 10% or less in every theme, at desktop and 375 px (2026-11-16).
-- 3 (first part) Published to GitHub with the user's approval: remote added, the repository's first commit joined (no force-push), `main` pushed; `.github/workflows/pages.yml` runs `test.js` and `check.js`, then deploys only the app's files. Both checks pass on GitHub (2026-11-16).
-- 13 Small known faults, all four fixed and each guarded by a rule in `check.js`: (a) a web address that blocks reading was confirmed to "play" in silence over a black picture; it now plays on a second, plain player and the picture shows the idle preview, with a note; (b) an imported settings file says which settings version it holds, and outdated groups are skipped; (c) shuffle and repeat are drawn icons in the theme's colours; (d) the saved theme's colours are set by a small script in the page head before the first paint (2026-11-16).
-- 3 (second part) The user switched on GitHub Pages; the public URL loads the app, its scripts and icons. Pages publishes the `main` branch itself, so the workflow was cut down to the two checks; `.nojekyll` added (2026-11-16).
-- User requests of 2026-11-16: the settings icon on the picture removed (the S key still opens Settings); a layout bar at the top of the Settings page for the current mode's layouts (Basic, Emoji, Clock, Fire), drawn from a new `'layout'` setting type; Fire given eight styles, one per theme code (fireworks, cauldron, candles, sun, pixels, vortex, aurora, and the hearth), each also selectable by hand.
-- 2 and 3 Phone check, by the user (2026-11-16): the site loads and works on the phone, the installed icon and the microphone too.
-- 4 Offline install: `sw.js` keeps the app's 48 files under a name that holds a hash of their contents (`node engine/sw-build.js`; `check.js` fails when it is stale); not registered on localhost unless the address ends in `?sw=1`. Checked in the browser: loaded once, preview server stopped, reloaded: the app opened and drew. A new build takes over after one reload (skipWaiting, old caches deleted). "Install the app" button on the Music page (2026-11-16).
-- User requests of 2026-11-16, second list: (a) background play: lock-screen and headphone controls (Media Session), the sound engine is woken after an interruption, and on iPhone and iPad the song moves to the plain player while the page is hidden; (b) mode row: modes that follow the codes left of a line, the others right; games row: Undarum (was Survivor), Artificium (was Defense), a line, Dungeon of Echoes (was Cards), Solarium (was Sandbox); (c) Rain, Nature and Clock have a form of their own for every code (table in docs/MODES.md), with a "Follow theme" switch; Fire, Nature, Clock and Rain start in the Omega look; (d) the code "Tessa": an electric theme (Jacob's ladder for String, plasma globe for Fire, lightning tree, storm, sparks), its button next to Omega's; (e) Liquid mode after `inspiration/liquid-example.mp4`, with the boom measured on the video (drop swells about 1.4 times, two sharp horns, a bright copy behind, zoom and specks); (f) drawn icons on every mode, game, code, layout and page button (`js/core/icons.js`); (g) `engine/unused.js` reports unused files, CSS classes and ids; it found only the 20 icon options and their gallery, which were deleted (`node engine/icons.js` makes them again).
-- 10 More themes: withdrawn by the user (2026-11-16). Special modes (Ice, Aquatic, Piano) keep their own look and do not follow the codes.
-- 8 Modes in packages: P1 to P4 done (above). What was left moved: the review after P4 to item 17, P5 Piano falling notes to item 20 (2026-11-16).
-- User requests of 2026-11-16, third list: (a) a song on repeat sometimes stopped on the phone: "repeat one" is now the player's own loop, every start of sound goes through `P.safePlay`, and a start refused while the page is hidden is made up for when it is seen again; rules in `check.js`; in the browser a song looped with 0 "ended" events and the next song followed with repeat off; (b) iPhone and Safari: sound session "playback", Home Screen tags, a fill-the-window stand-in for fullscreen, 16 px text boxes, no folder button where no folder can be opened; not tested on a device; (c) Piano: glow where a note starts, flames from held keys, whole key lit, roll at 0.35 screen heights a second, taken from the piano video (measured in docs/RESEARCH.md section 6); colours unchanged at the user's word; 1.3 to 1.4 ms a frame; (d) README lists the nine codes without saying what they do; (e) research: how the InShot player finds songs (Android's media store, closed to web pages) and what the app can do instead (docs/RESEARCH.md section 7); (f) the user's version plan and the four kinds of mode recorded in ORGANIZER.md; queue regrouped.
-- User requests of 2026-11-16, fourth list: (a) item 19 (a, b, d): single files are remembered as handles like folders (`js/player/library.js` rewritten: folders, files and copies in one IndexedDB store; the old single folder moves over by itself); "Reconnect" brings back everything that waits for permission with one tap; a "Keep a copy of added songs inside the app" switch on the Music page, off by default, with the space used and "delete the copies"; the last song and its second come back paused. Checked in the browser: two songs kept as copies, reload: both back, the first cued at 0:42, paused, and playing on a tap; rules in `check.js`. (b) item 20, Piano: notes fall onto the keys and land as they are heard. The engine plays the song 2.3 s late while Piano is on screen ("late sound", `audio-engine.js`); pause holds the delayed sound; a seek or a new song mutes it. Measured with made-up notes of known times: every note lands within 0.01 s of the moment it is heard; overtones no longer draw ghost notes; 1.1 to 1.5 ms a frame. (c) Fullscreen on a phone: the picture fills the screen, the buttons lie over it in one sliding line and fade out, a phone held upright turns sideways; all eleven modes checked upright and sideways. (d) Clock redrawn (see docs/MODES.md "Clock"). (e) Decisions recorded in ORGANIZER.md: agents allowed again, "Keep a copy" for every browser, Play Store later.
-- 19 Remember folders and songs; folders inside the app (asked by the user, 2026-11-16): (a, b, d) see the fourth list above; (c) folders inside the app, `js/player/folders.js`: a bar of folders over the playlist ("All songs", the user's folders, "+ New folder"), a folder button on every song to put it in or take it out, rename and delete (deleting a folder removes no song), a song added while a folder is open goes into it, and playing inside a folder plays only its songs (shuffle and repeat too). A folder holds the songs' keys, so nothing is copied; a song not in the playlist today is counted as waiting. Kept in localStorage. Checked in the browser at 1280 px and 375 px: made, filled, played (the next song stayed in the folder), song taken out, reload: folder and its song kept; row buttons 36 px. Not yet seen on the user's phone (2026-11-17).
-- 17 (part) Clock, asked by the user (2026-11-16/17, by two agents): first redrawn (a plain dial, a crown of sound, a ring for the song, three orbits); then its styles became the Clock's own designs (Classic, Gears, Garden, Grid, Sky) apart from the codes, which set palette and forms; rainbow under the rainbow code; layered wings; gears with meshing teeth; a real sand pile; Solarpunk's leftover panels and still leaves gone. Under 2 ms a frame at every size. Weak still: white wings on pale codes, sand streams crossing the top gears.
+(Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
 
 ## For the user
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
-- **Piano on the phone.** Play a piano song in Piano mode: the notes should fall and land on the keys as you
-  hear them (the song starts about 2 seconds late in this mode; that is how it sees the future). Say whether
-  they land in time on your phone, and whether pause and play behave.
-- **Fullscreen on the phone.** Tap the fullscreen button with the phone held upright: the picture should turn
-  sideways and fill the screen, the buttons fade away and come back on a touch. Try two or three modes.
-- **Clock.** Settings > the bar at the top: try Classic, Gears, Garden, Grid and Sky, with two or three codes.
-  Say whether it looks right now.
-- **Folders inside the app.** On the Music page, make a folder, put two or three songs in it with the small
-  folder button on each song, open the folder and play: only its songs should play. Close and reopen the app:
-  the folder should still be there (with "Keep a copy" on, its songs too).
-- **Remembering ("Keep a copy" checked by you).** Add two songs with "Add files", close the app, open it: tap "Reconnect" (or, with "Keep a
-  copy" on, they are simply there). The last song should be ready at the place it stopped.
-- **iPhone / Safari check, whenever one is at hand.** Open the site in Safari. (1) Add a song with "Add files"
-  and play it: is there sound with the ring/silent switch on silent? (2) Lock the phone: does the music go on,
-  and does the lock screen show the song? (3) Share > "Add to Home Screen", open it from there, switch the
-  network off, open it again. (4) Tap the fullscreen button: the picture should fill the window. (5) Turn on
-  "Keep a copy", add a song, close and reopen: is it still there?
-- **Count the beat of a few songs, when you have a minute.** For item 6: tap along to "Decensus Ad Nihilum",
-  "To Be Human" and "Want Some Fun" for 15 seconds and say the beats a minute (any tap-tempo app or website
-  works). The song map read 77.5, 109.4 and 84.9; that tells whether it is right, half or double.
-- **Google Search Console** comes at the end of v0.1.0 (item 18). It needs your Google account: nothing to do
-  until a run asks for the verification file or tag.
+- **Google Search Console** comes at the very end, before v1.0.0 (item 18). It needs your Google account:
+  nothing to do until a run asks for the verification file or tag.

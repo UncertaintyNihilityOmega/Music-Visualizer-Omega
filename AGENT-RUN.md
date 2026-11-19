@@ -13,35 +13,40 @@ other session can continue from. Runs are started by hand (a prompt from PROMPTS
    - Stale: missing, `beat` 90 minutes old or more, or its session ended. Write a new lock with this session's
      id (`get_session("self")`) and the time in both time fields.
 2. **Read** ORGANIZER.md, then ROADMAP.md, then run `git status`. If the last run stopped at a usage limit,
-   finish what it left on disk first: gates, then commit.
+   finish what it left on disk first: gates, then commit. **Start the preview server** ("static-server") now,
+   at the start of the run: the project is visual.
 3. **Usage gate.** Read the usage meter (`get_usage`) before every step. Start a step only if the 5-hour window
-   is at 75% or less and the weekly limit at 95% or less (user, 2026-11-16). If the 5-hour reset is under
+   is at 75% or less and the weekly limit at 95% or less. If the 5-hour reset is under
    30 minutes away, wait for it and go on. Otherwise write "waiting for the reset at <time>" in "Now" and stop.
 4. **Loop.** Take the next step that is not waiting on the user: one queue item, or one package of a
    multi-package item. For each step:
    - do the work, saving as you go; never hold a finished file only in the chat;
    - run the gates (ORGANIZER.md): self-test, check, songtest if sound changed, browser check (see Preview);
    - commit only that step's files with a message that names the queue item. Push only if ORGANIZER.md
-     "User decisions" records a standing approval to push; never force-push;
+     "Standing approvals" allows it; never force-push;
+   - if the step finishes a snapshot, follow ORGANIZER.md "Versions and snapshots" (CHANGELOG summary, version,
+     tag, empty ROADMAP "Done");
    - update the lock's `beat` and `item`, and ROADMAP "Now";
    - read the meter again, then take the next step.
 5. **Stop** when a usage limit stops the session, when the gate blocks the next step, or when every step left
    needs the user. Before stopping: finish or checkpoint-commit the step in hand; move finished items from
    "Queue" to "Done"; rewrite "Now" as short lines of current state; put anything only the user can do under
-   "For the user"; stop every server and background process.
+   "For the user"; write any suggestions for the user in the chat; stop every server and background process.
 6. **Unlock.** Delete `.run/run.lock`, unless a usage limit stopped the run (the next run sees the session has
    ended and takes over).
 
 ## Rules for runs
-- **Agents** (no agents from 2026-11-15; lifted by the user 2026-11-16): at most one Writer agent per package,
-  one area at a time, with a save-as-you-go rule. The agent gets a prompt that stands alone, edits only its
-  package's files, and commits only those; the Organizer session keeps the root docs, so two writers never
-  edit one file. An agent stopped by a usage limit keeps its work: resume it after the reset rather than
-  starting a new one.
-  User rule (2026-11-17): an agent sees and edits only its own files, and checks its work on the preview
-  server (the "static-server" launch configuration, in a tab of its own).
+- **Agents, by default in a run:** at most 2 Sonnet agents and 1 Opus agent, plus the Organizer (Opus: the chat
+  session itself, not an agent). If the user changes this in a run, the change holds for that run only, unless
+  they say it is for all runs (then it is written here). At most one Writer agent per package, one area per
+  agent, with a save-as-you-go rule. The agent gets a prompt that stands alone, sees and edits only its
+  package's files, checks its work on the preview server in a tab of its own, and commits only its own files;
+  the Organizer keeps the root docs and commits them after the agent's commit, so two writers never edit one
+  file. Ask each agent to checkpoint-commit as soon as one part passes its gates. An agent stopped by a usage
+  limit keeps its work: resume it after the reset rather than starting a new one. Agents count against the same
+  usage meter: two at once spend about twice as fast.
 - **One step at a time.** Each step has its own gates and its own commit, so a stop at any point loses nothing.
-- **Preview.** The user allows the preview server in runs (2026-11-16). Start the "static-server" launch
+- **Preview.** Every run starts the preview server at its start. Start the "static-server" launch
   configuration. If it asks for approval or will not start, skip the browser check, say so in the step's Done
   line, and leave it under "For the user".
 - **A hidden pane fires no animation frames.** In an automatic run the browser pane is usually hidden. Step
@@ -51,7 +56,10 @@ other session can continue from. Runs are started by hand (a prompt from PROMPTS
   standing approval recorded in ORGANIZER.md.
 - **Needs the user.** Write it under "For the user" and take the next step that does not need them. If every
   step left needs them, the first line of "Now" begins `USER:`.
-- **The user joins a run:** their message replaces the plan. Do what they list, in their order, then end cleanly.
+- **The user joins a run:** what they ask for goes into the queue (ORGANIZER.md "Working with the user"), in
+  the snapshot where it fits, and the run continues from where the queue stood. Only what they mark
+  "immediately" is done at once, in their order. Their questions are answered at once; their rule changes take
+  effect at once.
 - **A usage-limit stop loses nothing on disk.** The next run reads ROADMAP "Now", checks `git status`, runs the
   gates on what is there, and continues.
 

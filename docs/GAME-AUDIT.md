@@ -2,7 +2,8 @@
 
 Every requirement from the earlier game prompt, with where it is in the code. **"In code"** means the feature was
 found by reading; it has **not** been play-tested in this audit. ROADMAP item 9 plays each row and changes its
-state to "confirmed <date>" or "fixed <date>".
+state to "confirmed <date>" or "fixed <date>": item 30 (Artificium, v0.6.0), item 31 (Undarum, v0.7.0),
+item 9 (the mini-games, v0.8.0).
 
 Files: TD = `js/games/game-tower-defense.js`, SV = `js/games/game-survivor.js`, CD = `js/games/game-cards.js`,
 SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/tool-sandbox.js`.
@@ -15,7 +16,7 @@ SH = `js/games/games-shared.js`, HO = `js/games/games-host.js`, SB = `js/tools/t
 | D3 | Tower range shown as clean white circles | to check | not located by search |
 | D4 | Losing one game must not count as losing another | in code | state is per game (`setGameState`, `onEnterGame` in HO) |
 | D5 | Shock Pylon stuns 1 s, slow, never faster than one hit per 2 s even with buffs | in code | TD item `shock`, rate clamp near line 121 |
-| D6 | Resizing the tab must not change tower range or road length (zoom instead) | in code | TD works in board units (`uu`), per its header |
+| D6 | Resizing the tab must not change tower range or road length (zoom instead) | **fails** (user, 2026-11-19: road length still changes) | TD works in board units (`uu`), per its header |
 | D7 | Shop buttons only buy; no drag outside Positioning mode | in code | TD `TD.placing`, drag guarded near line 904 |
 | D8 | Grid selection by click / tap and WASD; white outline, red when blocked | in code | TD `TD.sel`, keys near line 995 |
 | D9 | Each tower upgrades on its own | in code | per-tower `t.lv`, `t.evo`, `t.spent` |

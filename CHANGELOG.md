@@ -1,8 +1,16 @@
 # Changelog
 
-What someone using the app would notice. Newest first.
+What someone using the app would notice. Newest first. Each finished snapshot gets a short summary here, and
+ROADMAP.md "Done" is emptied for the next one.
 
-## 0.1.0-dev (in progress; becomes v0.1.0 when ROADMAP item 12 is done)
+## v0.1.0 (2026-11-19): everything built so far
+
+**In short:** the old "Our Playlist" page became Music Visualiser Omega. It plays songs where they are on the
+device (files, folders, web addresses, the microphone), remembers them, and sorts them into folders inside
+the app. It installs like an app, works offline and plays in the background, on Android, iPhone and PC. A new
+sound engine makes quiet parts look quiet and loud parts move. Eleven modes (eight that change with the nine
+theme codes, three with their own art style: Ice, Aquatic, Piano with falling notes), a Clock with five designs,
+four games, a Guide page, and drawn icons on every button. The details:
 
 ### New
 - **Folders inside the app.** Over the playlist: "All songs", your own folders and "+ New folder". The small

@@ -64,3 +64,14 @@ One home per fact. Measured numbers about our own tools are in engine/README.md.
 - "Skarrsinger Karmelita - Piano Tutorial" (640 x 360): keyboard on the bottom 20%; notes fall 126 px a second =
   0.35 screen heights a second, on screen 2.3 s; left hand red, right hand white; glow and small flames where a
   note lands. (docs/RESEARCH.md section 6.)
+
+## The test songs, counted by the user
+- Counted with Vibes (vibesdj.io), a paid DJ library program for macOS and Windows that reads each track's
+  BPM, key (shown in Camelot notation such as "5A", and in Open Key notation such as "10m"), an energy score,
+  and drops and breakdowns, and sorts tracks by them. Its percentages are its own confidence. (vibesdj.io
+  front page, read 2026-11-19.)
+- Decensus Ad Nihilum: 77.70 BPM (half 39, double 155), C minor (5A, 10m), energy 8 of 10, BPM confidence 52%.
+- Nightcore - To Be Human: 109.30 BPM (half 55, double 219; "could be felt at half or double time"), A flat
+  minor (1A, 6m), energy 7 of 10, BPM confidence 62%.
+- Want Some Fun: 85 BPM (half 42, double 170), B minor (10A, 3m), energy 7 of 10, BPM confidence 64%.
+  (The user, 2026-11-19.)
