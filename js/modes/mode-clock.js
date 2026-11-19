@@ -26,8 +26,8 @@
                       (look.clock in themes.js).
                         classic  the dial alone, with a few of the code's
                                  characters drifting by
-                        gears    clockwork that meshes, and a sand pile fed
-                                 by a thin stream, like an hourglass
+                        gears    flat gear icons in four trains that mesh and
+                                 turn in time
                         garden   hills and two vines that grow and sway
                         grid     a perspective grid, circuit traces, glitches
                         sky      clouds, two unlike flat wings (blades, plumes), motes
@@ -658,37 +658,48 @@
     ctx.restore();
   }
 
-  /* ---------- Gears: clockwork that meshes ---------- */
-  // Four corner clusters frame the dial. Every gear has the same tooth pitch
-  // (GEAR_PITCH of the short side along the pitch circle), so its radius
-  // follows from its number of teeth and meshed gears fit tooth into gap.
-  var GEAR_PITCH = 0.0275;
+  /* ---------- Gears: clockwork that meshes ----------
+     Redrawn flat (item 25, the user: "Gears need to be more like gear icons and less realistic"): each gear
+     is one solid shape in a colour of the code, with square-cut teeth and a round hole in the middle, the
+     larger ones with a thin ring inside. Four corner trains of four or five gears frame the dial. Every
+     gear has the same tooth pitch (GEAR_PITCH of the short side along the pitch circle), so its radius
+     follows from its number of teeth and meshed gears fit tooth into gap. All trains are driven by one
+     master angle at the same speed along the teeth, so the whole picture turns in time: a small gear
+     spins fast, a big one slowly, and neighbours turn opposite ways. */
+  var GEAR_PITCH = 0.045;
   // a tooth, in parts of the tooth spacing: half its width at the tip and at the root; its height above and
-  // below the pitch circle in modules. Narrow enough that meshed teeth never cut into each other while
-  // they turn (engine/check.js turns every pair through two revolutions to make sure)
-  var TOOTH_TIP = 0.12, TOOTH_ROOT = 0.27, TOOTH_ADD = 0.9, TOOTH_DED = 1.25;
+  // below the pitch circle in modules. Chunky like an icon, yet narrow enough that meshed teeth never cut
+  // into each other while they turn (engine/check.js turns every pair through two revolutions to make sure)
+  var TOOTH_TIP = 0.15, TOOTH_ROOT = 0.24, TOOTH_ADD = 0.8, TOOTH_DED = 1.0;
   var GEAR_CLUSTERS = [
     [
-      { cx: 0.11, cy: 0.15, teeth: 28 },
-      { rel: 0, ang: 2.4, teeth: 16 },
-      { rel: 1, ang: 1.6, teeth: 20 },
-      { rel: 0, ang: 0.65, teeth: 14 }
+      { cx: 0.07, cy: 0.12, teeth: 20 },
+      { rel: 0, ang: 0.3, teeth: 12 },
+      { rel: 1, ang: -0.9, teeth: 8 },
+      { rel: 0, ang: 1.65, teeth: 14 },
+      { rel: 3, ang: 2.4, teeth: 10 }
     ],
     [
-      { cx: 0.89, cy: 0.87, teeth: 24 },
-      { rel: 0, ang: -1.0, teeth: 14 },
-      { rel: 1, ang: -2.2, teeth: 18 }
+      { cx: 0.93, cy: 0.88, teeth: 20 },
+      { rel: 0, ang: 3.44, teeth: 12 },
+      { rel: 1, ang: 2.24, teeth: 8 },
+      { rel: 0, ang: -1.49, teeth: 14 },
+      { rel: 3, ang: -0.74, teeth: 10 }
     ],
     [
-      { cx: 0.92, cy: 0.14, teeth: 16 },
-      { rel: 0, ang: 2.6, teeth: 12 }
+      { cx: 0.93, cy: 0.11, teeth: 16 },
+      { rel: 0, ang: 2.75, teeth: 10 },
+      { rel: 0, ang: 1.5, teeth: 12 },
+      { rel: 2, ang: 2.5, teeth: 8 }
     ],
     [
-      { cx: 0.09, cy: 0.88, teeth: 16 },
-      { rel: 0, ang: 0.9, teeth: 12 }
+      { cx: 0.07, cy: 0.89, teeth: 16 },
+      { rel: 0, ang: -0.4, teeth: 10 },
+      { rel: 0, ang: -1.64, teeth: 12 },
+      { rel: 2, ang: -0.64, teeth: 8 }
     ]
   ];
-  var gearMasterAngle = [0, 0, 0, 0];
+  var gearMasterAngle = 0;
   function layoutCluster(cluster, w, h){
     var m = Math.min(w, h), out = [];
     for (var i = 0; i < cluster.length; i++){
@@ -723,127 +734,94 @@
     }
     return out;
   }
-  // everything about the gears that only changes with the picture's size or the code
+  // everything about the gears that only changes with the picture's size or the code: where each one
+  // sits, how fast it turns against the master angle, and its picture (painted once, turned each frame)
   var gearCache = null, gearKey = '';
-  function gearLayout(w, h, pal, pid){
+  function gearLayout(w, h, pal, pid, k){
     var key = w + 'x' + h + pid;
     if (gearCache && gearKey === key) return gearCache;
     var m = Math.min(w, h), mod = GEAR_PITCH * m / Math.PI, out = [], n = 0;
+    var tones = pal.light ? [pal.rim, pal.accent, mix(pal.rim, pal.numeral, 0.5)] : [pal.rim, pal.accent, mix(pal.rim, pal.numeral, 0.45)];
     for (var ci = 0; ci < GEAR_CLUSTERS.length; ci++){
       var cluster = GEAR_CLUSTERS[ci], laid = layoutCluster(cluster, w, h), ratios = ratiosFor(cluster, laid), ph = phasesFor(cluster);
+      // one master for every train: each root turns so that its teeth pass at the same speed as every other's
+      var rootRatio = (ci % 2 ? -1 : 1) * 12 / cluster[0].teeth;
       for (var i = 0; i < laid.length; i++){
-        var g = laid[i], r = g.r;
-        g.ratio = ratios[i]; g.phase = ph[i]; g.mod = mod; g.cluster = ci;
-        // metal, tinted by the palette (by a hue of its own under the rainbow code)
-        var tint = pal.rainbow ? hslHex(n++ * 47, 0.7, 0.6) : pal.accent, tint2 = pal.rainbow ? tint : pal.rim;
-        var lightC = mix(pal.light ? '#F4F4F2' : '#D6D6D2', tint, 0.25), midC = mix(pal.light ? '#8E9099' : '#6E7079', tint2, 0.38), darkC = mix('#2C2D34', pal.bg2, 0.35);
-        var body = ctx.createRadialGradient(-r * 0.45, -r * 0.55, r * 0.05, 0, 0, r * 1.2);
-        body.addColorStop(0, lightC); body.addColorStop(0.5, midC); body.addColorStop(1, darkC);
-        var bev = ctx.createLinearGradient(-r, -r, r, r);
-        bev.addColorStop(0, 'rgba(255,255,255,0.55)'); bev.addColorStop(0.5, 'rgba(255,255,255,0)'); bev.addColorStop(1, 'rgba(0,0,0,0.4)');
-        var bevIn = ctx.createLinearGradient(-r, -r, r, r);
-        bevIn.addColorStop(0, 'rgba(0,0,0,0.45)'); bevIn.addColorStop(0.5, 'rgba(0,0,0,0)'); bevIn.addColorStop(1, 'rgba(255,255,255,0.45)');
-        var hub = ctx.createRadialGradient(-r * 0.08, -r * 0.08, 0, 0, 0, r * 0.22);
-        hub.addColorStop(0, lightC); hub.addColorStop(1, midC);
-        g.body = body; g.bev = bev; g.bevIn = bevIn; g.hub = hub; g.edge = rgba(darkC, 0.75); g.axle = darkC;
+        var g = laid[i];
+        g.ratio = ratios[i] * rootRatio; g.phase = ph[i]; g.mod = mod; g.cluster = ci;
+        g.color = pal.rainbow ? rbCol((n * 0.137) % 1, pal) : tones[n % 3];
+        g.sprite = gearSprite(g, k, pal);
+        n++;
         out.push(g);
       }
     }
     gearKey = key;
     return (gearCache = out);
   }
-  // one gear's outline as one path: trapezoid teeth on the root circle, and the
-  // cut-outs between the spokes (filled even-odd, so they are holes)
-  function gearPath(g, angle){
+  // one gear's outline as one path: square-cut teeth on the root circle, and the hole in the middle
+  // (filled even-odd, so it is a hole)
+  function gearPath(c, g){
     var r = g.r, N = g.teeth, mod = g.mod, ro = r + TOOTH_ADD * mod, rr = r - TOOTH_DED * mod, th = 6.2832 / N, j, a, tt = TOOTH_TIP * th, tr = TOOTH_ROOT * th;
-    ctx.beginPath();
+    c.beginPath();
     for (j = 0; j < N; j++){
-      a = angle + j * th;
-      if (j === 0) ctx.moveTo(Math.cos(a - tr) * rr, Math.sin(a - tr) * rr);
-      else ctx.lineTo(Math.cos(a - tr) * rr, Math.sin(a - tr) * rr);
-      ctx.lineTo(Math.cos(a - tt) * ro, Math.sin(a - tt) * ro);
-      ctx.lineTo(Math.cos(a + tt) * ro, Math.sin(a + tt) * ro);
-      ctx.lineTo(Math.cos(a + tr) * rr, Math.sin(a + tr) * rr);
-      ctx.arc(0, 0, rr, a + tr, a + th - tr);
+      a = j * th;
+      if (j === 0) c.moveTo(Math.cos(a - tr) * rr, Math.sin(a - tr) * rr);
+      else c.lineTo(Math.cos(a - tr) * rr, Math.sin(a - tr) * rr);
+      c.lineTo(Math.cos(a - tt) * ro, Math.sin(a - tt) * ro);
+      c.lineTo(Math.cos(a + tt) * ro, Math.sin(a + tt) * ro);
+      c.lineTo(Math.cos(a + tr) * rr, Math.sin(a + tr) * rr);
+      c.arc(0, 0, rr, a + tr, a + th - tr);
     }
-    ctx.closePath();
-    var rimIn = rr - mod * 2.2, hubR = r * 0.34, S = N >= 20 ? 5 : N >= 14 ? 4 : 3, sw = r * 0.085;
-    if (rimIn - hubR > r * 0.16){
-      for (var s = 0; s < S; s++){
-        var a0 = angle + s * 6.2832 / S + 0.3, a1 = a0 + 6.2832 / S, po = sw / rimIn, pin = sw / hubR;
-        ctx.moveTo(Math.cos(a0 + po) * rimIn, Math.sin(a0 + po) * rimIn);
-        ctx.arc(0, 0, rimIn, a0 + po, a1 - po);
-        ctx.arc(0, 0, hubR, a1 - pin, a0 + pin, true);
-        ctx.closePath();
-      }
-    }
-    return rimIn;
+    c.closePath();
+    var hole = Math.max(r * 0.2, mod * 0.9);
+    c.moveTo(hole, 0);
+    c.arc(0, 0, hole, 0, 6.2832, true);
   }
-  function drawGear(g, angle, pal, k){
-    var r = g.r, rr = r - TOOTH_DED * g.mod;
-    // a hard shadow, offset down and right
-    ctx.save();
-    ctx.translate(g.x + r * 0.05, g.y + r * 0.08);
-    gearPath(g, angle);
-    ctx.fillStyle = pal.light ? 'rgba(40,30,20,0.18)' : 'rgba(0,0,0,0.35)';
-    ctx.fill('evenodd');
-    ctx.restore();
-    // the gear: lit from the top left whichever way it has turned
-    ctx.save();
-    ctx.translate(g.x, g.y);
-    var rimIn = gearPath(g, angle);
-    ctx.fillStyle = g.body;
-    ctx.fill('evenodd');
-    ctx.strokeStyle = g.edge;
-    ctx.lineWidth = Math.max(0.8 * k, r * 0.012);
-    ctx.stroke();
-    // the bevelled rim: its face catches the light top left, the inner cut edge bottom right
-    ctx.lineWidth = g.mod * 0.9;
-    ctx.strokeStyle = g.bev;
-    ctx.beginPath();
-    ctx.arc(0, 0, rr - g.mod * 0.6, 0, 6.2832);
-    ctx.stroke();
-    ctx.lineWidth = Math.max(0.8 * k, g.mod * 0.45);
-    ctx.strokeStyle = g.bevIn;
-    ctx.beginPath();
-    ctx.arc(0, 0, rimIn + g.mod * 0.2, 0, 6.2832);
-    ctx.stroke();
-    // the hub and its axle
-    ctx.fillStyle = g.hub;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.2, 0, 6.2832);
-    ctx.fill();
-    ctx.strokeStyle = g.bev;
-    ctx.stroke();
-    ctx.fillStyle = g.axle;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.065, 0, 6.2832);
-    ctx.fill();
-    ctx.restore();
+  function gearSprite(g, k, pal){
+    var ro = g.r + TOOTH_ADD * g.mod, half = Math.ceil(ro + 2 * k), cv = document.createElement('canvas');
+    cv.width = cv.height = half * 2;
+    var c = cv.getContext('2d');
+    c.translate(half, half);
+    gearPath(c, g);
+    c.fillStyle = g.color;
+    c.fill('evenodd');
+    // a thin ring inside the bigger gears, and a darker line round the hole: still flat, like an icon
+    var line = pal.light ? mix(g.color, '#FFFFFF', 0.45) : mix(g.color, pal.bg2, 0.55);
+    c.strokeStyle = line;
+    c.lineWidth = Math.max(1 * k, g.mod * 0.28);
+    if (g.teeth >= 14){
+      c.beginPath();
+      c.arc(0, 0, g.r * 0.6, 0, 6.2832);
+      c.stroke();
+    }
+    c.beginPath();
+    c.arc(0, 0, Math.max(g.r * 0.2, g.mod * 0.9) + c.lineWidth * 0.5, 0, 6.2832);
+    c.stroke();
+    return { cv: cv, half: half };
   }
   var gearDrive = 0, gearKick = 0, gearOmegaNow = 0;
   function stepGears(w, h, k, dt, cfg, pal, pid){
-    var gears = gearLayout(w, h, pal, pid);
+    var gears = gearLayout(w, h, pal, pid, k);
     // speed follows the music: all but still in a calm passage, a busy clockwork in a big one
     gearDrive = U.env(gearDrive, A.drive, 2.5, 1.2, dt);
     gearKick = Math.max(gearKick * Math.exp(-5 * dt), A.kickHit > 0.4 ? A.kickHit * A.drive * A.drive : 0);
     var pace = cfg.handSpeed * (0.04 + 0.15 * gearDrive + 1.4 * gearDrive * gearDrive + 0.6 * gearKick);
     gearOmegaNow = 0.32 * pace;
-    for (var ci = 0; ci < GEAR_CLUSTERS.length; ci++){
-      gearMasterAngle[ci] += (ci % 2 === 0 ? 1 : -1) * (0.32 + ci * 0.05) * pace * dt;
-    }
+    gearMasterAngle += 0.32 * pace * dt;
+    ctx.save();
+    ctx.globalAlpha = pal.light ? 0.85 : 0.8;
     for (var i = 0; i < gears.length; i++){
-      var g = gears[i];
-      drawGear(g, gearMasterAngle[g.cluster] * g.ratio + g.phase, pal, k);
+      var g = gears[i], s = g.sprite;
+      ctx.save();
+      ctx.translate(g.x, g.y);
+      ctx.rotate(gearMasterAngle * g.ratio + g.phase);
+      ctx.drawImage(s.cv, -s.half, -s.half);
+      ctx.restore();
     }
+    ctx.restore();
   }
-  // a warm light low in the frame, so the sand pile reads as lit, and fine engraved arcs
+  // fine engraved arcs low in the frame
   function paintGearsBG(c, w, h, k, pal){
-    var glow = c.createRadialGradient(w / 2, h * 0.98, 0, w / 2, h * 0.98, w * 0.6);
-    glow.addColorStop(0, rgba(pal.accent, pal.light ? 0.2 : 0.16));
-    glow.addColorStop(1, rgba(pal.accent, 0));
-    c.fillStyle = glow;
-    c.fillRect(0, 0, w, h);
     c.strokeStyle = rgba(pal.rim, 0.07);
     c.lineWidth = Math.max(1 * k, w * 0.0015);
     for (var i = 0; i < 3; i++){
@@ -851,210 +829,6 @@
       c.arc(w / 2, h * 0.98, w * (0.5 + i * 0.16), Math.PI * 1.08, Math.PI * 1.92);
       c.stroke();
     }
-  }
-
-  /* ---------- Gears: the sand pile, fed like an hourglass ----------
-     The pile is a row of column heights. A thin stream pours from under the
-     dial onto it; where the slope gets steeper than sand can hold, the
-     column slides down to the gentler slope it rests at (small avalanches);
-     a kick throws a little spray up that falls back. How much sand there
-     is follows the energy of the music, and the pile settles slowly. */
-  var SAND_N = 120, sandH = new Float32Array(SAND_N), sandW = 0, sandHh = 0, sandBits = [];
-  var sandEnergy = 0, sandFeed = 0, sprayCd = 0, sandPeak = 0, sandFlip = 0;
-  var REST = 0.42, SLIP = 0.62;   // height over width: the slope sand rests at, and the one it slides at
-  var SAND_RAMP = ['#F3E1B4', '#E2C48A', '#CDA264', '#A87E47', '#7C5933'];
-  function sandTone(j, pal){ return mix(mix(SAND_RAMP[j], pal.accent, 0.16), pal.bg2, pal.light ? 0 : 0.18); }
-  var sandPat = null, sandPatKey = '';
-  function sandPattern(pal, k){
-    var key = pal.accent + pal.bg2 + k;
-    if (sandPat && sandPatKey === key) return sandPat;
-    var n = 96, cv = document.createElement('canvas');
-    cv.width = cv.height = n;
-    var c = cv.getContext('2d');
-    for (var i = 0; i < 900; i++){
-      c.fillStyle = pal.rainbow && Math.random() < 0.22 ? hslHex(Math.random() * 360, 0.8, 0.6) : sandTone(Math.floor(Math.random() * 5), pal);
-      c.globalAlpha = 0.35 + Math.random() * 0.55;
-      var s = (0.6 + Math.random() * 1.1) * Math.max(1, k * 0.8);
-      c.fillRect(Math.random() * n, Math.random() * n, s, s);
-    }
-    sandPatKey = key;
-    return (sandPat = ctx.createPattern(cv, 'repeat'));
-  }
-  function surfaceAt(x, cw){
-    var f = x / cw, i = Math.max(0, Math.min(SAND_N - 2, Math.floor(f))), t = Math.max(0, Math.min(1, f - i));
-    return sandH[i] + (sandH[i + 1] - sandH[i]) * t;
-  }
-  // Where the sand pours from: from under the dial when there is room below it
-  // (an upright picture), else two thin streams from the top, either side of the crown
-  function sandStreams(w, h, cx, cy, R){
-    var m = Math.min(w, h);
-    if (h - (cy + R * 1.55) > m * 0.15) return [{ x: cx, y: cy + R * 1.08, hMax: Math.min(m * 0.2, (h - cy - R * 1.55) * 0.8) }];
-    var side = Math.max(w * 0.06, (cx - R * 1.6) * 0.55);
-    return [{ x: side, y: 0, hMax: m * 0.2 }, { x: w - side, y: 0, hMax: m * 0.2 }];
-  }
-  var sandDisp = new Float32Array(SAND_N), sandTmp = new Float32Array(SAND_N), sandStreamsNow = [];
-  function stepSand(w, h, k, dt, cfg, pal, cx, cy, R){
-    var m = Math.min(w, h), cw = w / (SAND_N - 1), i, st, streams = sandStreamsNow = sandStreams(w, h, cx, cy, R), nSt = streams.length;
-    if (sandW !== w || sandHh !== h){
-      // a new size: start from a small heap under each stream, so the design never opens on a bare floor
-      sandW = w; sandHh = h; sandBits = [];
-      for (i = 0; i < SAND_N; i++){
-        sandH[i] = 0;
-        for (st = 0; st < nSt; st++) sandH[i] = Math.max(sandH[i], m * 0.04 - Math.abs(i - streams[st].x / cw) * cw * REST);
-      }
-    }
-    // how big the pile wants to be: from the music's energy, never up to the stream's mouth
-    sandEnergy = U.env(sandEnergy, A.drive, 0.6, 0.25, dt);
-    var Hpk = Math.min(Math.max(m * 0.04, streams[0].hMax), m * (0.045 + 0.17 * sandEnergy) * (0.7 + 0.3 * cfg.density));
-    var target = nSt * Hpk * Hpk / ((REST + SLIP) / 2), area = 0;
-    for (i = 0; i < SAND_N; i++) area += sandH[i] * cw;
-    // the streams: a dribble always, a pour while the pile is short of what the music asks
-    sandFeed = Math.max(0, target - area) * 0.5 + target * 0.03;
-    for (st = 0; st < nSt; st++){
-      var ci = Math.max(1, Math.min(SAND_N - 2, Math.round(streams[st].x / cw))), add = sandFeed / nSt * dt / cw;
-      sandH[ci - 1] += add * 0.25; sandH[ci] += add * 0.5; sandH[ci + 1] += add * 0.25;
-      streams[st].col = ci;
-    }
-    // settling: a pile bigger than the music asks sinks slowly
-    if (area > target){
-      var keep = 1 - Math.min(0.2, 0.3 * dt * (area - target) / area);
-      for (i = 0; i < SAND_N; i++) sandH[i] *= keep;
-    }
-    // avalanches: a slope steeper than sand holds slides down to the slope it rests at
-    var slip = SLIP * cw, rest = REST * cw;
-    sandFlip ^= 1;
-    for (var pass = 0; pass < 2; pass++){
-      var fwd = (pass ^ sandFlip) === 0;
-      for (var q = 0; q < SAND_N - 1; q++){
-        i = fwd ? q : SAND_N - 2 - q;
-        var d = sandH[i] - sandH[i + 1];
-        if (d > slip || d < -slip){
-          var mv = (Math.abs(d) - rest) * 0.5, from = d > 0 ? i : i + 1, to = d > 0 ? i + 1 : i;
-          sandH[from] -= mv; sandH[to] += mv;
-          if (mv > cw * 0.05 && sandBits.length < 150 && Math.random() < 0.2)
-            sandBits.push({ t: 2, x: from * cw, y: 0, vx: (to > from ? 1 : -1) * (25 + Math.random() * 45) * k, vy: 0,
-                            life: 0.4 + Math.random() * 0.6, c: Math.floor(Math.random() * 4), s: (1 + Math.random()) * k });
-        }
-      }
-    }
-    // a kick throws a little spray up off the top of a pile
-    sprayCd -= dt;
-    if (A.kickHit > 0.5 && A.drive > 0.15 && sprayCd <= 0){
-      sprayCd = 0.18;
-      var nS = Math.round(6 + 18 * A.kickHit * A.drive);
-      for (var s = 0; s < nS && sandBits.length < 170; s++){
-        var sc = streams[s % nSt].col, col = Math.max(1, Math.min(SAND_N - 2, sc + Math.round((Math.random() - 0.5) * 16))), vol = 4 * k * k;
-        if (sandH[col] * cw < vol * 3) continue;
-        sandH[col] -= vol / cw;
-        sandBits.push({ t: 1, x: col * cw, y: h - sandH[col], vx: (Math.random() - 0.5) * 140 * k,
-                        vy: -(90 + Math.random() * 220) * k * (0.5 + A.kickHit * 0.7), vol: vol,
-                        c: Math.floor(Math.random() * 4), s: (1.2 + Math.random()) * k });
-      }
-    }
-    // grains of the streams (only for the eye: the sand they bring is added above)
-    var want = Math.min(2 * nSt, sandFeed * dt / (5 * k * k)), nStream = 0;
-    for (i = 0; i < sandBits.length; i++) if (sandBits[i].t === 0) nStream++;
-    while (want > 0 && nStream < 90 && sandBits.length < 200){
-      if (Math.random() < Math.min(1, want)){
-        var so = streams[Math.floor(Math.random() * nSt)];
-        sandBits.push({ t: 0, x: so.x + (Math.random() - 0.5) * 3 * k, y: so.y, vx: (Math.random() - 0.5) * 6 * k, vy: (so.y > 0 ? 25 : 160) * k * (1 + Math.random()),
-                        c: Math.floor(Math.random() * 3), s: (1 + Math.random() * 0.8) * k });
-        nStream++;
-      }
-      want -= 1;
-    }
-
-    // the pile: one smooth filled curve through the column tops (drawn a little smoothed, so crests are round)
-    var top = h, src = sandH;
-    for (var sm = 0; sm < 2; sm++){
-      var dst = sm ? sandDisp : sandTmp;
-      for (i = 0; i < SAND_N; i++){
-        var a2 = src[Math.max(0, i - 2)], a1 = src[Math.max(0, i - 1)], b1 = src[Math.min(SAND_N - 1, i + 1)], b2 = src[Math.min(SAND_N - 1, i + 2)];
-        dst[i] = (a2 + 4 * a1 + 6 * src[i] + 4 * b1 + b2) / 16;
-      }
-      src = dst;
-    }
-    for (i = 0; i < SAND_N; i++) if (h - sandDisp[i] < top) top = h - sandDisp[i];
-    sandPeak = h - top;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0, h + 2);
-    ctx.lineTo(0, h - sandDisp[0]);
-    for (i = 0; i < SAND_N - 1; i++) ctx.quadraticCurveTo(i * cw, h - sandDisp[i], (i + 0.5) * cw, h - (sandDisp[i] + sandDisp[i + 1]) / 2);
-    ctx.lineTo(w, h - sandDisp[SAND_N - 1]);
-    ctx.lineTo(w, h + 2);
-    ctx.closePath();
-    var fill = ctx.createLinearGradient(0, top, 0, h);
-    fill.addColorStop(0, sandTone(1, pal)); fill.addColorStop(0.5, sandTone(2, pal)); fill.addColorStop(1, sandTone(4, pal));
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.save();
-    ctx.clip();
-    // grain texture
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = sandPattern(pal, k);
-    ctx.fillRect(0, top, w, h - top);
-    // shading: faces turned to the light (top left) are brighter, the others darker; soft at the crests
-    ctx.globalAlpha = 1;
-    for (i = 0; i < SAND_N - 1; i++){
-      if (sandDisp[i] < 1 && sandDisp[i + 1] < 1) continue;
-      var sl = (sandDisp[i + 1] - sandDisp[i]) / cw, al = Math.round(Math.min(0.13, Math.abs(sl) * 0.22) * 100) / 100;
-      if (al < 0.02) continue;
-      ctx.fillStyle = sl > 0 ? 'rgba(255,248,230,' + al + ')' : 'rgba(70,40,12,' + al + ')';
-      ctx.fillRect(i * cw + cw * 0.5, top, cw + 0.6, h - top);
-    }
-    ctx.restore();
-    // the lit edge of the surface
-    ctx.strokeStyle = rgba(sandTone(0, pal), 0.75);
-    ctx.lineWidth = 1.2 * k;
-    ctx.stroke();
-    ctx.restore();
-
-    // grains: the streams (drawn behind the gears, by drawSandStreams), the spray and the ones rolling down a slope
-    var gr = 900 * k;
-    for (var b = sandBits.length - 1; b >= 0; b--){
-      var p = sandBits[b];
-      if (p.t === 2){
-        p.life -= dt;
-        p.x += p.vx * dt;
-        if (p.life <= 0 || p.x < 0 || p.x > w){ sandBits.splice(b, 1); continue; }
-        p.y = h - surfaceAt(p.x, cw) - p.s * 0.6;
-      } else {
-        p.vy += gr * dt;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        if (p.x < -10 * k || p.x > w + 10 * k){ sandBits.splice(b, 1); continue; }
-        if (p.vy > 0 && p.y >= h - surfaceAt(p.x, cw)){
-          if (p.t === 1){ var lc = Math.max(0, Math.min(SAND_N - 1, Math.round(p.x / cw))); sandH[lc] += p.vol / cw; }
-          sandBits.splice(b, 1);
-          continue;
-        }
-        if (p.t === 0) continue;
-      }
-      ctx.fillStyle = sandTone(p.c, pal);
-      ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
-    }
-  }
-  // the streams themselves: a thin line of falling sand, thicker when it pours, and its grains
-  function drawSandStreams(w, h, k, pal){
-    if (!sandW) return;
-    var cw = w / (SAND_N - 1), target = Math.max(1, sandPeak * sandPeak / ((REST + SLIP) / 2) * sandStreamsNow.length);
-    ctx.save();
-    ctx.strokeStyle = rgba(sandTone(1, pal), 0.55);
-    ctx.lineWidth = (0.6 + Math.min(2, sandFeed / target * 4)) * k;
-    ctx.beginPath();
-    for (var st = 0; st < sandStreamsNow.length; st++){
-      var so = sandStreamsNow[st], surf = h - surfaceAt(so.x, cw);
-      if (surf > so.y){ ctx.moveTo(so.x, so.y); ctx.lineTo(so.x, surf); }
-    }
-    ctx.stroke();
-    for (var b = 0; b < sandBits.length; b++){
-      var p = sandBits[b];
-      if (p.t !== 0) continue;
-      ctx.fillStyle = sandTone(p.c, pal);
-      ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
-    }
-    ctx.restore();
   }
 
   /* ---------- Garden: hills, two vines that grow and sway, leaves and pollen ---------- */
@@ -1704,7 +1478,7 @@
     }
 
     if (design === 'classic') stepOrbit(w, h, cx, cy, R, k, dt, cfg, pal, P.decor);
-    else if (design === 'gears'){ drawSandStreams(w, h, k, pal); stepGears(w, h, k, dt, cfg, pal, pid); stepSand(w, h, k, dt, cfg, pal, cx, cy, R); }
+    else if (design === 'gears') stepGears(w, h, k, dt, cfg, pal, pid);
     else if (design === 'garden'){ stepVines(w, h, k, dt, cfg, pal); stepLeaves(w, h, k, dt, cfg, pal); }
     else if (design === 'grid'){ stepGrid(w, h, k, dt, cfg, pal); stepGlitches(w, h, k, dt, cfg, pal); }
     else { stepClouds(w, h, k, dt, cfg, pal); stepMotes(w, h, k, dt, cfg, pal); }
@@ -1723,13 +1497,8 @@
       for (var o = 0; o < 4; o++) spawnOrbit(canvas.width, canvas.height, canvas.width / 2, canvas.height * 0.5, 1, P.decor,
                                              x + (Math.random() - 0.5) * 40 * k, y + (Math.random() - 0.5) * 40 * k);
     } else if (design === 'gears'){
-      // a tap on the floor throws sand up there
-      var cw = canvas.width / (SAND_N - 1);
-      for (var s = 0; s < 14; s++){
-        var col = Math.max(0, Math.min(SAND_N - 1, Math.round(x / cw + (Math.random() - 0.5) * 6)));
-        sandBits.push({ t: 1, x: col * cw, y: canvas.height - sandH[col], vx: (Math.random() - 0.5) * 120 * k, vy: -(120 + Math.random() * 200) * k,
-                        vol: 0, c: Math.floor(Math.random() * 4), s: (1.2 + Math.random()) * k });
-      }
+      // a tap gives the clockwork a shove
+      gearKick = Math.max(gearKick, 0.8);
     } else if (design === 'garden'){
       for (var l = 0; l < 8; l++) spawnLeaf(x, y);
     } else if (design === 'grid'){
@@ -1738,12 +1507,11 @@
       for (var m = 0; m < 10; m++) spawnMote(x, y);
     }
   }
-  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; sandBits = []; tickKick = 0; }
+  function reset(){ leafParts = []; glitches = []; motes = []; chimes = []; orbit = []; tickKick = 0; }
   Can.addResizeHook(function(){ cloudsReady = false; });
   // what the motion is doing now, for measuring calm against loud (engine/probe.js, by hand)
   function stats(){
-    var m = Math.min(canvas.width, canvas.height);
-    return { design: designId(), palette: paletteId(), drive: A.drive, gearSpeed: gearOmegaNow, pile: sandPeak / m,
+    return { design: designId(), palette: paletteId(), drive: A.drive, gearSpeed: gearOmegaNow,
              flap: flapAmpNow, vineSway: vineAmpNow, vineReach: vineGrow, gridSpeed: 6 + 120 * gridDrive * gridDrive };
   }
 
