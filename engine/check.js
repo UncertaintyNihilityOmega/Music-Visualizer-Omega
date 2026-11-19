@@ -313,7 +313,9 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (!/document\.hidden\)\{ songOffTTL = 0; applySongOff\(false\)/.test(eng)) err('audio-engine.js: the song must come back at once when the page is hidden');
   if (/analyser|Analyser|destination/.test(pv.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))) err('piano-voice.js: the piano must go only to Aud.speakers() (the volume node), never to an analyser or straight out');
   if (!/Aud\.onSongBack = V\.stopAll/.test(pv)) err('piano-voice.js: piano notes on their way must stop when the song comes back (Aud.onSongBack)');
-  if (!/Aud\.source !== 'mic'/.test(pm) || !/App\.pianoVoice\.stopAll\(\)/.test(pm)) err('mode-piano.js: no piano sound with the microphone, and every note on its way stops when the falling notes are dropped');
+  // the user, 2026-11-19: "I cannot play the black keys" (a tap only looked at white keys)
+  if (!/function keyAt\([\s\S]{0,400}pianoKeys\.black/.test(pm) || !/var key = keyAt\(x, y\)/.test(pm)) err('mode-piano.js: a tap must find black keys first (keyAt looks at pianoKeys.black), or black keys cannot be played');
+  if (!/Aud\.source !== 'mic'/.test(pm) ||!/App\.pianoVoice\.stopAll\(\)/.test(pm)) err('mode-piano.js: no piano sound with the microphone, and every note on its way stops when the falling notes are dropped');
   const off = walk('js/modes', '.js').concat(walk('js/games', '.js'), walk('js/pages', '.js'), walk('js/player', '.js')).filter(f => /Aud\.askSongOff\(/.test(read(f)));
   if (off.join() !== 'js/modes/mode-piano.js') err('only Piano may keep the song off the speakers (Aud.askSongOff); found in: ' + off.join(', '));
   before('js/core/audio-engine.js', 'js/core/piano-voice.js', 'the piano joins the engine\'s sound');
