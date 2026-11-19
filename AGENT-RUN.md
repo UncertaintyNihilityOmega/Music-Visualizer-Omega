@@ -112,6 +112,23 @@ folders, half a review (one agent, about 125k tokens) and the start of the song 
 tokens). Two agents at once doubled the spend; the user closed the run to save the weekly limit. Lesson: one
 agent at a time, and ask each agent to checkpoint-commit as soon as one part passes its gates.
 
+Run of 2026-11-19, afternoon (scheduled, Opus 5.5 Organizer doing the steps itself, one Sonnet Reader agent at
+the end; 5-hour meter from 1%, weekly from 46%):
+
+| Step | 5-hour meter | Weekly meter |
+| --- | --- | --- |
+| Item 26 piano sound (a new synth file, engine routing, checks, browser timing tests) | 8% | 1% |
+| Items 20, 27 notes, item 29 fish redrawn, the black-keys question | 5% | 1% |
+| Item 6 song map finished (drop and confidence fixes, Node tool, seek bar) | 6% | 0% |
+| Item 7 "follows" settings | 3% | 1% |
+| Item 30 Artificium: board units, probe of every row | 9% | 1% |
+| Item 31 Undarum (and repairing the audit file) | 6% | 1% |
+| Item 9 mini-game audit | 7% | 1% |
+| Item 16 two design steps with before and after pictures | 11% | 1% |
+| Item 11 touch targets | 6% | 1% |
+
+Lesson: probing a whole game by script (`Probe.*`) costs far less than playing it through screenshots.
+
 A step costs about 10 to 20% of the 5-hour meter; an agent step with browser checks about 10%, three mode fixes by one agent about 10% (2026-11-19). Browser checks cost
 most: every screenshot and long probe result stays in the session. Prefer numbers from `engine/probe.js` over
 screenshots, and one screenshot per fault. Update this table after more runs.

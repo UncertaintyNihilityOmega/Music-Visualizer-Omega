@@ -1,15 +1,16 @@
 # ROADMAP: build queue and current state
 
 ## Now
-- v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
-- Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks).
-- v0.3.0 started: items 24 and 25 built (they wait on your look); item 17 done (every custom mode
-  measured and the weak ones fixed).
-- v0.4.0 started: item 28 done, item 27 built. Next: item 26 (Piano plays piano sounds, a big one: best
-  started with a fresh 5-hour window), then Ice (item 20) and the new fish (item 29).
-- Item 6 (v0.5.0) is started, not committed: the pure maths is in `.run/wip/song-map.js` (git-ignored). The
-  user's beat counts agree with it (see item 6). To resume: move the file back to `js/core/` and add it to
-  `index.html` in the same commit.
+- USER: every item left waits on you (a look, a listen, a phone check or a decision); see "For the user".
+- v0.1.0 is tagged. No later snapshot can be tagged yet: v0.2.0 waits on items 22 and 23 (your checks).
+- Built and waiting on you: 22, 23 (v0.2.0); 24, 25 (v0.3.0); 26 piano sound, 29 fish (v0.4.0); 30 Artificium
+  balance, D16 (v0.6.0); 16 mini-game looks (v0.8.0).
+- Done in the run of 2026-11-19 (afternoon): 6 song map, 7 "follows" settings, 9 mini-game audit, 20 special
+  modes, 27 piano note icons, 31 Undarum (see "Done").
+- v0.9.0 item 11 (phone pass), part done: touch targets of 40 px on touch screens, no sideways scroll, folder
+  and microphone fallbacks checked, Fire and Nature light enough on a PC. Left: a real phone (you) and the
+  Reader's findings (`docs/READER.md`, a Reader agent's pass at 375 px).
+- v1.0.0 (items 12, 18) comes after every snapshot before it is finished.
 
 ## Rules
 - After each step: `node engine/test.js`, `node engine/check.js`, `node engine/songtest.js` if sound changed,
@@ -94,8 +95,7 @@
     through. Seen at 1280 px and 375 px; 0.6 ms a frame at 1280 px, 1.1 ms at 375 px; still calm when quiet
     (change per frame 1.4) and lively when loud (9.3).
 
-**v0.5.0: song map**
-
+**v0.5.0: song map** (items 6 and 7 done)
 
 **v0.6.0: Artificium**
 
@@ -138,6 +138,13 @@
     page and mode at 375 px and on a real phone: touch targets at least 40 px, no sideways scroll, microphone
     over https, folder fallback where the folder API is missing. Done when: a Reader session finds nothing
     blocking.
+    **Part done 2026-11-19.** Fire and Nature on the PC in a loud passage: 1.65 and 1.37 ms a frame (reading a
+    pixel back every frame made Fire read 207 ms: that forces the canvas off the graphics card, so it is not a
+    real number; a phone must be measured on the phone). Touch targets: at 375 px with every Settings group
+    open, many were under 40 px; on a touch screen every control is now 40 px or more and a Settings row's
+    words work its control (`check.js` rule 8g); no page scrolls sideways. "Open a music folder" falls back
+    to the browser's folder chooser and hides where there is none; the microphone says it needs https. Left:
+    the Reader's findings (`docs/READER.md`) and a real phone.
 
 **v1.0.0: release**
 
@@ -205,6 +212,22 @@
 - **Clock (items 24 and 25).** Settings > the bar at the top: Sky under the code Ascensus Ad Incertum (new
   wings, should no longer lag), Gears (flat gear icons), and the new Sand (press and drag to scoop sand, let go
   while moving to throw). Say whether they look right.
+- **Piano plays piano (item 26).** Play a piano song in Piano mode (for example the Silksong piano tutorial in
+  test-songs) and listen: do you hear piano notes that match the falling notes? Touch a few keys, black ones
+  too. Settings > Piano > switch off "Play piano notes instead of the song": the song should come back. Say
+  whether the piano sound is good enough.
+- **New fish (item 29).** Aquatic mode: do the fish look right next to `inspiration/fish-example.jpg`?
+- **Artificium balance (item 30, D16).** Playing itself on Normal it reaches wave 61 with no life lost and
+  💰13,525 unspent, so it looks easy. Should enemies get tougher per wave ("Enemy HP per wave/level" is 0.085)?
+  Also: the board now keeps one shape (2:1) and zooms to fit, so a wide PC picture has empty space at its
+  sides; say if you would rather it filled the width.
+- **Undarum speed key (item 31).** 3x speed is now the X key (press once on, once off) instead of holding
+  Shift. On the PC in fullscreen, check it no longer throws you out of fullscreen.
+- **Mini-game looks (item 16).** Pictures in `docs/design/` (before and after, PC and phone width): Solarium
+  and Dungeon of Echoes. Say whether they look right, and whether Solarium should get finger-dragging to move
+  around a big drawing on a phone (today only the keyboard pans it).
+- **Phone pass (item 11).** On your phone: open every page and a few modes and games; tell a run anything
+  that is hard to tap, cut off or slow.
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
 - **Google Search Console** comes at the very end, before v1.0.0 (item 18). It needs your Google account:
   nothing to do until a run asks for the verification file or tag.

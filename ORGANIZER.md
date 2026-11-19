@@ -112,6 +112,14 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - **Piano sound** (`piano-voice.js`): in Piano mode the speakers play piano notes made in the app for the notes
   found, not the song ("Song off" in `audio-engine.js`: only while Piano asks, never while the page is hidden,
   never with the microphone). The piano joins after the analysers, so it is never analysed (`check.js`).
+- **Song map** (`js/core/song-map.js`): a whole song read once (tempo, beats, hits, sections, energy), drawn
+  behind the seek bar for songs on the device up to 15 minutes; `node engine/songmap.js` makes or checks maps.
+- **Games:** 3x speed is the X key, a switch (never Shift: Windows opens Filter Keys / Sticky Keys and fullscreen
+  ends). Artificium's board is a fixed 640 x 320 board units zoomed to fit. Each game has a `probe` hook and a
+  script play-test in `engine/probe.js` (`Probe.artificium`, `undarum`, `dungeon`, `solarium`), which blocks
+  saves while it runs: the preview's tabs share storage with the user's.
+- **Touch screens:** every control is 40 px or more where the pointer is a finger (`pointer: coarse` in
+  `styles.css`); with a mouse the look is unchanged.
 - **Fullscreen:** one set of rules for real fullscreen and the iPhone stand-in (class "is-full"). The picture
   fills the screen; the buttons lie over its lower edge in one sliding line and fade out after 3.5 s without a
   touch; a phone held upright turns the picture sideways (a setting, on by default). Every mode must look right
