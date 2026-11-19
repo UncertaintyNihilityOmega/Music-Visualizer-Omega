@@ -2,11 +2,9 @@
 
 ## Now
 - v0.1.0 is everything built up to 2026-11-19 (the user's plan change): summary in CHANGELOG.md, tag `v0.1.0`.
-- Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks); every other v0.2.0 item is done, so
-  work goes on with v0.3.0 (item 17).
-- Item 17 (v0.3.0) is half done: the "## Review" section of docs/MODES.md has motion and speed numbers for Omega
-  and Love and the three worst faults (Liquid moves the same quiet and loud; Emoji and String move a lot when
-  quiet). Not yet looked at: the other seven codes, looks, 375 px, phone fullscreen.
+- Snapshot in hand: **v0.2.0**. Item 21 done; items 22 and 23 built (they wait on your checks).
+- v0.3.0 started: items 24 and 25 built (they wait on your look); item 17's review finished; Liquid, Emoji
+  and String being fixed by an agent.
 - Item 6 (v0.5.0) is started, not committed: the pure maths is in `.run/wip/song-map.js` (git-ignored). The
   user's beat counts agree with it (see item 6). To resume: move the file back to `js/core/` and add it to
   `index.html` in the same commit.
@@ -54,6 +52,10 @@
     Rain, Nature, Clock, Liquid): two songs, every code, calm part against loud part measured, the weakest thing
     fixed. Worst first: Liquid, Emoji, String. Done when: the review's notes are closed and each of the eight
     has a dated line in docs/MODES.md.
+    **Review finished 2026-11-19** (second half in docs/MODES.md): worst are Emoji (quiet 11 to 23 under every
+    code, ratio 1.2 to 1.5), Liquid (ratio 0.9 to 1.6) and String (ratio 0.8 to 1.9); Emoji and Liquid codes
+    change mostly colours; Fire under three codes and Nature under pale codes are weaker. Every mode is under
+    6 ms a frame (worst 4.7 ms at 1280 px, 2.3 ms at 375 px). Fixes for Liquid, Emoji, String: in hand (agent).
     Clock notes left for a later look: the time in figures is crowded beside VIII and IV in the Roman skins,
     the hands can pass over it, Golden's sand covers the bottom of the crown on a phone, Cyberpunk is busy,
     Solarpunk's solar panels are left over.
@@ -61,11 +63,23 @@
     find the cost. Redraw the wings in 2D after `inspiration/wing-example.webp` (feathered wings like it, but
     flat); the left and right wings are different from each other. Done when: under 2 ms a frame at 1280 px
     and 375 px, and the user says the wings look right.
+    **Built 2026-11-19, waiting on the user's look.** Ascensus shows the Sky design; it was slow from about 330
+    fills, 150 strokes and blurred shadows a frame; now the dial and wing parts are painted once and copied in
+    (19 fills, 12 strokes): 1.84 to 1.06 ms at 1280 px, 1.54 to 0.92 ms at 375 px (loud). New flat wings: left,
+    three stiff mechanical blades that snap apart on a kick; right, nine thin plumes that flutter one after
+    another; a hue each under the rainbow code. On an upright phone the wings fold above the dial.
 25. **Clock: Gears and Sand as two designs** (user check). Gears: flat gears like gear icons (fits the Clock's
     art style), more gears, all meshing in time. Sand: its own design in the layout bar. The sand can be
     grabbed and thrown (mouse and touch) and lands in piles that stay apart; it slowly fills the whole screen
     in 10 minutes. Done when: both designs are in the layout bar, work with every code, under 2 ms a frame
     (sand measured near full), and the user says they look right.
+    **Built 2026-11-19, waiting on the user's look.** Gears: 18 flat gear icons (was 11) in four trains, square
+    teeth and a hole, neighbours turning opposite ways in time; a tap shoves them. Sand: a new design in the
+    layout bar (hourglass icon); pours in thin streams, faster when the music is big, stops on pause, lies in
+    coloured layers; press and drag to scoop, let go while moving to throw, it lands in separate heaps; when
+    full it drains out of the bottom in about 30 s and starts again. In fullscreen a tap on Sand does not
+    pause. 0.55 to 0.7 ms a frame with the picture 95% full. Weak: on a phone a drag on the Sand picture does
+    not scroll the page; quiet passages not measured.
 
 **v0.4.0: special modes**
 
@@ -167,6 +181,9 @@
 - **One question (item 23).** On the PC (Chrome or Edge), open the app with remembered songs and tap
   Reconnect: in the browser's question choose "Allow on every visit". Close the app, open it again: the songs
   should be there with no question. Installing the app (Music > Install the app) should do the same by itself.
+- **Clock (items 24 and 25).** Settings > the bar at the top: Sky under the code Ascensus Ad Incertum (new
+  wings, should no longer lag), Gears (flat gear icons), and the new Sand (press and drag to scoop sand, let go
+  while moving to throw). Say whether they look right.
 - **Update the phone's copy of the app**: open it once with the network on, close it and open it again.
 - **Google Search Console** comes at the very end, before v1.0.0 (item 18). It needs your Google account:
   nothing to do until a run asks for the verification file or tag.

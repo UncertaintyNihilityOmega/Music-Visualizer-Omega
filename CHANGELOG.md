@@ -13,6 +13,11 @@ ROADMAP.md "Done" is emptied for the next one.
 - **One question brings back every remembered song.** Reconnect asks the browser once for all of them. Choose
   "Allow on every visit" in that question (Chrome and Edge) and the app stops asking; an installed app keeps
   the permission by itself.
+- **Clock under Ascensus Ad Incertum no longer lags**, and its wings are new: flat, after a drawing, and the
+  two sides differ (three stiff blades on the left, nine fluttering plumes on the right).
+- **Clock: Gears** are flat gear icons now, eighteen of them, all turning in time.
+- **Clock: Sand**, a new design. Sand pours in and fills the picture in about ten minutes; press and drag to
+  scoop some up and let go while moving to throw it. When the picture is full it drains away and starts again.
 
 ## v0.1.0 (2026-11-19): everything built so far
 
