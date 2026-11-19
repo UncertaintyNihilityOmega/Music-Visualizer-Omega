@@ -8,7 +8,7 @@
    The list and version are written by  node engine/sw-build.js .
    ========================================================================= */
 /* BUILD:START (written by engine/sw-build.js; do not edit by hand) */
-var VERSION = '0.2.0-dev-254d4a1e9a';
+var VERSION = '0.2.0-dev-d805878aa2';
 var FILES = [
   'css/styles.css',
   'icons/icon-180.png',

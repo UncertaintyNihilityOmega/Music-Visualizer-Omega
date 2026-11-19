@@ -323,7 +323,7 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
   does not (see Basic). No text over text was seen in these pictures.
 
 ### Liquid
-- [ ] Quiet and loud move the same under every code: 1.75 / 1.76 (ratio 1.0) under Omega (1.75 / 2.05 on a
+- [x] (2026-11-19: quiet 0.02 to 0.15, loud 0.34 to 2.7, ratio 12 to 28 under all 9 codes at 1280 px) Quiet and loud move the same under every code: 1.75 / 1.76 (ratio 1.0) under Omega (1.75 / 2.05 on a
   repeat), 1.66 / 1.58 under New Year, 1.45 / 1.31 under Halloween, 0.85 / 0.77 under Incertum (loud lower than
   quiet), 1.2 to 1.6 under the rest; it is the only mode with no difference at all. On song 2 the ratio is 2.4
   (1.06 / 2.57), so it follows the music a little when the quiet is real silence. Likely causes, read from the
@@ -332,12 +332,13 @@ Solarpunk String, Incertum Basic; Halloween Emoji, Tessa Nature, Tessa Fire (lou
   spectrum's shape (`Aud.bars`), which stays tall in a soft passage. Fixed when the quiet window changes a third or
   less of the loud one (ratio 3 or more) under Omega, Tessa and Cyberpunk, with the loud number not lower than
   now (1.76, 3.46, 1.86).
-- [ ] Codes change mostly the colours. Five of nine codes use kind `ink` (Omega, New Year, Love, Solarpunk,
+- [x] (2026-11-19: tessa lightning, newyear tick ring, halloween slime strands, love heart, solarpunk petals, cyberpunk hexagon, nihilum tilted ring with inward water, incertum orbiting second drop; Omega is the plain drop) Codes change mostly the colours. Five of nine codes use kind `ink` (Omega, New Year, Love, Solarpunk,
   Incertum). In the pictures of Love, Tessa and Cyberpunk the drop has the same outline with the same two horns,
   the same rings and whirlpool; only the colours and the centre mark differ (plasma adds jitter, mercury adds
   steps, slime adds drips, all small). Fixed when each of the nine codes has one thing in its picture that a
   grey-scale copy would still show (an outline, a second drop, a different whirlpool or a different kind of
   droplet), not only a colour or the centre mark.
+- Liquid: checked 2026-11-19, 1280 px, "Want Some Fun", quiet / loud (ratio), baseline measured the same day before the change: Omega 1.28 / 1.30 (1.0) -> 0.05 / 1.32 (26), Tessa 1.15 / 1.39 (1.2) -> 0.07 / 1.93 (28), Cyberpunk 1.08 / 1.18 (1.1) -> 0.15 / 2.70 (18), Incertum 0.62 / 0.56 (0.9) -> 0.07 / 1.21 (17); after only: New Year 0.11 / 2.39, Halloween 0.08 / 0.95 (12), Love 0.02 / 0.34, Solarpunk 0.03 / 0.51, Nihilum 0.05 / 1.22. Cause: the boom (`swell`) followed every soft kick even at `drive` 0; it is now scaled by `drive`, and whirlpool, specks, slow edge waves, rainbow hue and the edge's swing are tied to `drive` too. Speed 0.58 to 1.03 ms at 1280 px, 0.51 to 0.60 at 375 px. The loud numbers of the review (1.76, 3.46, 1.86) were not reproduced by the baseline (1.30, 1.39, 1.18); the new loud numbers are above both.
 
 ### Emoji
 - [ ] Quiet is busier than any other mode's loud, under every code: quiet / loud 11.12 / 15.39 (Nihilum) up to
