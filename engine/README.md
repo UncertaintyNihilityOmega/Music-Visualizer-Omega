@@ -77,7 +77,10 @@ await Probe.songs()                   // load test-songs and play
 await Probe.run(Probe.MODES, 52, 3)   // per mode: ms per frame, lit share, errors
 await Probe.motion(['rain'], 46, 5, 3)// change per frame; compare a loud second with a quiet one
 await Probe.white('fire', 52, 3)      // share of the picture burnt out to white
+await Probe.artificium()              // every Artificium row of docs/GAME-AUDIT.md, played by script
 ```
+`Probe.artificium()` blocks the game's saves while it runs (the preview's tabs share storage with the user's)
+and puts the game settings back after; `{ skipBalance: true }` leaves out the self-playing balance run.
 
 It steps frames with a timer, so it works while the browser pane is hidden (animation frames do not fire
 there). Speed is milliseconds per frame, never a frame rate.

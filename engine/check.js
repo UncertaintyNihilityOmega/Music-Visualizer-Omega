@@ -326,6 +326,16 @@ before('js/core/icons.js', 'js/pages/pages-mount.js', 'the page tabs get their i
   if (users.length < 3) err('at least three modes should use a "follows" setting (type \'source\'); found ' + users.length);
 }
 
+/* 8e. Artificium's board (item 30, GAME-AUDIT D6): the road, ranges and speeds are in board units; only view()
+       (the zoom that fits the board into the picture) may read the window's size */
+{
+  const td = read('js/games/game-tower-defense.js');
+  const outside = td.replace(/function view\(\)\{[\s\S]*?\n  \}/, '');
+  if (!/var BW = \d+, BH = \d+/.test(td)) err('game-tower-defense.js: the board must have a fixed size in board units (BW, BH)');
+  if (/canvas\.(width|height)/.test(outside)) err('game-tower-defense.js: only view() may read canvas.width / canvas.height, or resizing the window changes the road length and tower range');
+  if (/addResizeHook/.test(td)) err('game-tower-defense.js: the board must not be rebuilt on resize (view() zooms it)');
+}
+
 /* 8c. piano sound (item 26): the song is kept off the speakers only while Piano asks for it, comes back when the
        page is hidden (no frames are drawn then, so nothing would play), and the piano never reaches the analysis */
 {

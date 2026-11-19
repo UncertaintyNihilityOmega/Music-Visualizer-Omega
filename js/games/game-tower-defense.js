@@ -1,9 +1,13 @@
 /* =========================================================================
    TOWER DEFENSE
    Towers are individual: each one carries its own level, its own
-   evolution and its own spent value. All distances are expressed in
-   game units (U) derived from the canvas height, so shrinking the
-   window zooms the whole board instead of changing the balance.
+   evolution and its own spent value.
+   The board is a fixed 640 x 320 board units (26 x 13 square cells):
+   the road, every range and every speed are in board units, and the
+   board is drawn scaled to fit the picture, centred (view()). So a
+   wider or smaller window zooms the whole board and changes neither
+   the road's length nor a tower's reach (ROADMAP item 30, GAME-AUDIT D6:
+   the road used to be laid out in window pixels).
    ========================================================================= */
 (function(){
   'use strict';
@@ -19,7 +23,18 @@
   };
   var GRID_COLS = 26, GRID_ROWS = 13;
   var TOWER_MAX = 30, TECH_MAX = 10, EVO_AT = 15;
-  function u(){ return canvas.height / 320; }
+  var BW = 640, BH = 320;
+  function u(){ return 1; }          // one board unit (kept so the numbers below read as before)
+  // where the board sits in the picture: scale s, then offset ox, oy (canvas pixels)
+  function view(){
+    var s = Math.min(canvas.width / BW, canvas.height / BH);
+    return { s: s, ox: (canvas.width - BW * s) / 2, oy: (canvas.height - BH * s) / 2 };
+  }
+  // a point on the canvas (pixels) to board units
+  function toBoard(pt){
+    var v = view();
+    return { x: (pt.x - v.ox) / v.s, y: (pt.y - v.oy) / v.s };
+  }
 
   var TD_ITEMS = [
     { id: 'cannon',  name: 'Cannon',      emoji: '💣', type: 'shot',  color: '#D8763A', dmg: 13,  rate: 0.95, range: 108, cost: 55,  desc: 'Single target. +14% damage per level, max level 30, evolves at 15.' },
@@ -135,7 +150,7 @@
   }
 
   function buildPath(){
-    var w = canvas.width, h = canvas.height;
+    var w = BW, h = BH;
     var m = w * 0.08;
     TD.path = [
       { x: -20, y: h * 0.2 }, { x: w - m, y: h * 0.2 },
@@ -175,12 +190,12 @@
     return Math.sqrt(best);
   }
   function cellCenter(gx, gy){
-    return { x: (gx + 0.5) * (canvas.width / GRID_COLS), y: (gy + 0.5) * (canvas.height / GRID_ROWS) };
+    return { x: (gx + 0.5) * (BW / GRID_COLS), y: (gy + 0.5) * (BH / GRID_ROWS) };
   }
   function cellAt(x, y){
     return {
-      gx: Math.max(0, Math.min(GRID_COLS - 1, Math.floor(x / (canvas.width / GRID_COLS)))),
-      gy: Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(y / (canvas.height / GRID_ROWS))))
+      gx: Math.max(0, Math.min(GRID_COLS - 1, Math.floor(x / (BW / GRID_COLS)))),
+      gy: Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(y / (BH / GRID_ROWS))))
     };
   }
   function towerAt(gx, gy){
@@ -190,7 +205,7 @@
   }
   function cellFree(gx, gy, ignore){
     var c = cellCenter(gx, gy);
-    if (distToPath(c.x, c.y) < canvas.height * 0.075) return false;
+    if (distToPath(c.x, c.y) < BH * 0.075) return false;
     var t = towerAt(gx, gy);
     return !t || t === ignore;
   }
@@ -322,6 +337,12 @@
     TD.waveT -= dt;
     if (TD.waveT <= 0 || (!TD.queue && !TD.enemies.length)){
       TD.level++;
+      // everything maxed (GAME-AUDIT D17): each wave adds +1% damage instead (G.dmgMul reads TD.breaks)
+      if (allMaxed()){
+        TD.breaks++;
+        G.GAME.banner = 'LEVEL BREAK  +1% damage  (x' + TD.breaks + ')';
+        G.GAME.bannerT = 2.4;
+      }
       tdStartWave();
       if (Cfg.CFG.games.autoUpgrade) tdAutoBuy();
     }
@@ -597,6 +618,13 @@
       if (TD.fx[f].life <= 0) TD.fx.splice(f, 1);
     }
   }
+  // every tech at its top level and every tower on the board at level 30 (at least one tower)
+  function allMaxed(){
+    for (var i = 0; i < TD_ITEMS.length; i++) if (TD_ITEMS[i].type === 'global' && (TD.lv[TD_ITEMS[i].id] || 0) < TECH_MAX) return false;
+    if (!TD.turrets.length) return false;
+    for (var t = 0; t < TD.turrets.length; t++) if ((TD.turrets[t].lv || 1) < TOWER_MAX) return false;
+    return true;
+  }
   function tdAutoBuy(){
     for (var pass = 0; pass < 3; pass++){
       var afford = [];
@@ -624,9 +652,20 @@
     }
   }
   function tdDraw(){
-    var w = canvas.width, h = canvas.height, k = Can.dpr(), uu = u();
+    var w = BW, h = BH, k = Can.dpr(), uu = u();
     G.gameBackdrop(false);
     var cw = w / GRID_COLS, chh = h / GRID_ROWS;
+    // everything up to the HUD is drawn in board units
+    var v = view();
+    ctx.save();
+    ctx.translate(v.ox, v.oy);
+    ctx.scale(v.s, v.s);
+    // the board's edge, so the zoomed board reads as one piece
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
 
     // positioning mode paints every cell green (free) or red (blocked)
     if (TD.placing){
@@ -768,6 +807,7 @@
                          cellCenter(TD.hover.gx, TD.hover.gy).y, 0, 18 * uu, 0.6);
     }
 
+    ctx.restore();
     G.hudText([
       'Wave ' + TD.level + (TD.breaks ? '   break x' + TD.breaks : '') + '   next in ' + Math.max(0, Math.ceil(TD.waveT)) + 's',
       '💰 ' + Math.round(TD.money) + '   Lives ' + TD.lives + '   Enemies ' + TD.enemies.length,
@@ -870,32 +910,13 @@
     if (b) b.textContent = TD.placing ? 'Positioning: ON' : 'Positioning: off';
   }
 
-  App.canvas.addResizeHook(function(){
-    if (!TD.path.length) return;
-    buildPath();
-    // a portrait/landscape change moves the road relative to the grid, so
-    // re-seat any tower that would now be standing on it
-    for (var ti = 0; ti < TD.turrets.length; ti++){
-      var tw = TD.turrets[ti];
-      if (cellFree(tw.gx, tw.gy, tw)) continue;
-      var moved = false;
-      for (var rad = 1; rad < 6 && !moved; rad++){
-        for (var ox = -rad; ox <= rad && !moved; ox++){
-          for (var oy = -rad; oy <= rad && !moved; oy++){
-            var nx = tw.gx + ox, ny = tw.gy + oy;
-            if (nx < 0 || ny < 0 || nx >= GRID_COLS || ny >= GRID_ROWS) continue;
-            if (cellFree(nx, ny, tw)){ tw.gx = nx; tw.gy = ny; moved = true; }
-          }
-        }
-      }
-    }
-  });
+  // no resize hook: the board does not change with the window (view() zooms it)
 
   /* ---------- pointer input ---------- */
   canvas.addEventListener('pointerdown', function(ev){
     if (App.modes.current !== 'td') return;
     if (G.GAME.state === 'choosing' || G.GAME.state === 'idle' || G.GAME.state === 'dead' || G.GAME.state === 'paused') return;
-    var pt = App.taps.canvasPoint(ev);
+    var pt = toBoard(App.taps.canvasPoint(ev));
     var cell = cellAt(pt.x, pt.y);
     TD.sel = cell;
     TD.hover = cell;
@@ -906,7 +927,7 @@
   });
   canvas.addEventListener('pointermove', function(ev){
     if (App.modes.current !== 'td' || (!TD.buying && !TD.drag)) return;
-    var pt2 = App.taps.canvasPoint(ev);
+    var pt2 = toBoard(App.taps.canvasPoint(ev));
     TD.hover = cellAt(pt2.x, pt2.y);
     TD.pointer = pt2;
   });
@@ -949,6 +970,9 @@
     label: 'Artificium',
     unit: 'wave',
     dmgStat: 'power',
+    // Power Tech already gives its +10% a level in towerStats(); the shared 1.2% a level on top made level 10
+    // read +124% instead of the +100% the shop promises (GAME-AUDIT D13, 2026-11-19)
+    dmgStatCoef: 0,
     update: tdUpdate,
     draw: tdDraw,
     autoBuy: tdAutoBuy,
@@ -984,6 +1008,12 @@
       }
     },
     renderShop: renderShop,
+    // for checks in the browser (play-testing GAME-AUDIT rows by script), never read by the app
+    probe: function(){ return { total: TD.total, board: [BW, BH], view: view(), evos: EVOS, items: TD_ITEMS,
+      turrets: TD.turrets.map(function(t){ return { id: t.id, gx: t.gx, gy: t.gy, lv: t.lv, evo: t.evo, range: towerStats(t).range }; }),
+      api: { towerStats: towerStats, buyItem: buyItem, confirmPlace: confirmPlace, upgradeTower: upgradeTower, sellTower: sellTower,
+             sellValue: sellValue, cellFree: cellFree, placeTower: placeTower, towerAt: towerAt, update: tdUpdate, spawn: tdSpawn,
+             cellCenter: cellCenter, distToPath: distToPath, upgradeCost: upgradeCost, allMaxed: allMaxed } }; },
     renderGridInfo: renderGridInfo,
     handleKey: function(key, down){
       if (!down) return false;
