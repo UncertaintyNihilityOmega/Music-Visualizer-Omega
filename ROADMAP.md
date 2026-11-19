@@ -73,19 +73,19 @@
 
 **v0.4.0: special modes**
 
-20. **Special modes pass: Ice, Aquatic, Piano.** They keep their own look (no theme codes). Piano's falling
-    notes are built and checked by the user on phone, web and PC. Ice is left, plus items 26 to 29. Done when:
-    each of the three has a dated line in docs/MODES.md.
 26. **Piano plays piano sounds.** In Piano mode the speakers play real piano notes for the keys the analysis
     picks from the song, instead of the song itself; touching a key plays that key too. Offline, so the sound
     is made in the app (synthesised with Web Audio) or from a small free sample set kept in the repository
     (licence in FACTS.md). A setting switches back to the song. With the late sound, a note sounds as it lands
     on its key. Done when: a piano song in Piano mode is heard as piano notes that match the falling notes,
     touch plays notes, and the setting brings back the song.
-27. **Piano: note icons on touch.** The touch effect draws music-note icons (line drawings, not emoji such as
-    "🎶") in the colour of the key that was pressed. Done when: seen at 1280 px and 375 px.
-    **Built 2026-11-19:** three drawn notes (a quaver, two joined quavers, a crotchet) in the colour of the key
-    under the touch; seen at 1280 px; the preview pane did not give a true 375 px picture, so that look waits.
+    **Built 2026-11-19, waiting on your listen.** A small piano made in the app (`js/core/piano-voice.js`, no
+    sample files): each found note is struck as it lands, let go when its end is heard; a touched key (black
+    keys too) plays at once. The song is kept off the speakers only while Piano is on screen, and comes back
+    when the page is hidden. Setting "Play piano notes instead of the song", on by default; a Guide line.
+    Measured on the piano tutorial song: every falling note had its piano note, struck within 6 ms of landing,
+    up to 8 at once; single notes sound at the right pitch (within 0.2 of a semitone); 2.4 ms a frame. Known
+    limit: while a paused song's late sound is held, a touched key lights but makes no sound.
 29. **Aquatic: better fish** after `inspiration/fish-example.jpg` (shape and style like it). Done when: seen at
     1280 px and 375 px and the user says they look right.
 
@@ -155,6 +155,12 @@
 
 ## Done
 (Emptied when v0.1.0 was finished on 2026-11-19; its summary is in CHANGELOG.md.)
+- 20 Special modes pass: Ice measured (change per frame 0.46 quiet, 1.83 loud; 0.6 to 0.9 ms a frame at 1280 px
+  and 375 px), looked at quiet and loud, right as it is; Aquatic (item 28) and Piano (items 26, 27) checked; each
+  of the three has a dated line in docs/MODES.md. Better fish (29) and Piano's sound (26) go on as their own
+  items (2026-11-19).
+- 27 Piano note icons on touch: three drawn notes (a quaver, two joined quavers, a crotchet) in the colour of the
+  key under the touch, black keys too; seen at 1280 px and at a true 375 px (picture 515 x 300) (2026-11-19).
 - 28 Aquatic edges: a fish past the left or right edge comes back from the other side (drawn on both sides while
   it crosses); one that swims up out of the water leaps in an arc and splashes back in (at most one leap every
   1.2 s for the whole school); the seabed is a wall. Checked by forcing fish to each edge and stepping frames:

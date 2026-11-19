@@ -109,6 +109,9 @@ A review by a fresh session every 4 packages; a Reader pass before a release.
 - **Late sound** (`audio-engine.js`): while Piano is on screen the speakers get the song 2.3 s after the analysis
   hears it, so a note can fall and land as it is heard. Only Piano asks for it (`check.js`). Pause holds the
   delayed sound; a seek or a new song mutes what is still in the delay.
+- **Piano sound** (`piano-voice.js`): in Piano mode the speakers play piano notes made in the app for the notes
+  found, not the song ("Song off" in `audio-engine.js`: only while Piano asks, never while the page is hidden,
+  never with the microphone). The piano joins after the analysers, so it is never analysed (`check.js`).
 - **Fullscreen:** one set of rules for real fullscreen and the iPhone stand-in (class "is-full"). The picture
   fills the screen; the buttons lie over its lower edge in one sliding line and fade out after 3.5 s without a
   touch; a phone held upright turns the picture sideways (a setting, on by default). Every mode must look right

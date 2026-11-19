@@ -106,6 +106,10 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   `intensity` (pressure, so music with no snare still cracks the ice).
 - Built: a snare starts a crack; frost creeps in from the edges while the music is calm and shatters on the
   first hard hit of a loud part; hi-hat glints.
+- Checked 2026-11-19 (ROADMAP item 20): "Want Some Fun", change per frame 0.46 quiet (seconds 8 to 11) and 1.83
+  loud (58 to 61), 4 times livelier; 0.6 to 0.9 ms a frame at 1280 px and 375 px (picture 1200 x 320 and
+  515 x 300). Looked at quiet (frost at the edges, a few still cracks) and loud (star-shaped cracks spreading,
+  glints): right as it is, nothing changed. No console errors.
 - Ideas left: none.
 
 ## Aquatic
@@ -113,6 +117,9 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   scatter), `hat` (bubble bursts), `level`, `mid`, `trebleTilt`.
 - Built: the surface is a bass spectrum line; fish school when calm and scatter on a kick; bubbles on hi-hats;
   light shafts brighten with the passage.
+- Checked 2026-11-19 (ROADMAP items 20 and 28): fish wrap round the side edges, leap out of the water and splash
+  back in (one leap every 1.2 s at most), the seabed is a wall. Change per frame 0.58 quiet and 3.57 loud (6
+  times livelier); 0.65 to 0.97 ms a frame at 1280 px and 375 px. Better fish: ROADMAP item 29.
 - Ideas left: none.
 
 ## Nature
@@ -133,8 +140,13 @@ needs about 10 s to grow or die back (0.50 loud against 0.15 quiet when given th
   the whole key takes the note's colour, a brighter edge on the bars, and the roll moves 0.35 screen heights a
   second. Colours unchanged (the user: the video is the example for the behaviour, not the palette).
   1.3 to 1.4 ms a frame at 1200 px and at phone width.
-- Ideas left: notes that **fall onto** the keys before they sound (ROADMAP 20). Two routes, written up in
-  docs/RESEARCH.md section 6: read the whole file first (the song map), or play the sound 2.3 s late.
+- Notes **fall onto** the keys before they sound (built 2026-11-16, the second route of docs/RESEARCH.md
+  section 6: the song is played 2.3 s late; checked by the user on phone, web and PC).
+- Checked 2026-11-19 (ROADMAP items 20, 26, 27): touch draws music-note icons in the colour of the key under
+  the finger (seen at 1280 px and 375 px); the speakers play piano notes made in the app for the notes found
+  (`js/core/piano-voice.js`), each struck within 6 ms of landing on its key, at the right pitch; a touched key
+  plays. 1.05 to 1.34 ms a frame at 1280 px and 375 px. Whether it sounds right waits on the user's ears.
+- Ideas left: none.
 
 ## Clock (redrawn 2026-11-16, asked by the user: the old one "looks pretty ugly"; designs apart from the codes 2026-11-17)
 - Picture, from the middle out: a plain dial with a hairline rim, hour marks, slim hands and the time in small
