@@ -107,6 +107,12 @@
     window size still changes the road length, so enemies jump and towers reach too far; the board must keep
     its size in board units and zoom to fit. Done when: every D row says "confirmed" or "fixed" with the date,
     and resizing the window changes neither range nor road length (a check in `test.js` or `check.js`).
+    **Built 2026-11-19, waiting on your call on D16 (balance).** Every row played by script (`Probe.artificium()`
+    in `engine/probe.js`, saves blocked while it runs): D2 to D17 and G1 confirmed or fixed in
+    docs/GAME-AUDIT.md. Fixed: D6 (a fixed 640 x 320 board drawn scaled to fit; road 1947 and range 108 at every
+    width; `check.js` rule 8e), D17 (the level break never happened in Artificium), D13 (Power tech counted
+    twice). D16: playing itself on Normal it reaches wave 61 with no life lost and 💰13,525 unspent, so it looks
+    easy. On a wide PC screen the board now has empty space at both sides (it keeps a 2:1 shape).
 
 **v0.7.0: Undarum**
 
