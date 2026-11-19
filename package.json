@@ -1,6 +1,6 @@
 {
   "name": "music-visualiser-omega",
-  "version": "0.1.0",
+  "version": "0.2.0-dev",
   "private": true,
   "description": "A music player and visualiser that plays the songs already on your device, listens to your microphone, and works offline.",
   "license": "SEE LICENSE IN LICENSE",

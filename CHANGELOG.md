@@ -3,6 +3,9 @@
 What someone using the app would notice. Newest first. Each finished snapshot gets a short summary here, and
 ROADMAP.md "Done" is emptied for the next one.
 
+## 0.2.0-dev (in progress: everyday playing)
+Nothing yet.
+
 ## v0.1.0 (2026-11-19): everything built so far
 
 **In short:** the old "Our Playlist" page became Music Visualiser Omega. It plays songs where they are on the
